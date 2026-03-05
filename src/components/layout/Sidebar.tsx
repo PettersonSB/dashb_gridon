@@ -1,10 +1,12 @@
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { sidebarItems } from "@/data/sidebarItems";
 import { useAuth } from "@/contexts/AuthContext";
-import { Zap, LogOut } from "lucide-react";
+import { Zap, LogOut, ChevronDown } from "lucide-react";
 
 const Sidebar = () => {
     const { user, signOut } = useAuth();
+    const location = useLocation();
 
     // Group items
     const groups: Record<string, typeof sidebarItems> = {};
@@ -18,6 +20,26 @@ const Sidebar = () => {
             ungrouped.push(item);
         }
     });
+
+    // Determine which groups should be initially open based on the current path
+    const getInitialOpenGroups = () => {
+        const initial: Record<string, boolean> = {};
+        Object.entries(groups).forEach(([group, items]) => {
+            if (items.some(item => location.pathname === item.href || location.pathname.startsWith(item.href + '/'))) {
+                initial[group] = true;
+            }
+        });
+        return initial;
+    };
+
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
+
+    const toggleGroup = (group: string) => {
+        setOpenGroups(prev => ({
+            ...prev,
+            [group]: !prev[group]
+        }));
+    };
 
     return (
         <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[hsl(228,25%,7%)] border-r border-white/[0.04] flex flex-col z-40">
@@ -48,27 +70,42 @@ const Sidebar = () => {
                     </NavLink>
                 ))}
 
-                {Object.entries(groups).map(([group, items]) => (
-                    <div key={group} className="pt-4">
-                        <span className="px-4 text-[11px] font-semibold text-white/20 uppercase tracking-widest">
-                            {group}
-                        </span>
-                        <div className="mt-2 space-y-1">
-                            {items.map((item) => (
-                                <NavLink
-                                    key={item.href}
-                                    to={item.href}
-                                    className={({ isActive }) =>
-                                        `sidebar-item ${isActive ? "active" : ""}`
-                                    }
-                                >
-                                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                                    {item.label}
-                                </NavLink>
-                            ))}
+                {Object.entries(groups).map(([group, items]) => {
+                    const isOpen = openGroups[group];
+                    
+                    return (
+                        <div key={group} className="pt-2">
+                            <button
+                                onClick={() => toggleGroup(group)}
+                                className="w-full flex items-center justify-between px-4 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-widest hover:text-white/70 transition-colors"
+                            >
+                                <span>{group}</span>
+                                <ChevronDown 
+                                    className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                                />
+                            </button>
+                            
+                            <div 
+                                className={`mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
+                                    isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                                }`}
+                            >
+                                {items.map((item) => (
+                                    <NavLink
+                                        key={item.href}
+                                        to={item.href}
+                                        className={({ isActive }) =>
+                                            `sidebar-item ml-2 ${isActive ? "active" : ""}`
+                                        }
+                                    >
+                                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                                        {item.label}
+                                    </NavLink>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </nav>
 
             {/* Footer - User + Sign Out */}

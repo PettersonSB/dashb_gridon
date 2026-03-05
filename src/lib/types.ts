@@ -1,3 +1,57 @@
+export type Database = {
+    public: {
+        Tables: {
+            blog_posts: {
+                Row: {
+                    id: string;
+                    slug: string;
+                    title: string;
+                    excerpt: string | null;
+                    content: string;
+                    category: string;
+                    image_url: string | null;
+                    author: string | null;
+                    read_time: string | null;
+                    published: boolean | null;
+                    published_at: string | null;
+                    created_at: string | null;
+                    updated_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    slug: string;
+                    title: string;
+                    excerpt?: string | null;
+                    content: string;
+                    category: string;
+                    image_url?: string | null;
+                    author?: string | null;
+                    read_time?: string | null;
+                    published?: boolean | null;
+                    published_at?: string | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    slug?: string;
+                    title?: string;
+                    excerpt?: string | null;
+                    content?: string;
+                    category?: string;
+                    image_url?: string | null;
+                    author?: string | null;
+                    read_time?: string | null;
+                    published?: boolean | null;
+                    published_at?: string | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                };
+            };
+        };
+    };
+};
+
 export interface HeroContent {
     id: string;
     badge_text: string;

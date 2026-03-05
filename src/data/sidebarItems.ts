@@ -19,7 +19,7 @@ export interface SidebarItem {
 }
 
 export const sidebarItems: SidebarItem[] = [
-    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Landing page", href: "/", icon: LayoutDashboard },
     { label: "Hero", href: "/hero", icon: Sparkles, group: "Seções" },
     { label: "Problemas", href: "/problems", icon: AlertTriangle, group: "Seções" },
     { label: "Soluções", href: "/services", icon: Wrench, group: "Seções" },

@@ -11,6 +11,7 @@ import ServicesEditor from "@/pages/ServicesEditor";
 import StatsEditor from "@/pages/StatsEditor";
 import TestimonialsEditor from "@/pages/TestimonialsEditor";
 import BlogManager from "@/pages/BlogManager";
+import BlogEditor from "@/pages/BlogEditor";
 import CompanyInfo from "@/pages/CompanyInfo";
 import SeoConfig from "@/pages/SeoConfig";
 
@@ -36,6 +37,8 @@ function App() {
               <Route path="/stats" element={<StatsEditor />} />
               <Route path="/testimonials" element={<TestimonialsEditor />} />
               <Route path="/blog" element={<BlogManager />} />
+              <Route path="/blog/new" element={<BlogEditor />} />
+              <Route path="/blog/edit/:id" element={<BlogEditor />} />
               <Route path="/company" element={<CompanyInfo />} />
               <Route path="/seo" element={<SeoConfig />} />
             </Route>

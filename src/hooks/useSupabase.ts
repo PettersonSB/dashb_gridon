@@ -62,19 +62,19 @@ export function useSupabaseSingle<T>(table: string) {
 }
 
 // Upsert (insert or update) a single row
-export async function upsertRow<T extends Record<string, unknown>>(table: string, data: T) {
+export async function upsertRow<T extends any>(table: string, data: T) {
     const { error } = await supabase.from(table).upsert(data);
     return { error: error?.message ?? null };
 }
 
 // Insert a new row
-export async function insertRow<T extends Record<string, unknown>>(table: string, data: T) {
+export async function insertRow<T extends any>(table: string, data: T) {
     const { data: row, error } = await supabase.from(table).insert(data).select().single();
     return { data: row as T | null, error: error?.message ?? null };
 }
 
 // Update a row by ID
-export async function updateRow<T extends Record<string, unknown>>(table: string, id: string, data: Partial<T>) {
+export async function updateRow<T extends any>(table: string, id: string, data: Partial<T>) {
     const { error } = await supabase.from(table).update(data).eq("id", id);
     return { error: error?.message ?? null };
 }
@@ -86,7 +86,7 @@ export async function deleteRow(table: string, id: string) {
 }
 
 // Bulk upsert (for saving ordered lists)
-export async function bulkUpsert<T extends Record<string, unknown>>(table: string, rows: T[]) {
+export async function bulkUpsert<T extends any>(table: string, rows: T[]) {
     const { error } = await supabase.from(table).upsert(rows);
     return { error: error?.message ?? null };
 }
