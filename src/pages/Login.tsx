@@ -41,11 +41,15 @@ const Login = () => {
 
             <div className="w-full max-w-md relative z-10 animate-fade-in">
                 {/* Logo */}
-                <div className="text-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
-                        <Zap className="w-8 h-8 text-primary" />
+                <div className="text-center mb-10">
+                    <div className="flex justify-center mb-6">
+                        <img
+                            src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-CuReGPKe.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLUN1UmVHUEtlLnBuZyIsImlhdCI6MTc3MjkzNDQwNCwiZXhwIjo0OTI2NTM0NDA0fQ.O2WN8HLKj9zWa95-AVfUtG0qKGGP8lIT6YjdUpSC0GI"
+                            alt="Gridon"
+                            className="h-16 w-auto object-contain brightness-0 invert opacity-90 transition-all dark:brightness-0 dark:invert dark:opacity-90"
+                        />
                     </div>
-                    <h1 className="font-display text-2xl font-bold text-white">Gridon Dashboard</h1>
+                    <h1 className="font-display text-2xl font-bold text-white">Dashboard</h1>
                     <p className="text-sm text-white/40 mt-1">Faça login para acessar o painel</p>
                 </div>
 

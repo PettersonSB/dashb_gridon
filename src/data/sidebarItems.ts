@@ -8,6 +8,9 @@ import {
     FileText,
     Building2,
     Search,
+    DollarSign,
+    Sun,
+    Calculator,
     type LucideIcon,
 } from "lucide-react";
 
@@ -16,6 +19,7 @@ export interface SidebarItem {
     href: string;
     icon: LucideIcon;
     group?: string;
+    dropdown?: { label: string; href: string }[];
 }
 
 export const sidebarItems: SidebarItem[] = [
@@ -28,4 +32,16 @@ export const sidebarItems: SidebarItem[] = [
     { label: "Blog", href: "/blog", icon: FileText, group: "Conteúdo" },
     { label: "Empresa", href: "/company", icon: Building2, group: "Config" },
     { label: "SEO", href: "/seo", icon: Search, group: "Config" },
+    {
+        label: 'Orçamento',
+        href: '#',
+        icon: Calculator,
+        group: "Orçamento",
+        dropdown: [
+            { label: 'Visão Geral', href: '/budget' },
+            { label: 'Todos os Orçamentos', href: '/budget/list' },
+            { label: 'Novo Orçamento', href: '/budget/new' },
+            { label: 'Kit Solar', href: '/budget/kits' }
+        ],
+    },
 ];

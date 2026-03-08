@@ -1,27 +1,42 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import { sidebarItems } from "@/data/sidebarItems";
 import { useAuth } from "@/contexts/AuthContext";
-import { Zap, LogOut, ChevronDown } from "lucide-react";
+import { Zap, LogOut, ChevronDown, Calculator, Grid, Settings } from "lucide-react";
 
 const Sidebar = () => {
     const { user, signOut } = useAuth();
     const location = useLocation();
 
     // Group items
-    const groups: Record<string, typeof sidebarItems> = {};
+    const landingPageGroups: Record<string, typeof sidebarItems> = {};
     const ungrouped: typeof sidebarItems = [];
 
     sidebarItems.forEach((item) => {
-        if (item.group) {
-            if (!groups[item.group]) groups[item.group] = [];
-            groups[item.group].push(item);
+        if (item.label === "Landing page" || (item.group && item.group !== "Orçamento")) {
+            if (item.group) {
+                if (!landingPageGroups[item.group]) landingPageGroups[item.group] = [];
+                landingPageGroups[item.group].push(item);
+            }
+        } else if (item.label === "Orçamento" || item.group === "Orçamento") {
+            // Handled manually
         } else {
             ungrouped.push(item);
         }
     });
 
-    // Determine which groups should be initially open based on the current path
+    const isLandingPageRelated = (path: string) => {
+        if (path === "/") return true;
+        for (const items of Object.values(landingPageGroups)) {
+            if (items.some(item => path === item.href || path.startsWith(item.href + '/'))) return true;
+        }
+        return false;
+    };
+
+    // Groups that are nested inside "Landing page"
+    const groups: Record<string, typeof sidebarItems> = landingPageGroups;
+
+    // Determine which nested groups should be initially open
     const getInitialOpenGroups = () => {
         const initial: Record<string, boolean> = {};
         Object.entries(groups).forEach(([group, items]) => {
@@ -33,6 +48,8 @@ const Sidebar = () => {
     };
 
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
+    const [isLandingPageOpen, setIsLandingPageOpen] = useState(false);
+    const [isBudgetOpen, setIsBudgetOpen] = useState(location.pathname.startsWith('/budget'));
 
     const toggleGroup = (group: string) => {
         setOpenGroups(prev => ({
@@ -41,17 +58,26 @@ const Sidebar = () => {
         }));
     };
 
+    const toggleLandingPage = () => {
+        setIsLandingPageOpen(!isLandingPageOpen);
+    };
+
+    const toggleBudget = () => {
+        setIsBudgetOpen(!isBudgetOpen);
+    };
+
     return (
         <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[hsl(228,25%,7%)] border-r border-white/[0.04] flex flex-col z-40">
             {/* Logo */}
-            <div className="px-6 h-16 flex items-center gap-3 border-b border-white/[0.04]">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                    <span className="font-display font-bold text-white text-sm">Gridon</span>
-                    <span className="text-xs text-white/30 block -mt-0.5">Dashboard</span>
-                </div>
+            <div className="h-20 flex items-center justify-center border-b border-white/[0.04] px-4">
+                <img
+                    src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-CuReGPKe.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLUN1UmVHUEtlLnBuZyIsImlhdCI6MTc3MjkzNDQwNCwiZXhwIjo0OTI2NTM0NDA0fQ.O2WN8HLKj9zWa95-AVfUtG0qKGGP8lIT6YjdUpSC0GI"
+                    alt="Gridon"
+                    className="h-10 w-auto object-contain brightness-0 invert opacity-90 transition-all dark:brightness-0 dark:invert dark:opacity-90"
+                /* The class 'brightness-0 invert' forces the logo to be solid white.
+                   If a light theme is implemented later, removing the dark prefix 
+                   will allow the original colored logo to show normally */
+                />
             </div>
 
             {/* Nav */}
@@ -70,52 +96,144 @@ const Sidebar = () => {
                     </NavLink>
                 ))}
 
-                {Object.entries(groups).map(([group, items]) => {
-                    const isOpen = openGroups[group];
-                    
-                    return (
-                        <div key={group} className="pt-2">
-                            <button
-                                onClick={() => toggleGroup(group)}
-                                className="w-full flex items-center justify-between px-4 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-widest hover:text-white/70 transition-colors"
-                            >
-                                <span>{group}</span>
-                                <ChevronDown 
-                                    className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-                                />
-                            </button>
-                            
-                            <div 
-                                className={`mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
-                                    isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                                }`}
-                            >
-                                {items.map((item) => (
+                {/* Landing Page Master Dropdown */}
+                <div className="pt-2 pb-2">
+                    <button
+                        onClick={toggleLandingPage}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${isLandingPageRelated(location.pathname) && !isLandingPageOpen
+                            ? "bg-primary/10 text-primary" // Active but collapsed state
+                            : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                            }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            {/* Assuming the first item is the landing page root to borrow its icon */}
+                            {sidebarItems.find(i => i.label === "Landing page")?.icon && React.createElement(sidebarItems.find(i => i.label === "Landing page")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                            <span className="font-medium">Landing page</span>
+                        </div>
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${isLandingPageOpen ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+
+                    <div
+                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${isLandingPageOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                            }`}
+                    >
+                        {/* Direct Landing Page Link inside the dropdown */}
+                        <NavLink
+                            to="/"
+                            end
+                            className={({ isActive }) =>
+                                `sidebar-item mt-2 !text-[13px] ${isActive ? "active" : ""}`
+                            }
+                        >
+                            Visão Geral
+                        </NavLink>
+
+                        {/* Nested Groups */}
+                        {Object.entries(groups).map(([group, items]) => {
+                            const isOpen = openGroups[group];
+
+                            return (
+                                <div key={group} className="pt-3">
+                                    <button
+                                        onClick={() => toggleGroup(group)}
+                                        className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider hover:text-white/70 transition-colors"
+                                    >
+                                        <span>{group}</span>
+                                        <ChevronDown
+                                            className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+
+                                    <div
+                                        className={`mt-1 space-y-0.5 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                                            }`}
+                                    >
+                                        {items.map((item) => (
+                                            <NavLink
+                                                key={item.href}
+                                                to={item.href}
+                                                className={({ isActive }) =>
+                                                    `sidebar-item !py-1.5 !px-3 !text-[13px] !rounded-lg ml-1 ${isActive ? "active" : ""}`
+                                                }
+                                            >
+                                                <item.icon className="w-4 h-4 flex-shrink-0 opacity-70" />
+                                                {item.label}
+                                            </NavLink>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Orçamento Master Dropdown */}
+                <div className="pt-2 pb-2">
+                    <button
+                        onClick={toggleBudget}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${location.pathname.startsWith('/budget') && !isBudgetOpen
+                            ? "bg-primary/10 text-primary" // Active but collapsed state
+                            : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                            }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            {sidebarItems.find(i => i.label === "Orçamento")?.icon && React.createElement(sidebarItems.find(i => i.label === "Orçamento")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                            <span className="font-medium">Orçamento</span>
+                        </div>
+                        <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${isBudgetOpen ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+
+                    <div
+                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${isBudgetOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                            }`}
+                    >
+                        {/* Orçamento nested items */}
+                        <div className="pt-2 space-y-1">
+                            {sidebarItems
+                                .find(item => item.label === "Orçamento")
+                                ?.dropdown?.map((subItem) => (
                                     <NavLink
-                                        key={item.href}
-                                        to={item.href}
+                                        key={subItem.href}
+                                        to={subItem.href}
+                                        end={subItem.href === '/budget'}
                                         className={({ isActive }) =>
-                                            `sidebar-item ml-2 ${isActive ? "active" : ""}`
+                                            `sidebar-item !py-1.5 !px-4 !text-[13px] !rounded-lg ml-2 ${isActive ? "active" : ""}`
                                         }
                                     >
-                                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                                        {item.label}
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
+                                        {subItem.label}
                                     </NavLink>
                                 ))}
-                            </div>
                         </div>
-                    );
-                })}
+                    </div>
+                </div>
             </nav>
 
             {/* Footer - User + Sign Out */}
             <div className="px-4 py-4 border-t border-white/[0.04]">
                 <div className="flex items-center gap-3 px-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                        {user?.email?.[0].toUpperCase() || "G"}
-                    </div>
+                    <Link to="/settings" className="flex-shrink-0 relative group">
+                        {user?.user_metadata?.avatar_url ? (
+                            <img
+                                src={user.user_metadata.avatar_url}
+                                alt="Avatar"
+                                className="w-8 h-8 rounded-lg object-cover ring-2 ring-transparent group-hover:ring-primary/50 transition-all"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                                {user?.user_metadata?.full_name?.charAt(0).toUpperCase() || user?.email?.[0].toUpperCase() || "G"}
+                            </div>
+                        )}
+                        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-background rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Settings className="w-2.5 h-2.5 text-white/70" />
+                        </div>
+                    </Link>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/70 truncate">Admin</p>
+                        <p className="text-sm font-medium text-white/70 truncate">{user?.user_metadata?.full_name || "Admin"}</p>
                         <p className="text-xs text-white/30 truncate">{user?.email || "—"}</p>
                     </div>
                     <button

@@ -1,0 +1,398 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator } from 'lucide-react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+import { budgetService } from '@/services/budgetService';
+import { kitService } from '@/services/kitService';
+import { SolarBudget, SolarKit } from '@/lib/types';
+
+const INSTALLATION_LOCATIONS = [
+    'telhado fibrocimento', 'telhado colonial', 'telhado de concreto',
+    'telhado zinco', 'laje', 'solo'
+] as const;
+
+const CONSTRUCTION_TYPES = [
+    'residencial', 'comercial', 'industrial',
+    'predio residencial', 'predio comercial', 'rural'
+] as const;
+
+const SUPPLY_TYPES = ['monofasico', 'bifasico', 'trifasico'] as const;
+
+export default function NewBudget() {
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const isEditing = !!id;
+
+    // UI State
+    const [isLoadingData, setIsLoadingData] = useState(isEditing);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [availableKits, setAvailableKits] = useState<SolarKit[]>([]);
+
+    // Form State - Customer
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+    const [customerCity, setCustomerCity] = useState('');
+    const [customerState, setCustomerState] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
+
+    // Form State - Installation
+    const [installationLocation, setInstallationLocation] = useState<SolarBudget['installation_location']>('telhado colonial');
+    const [constructionType, setConstructionType] = useState<SolarBudget['construction_type']>('residencial');
+    const [supplyType, setSupplyType] = useState<SolarBudget['supply_type']>('monofasico');
+    const [installationWarranty, setInstallationWarranty] = useState('');
+
+    // Form State - Proposal
+    const [selectedKitId, setSelectedKitId] = useState('');
+    const [validityDays, setValidityDays] = useState('7');
+    const [notes, setNotes] = useState('');
+
+    useEffect(() => {
+        const init = async () => {
+            await loadKits();
+            if (isEditing && id) {
+                await loadBudgetToEdit(id);
+            }
+        };
+        init();
+    }, [id, isEditing]);
+
+    const loadKits = async () => {
+        try {
+            const kits = await kitService.getKits();
+            setAvailableKits(kits);
+        } catch (err) {
+            console.error("Erro ao carregar kits:", err);
+            setError("Não foi possível carregar os kits disponíveis.");
+        }
+    };
+
+    const loadBudgetToEdit = async (budgetId: string) => {
+        try {
+            const budgetData = await budgetService.getBudgetById(budgetId);
+            setCustomerName(budgetData.customer_name);
+            setCustomerPhone(budgetData.customer_phone);
+            setCustomerCity(budgetData.customer_city);
+            setCustomerState(budgetData.customer_state);
+            setCustomerEmail(budgetData.customer_email || '');
+
+            setInstallationLocation(budgetData.installation_location);
+            setConstructionType(budgetData.construction_type);
+            setSupplyType(budgetData.supply_type);
+            setInstallationWarranty(budgetData.installation_warranty.toString());
+
+            setSelectedKitId(budgetData.kit_id);
+            setValidityDays(budgetData.proposal_validity_days.toString());
+            setNotes(budgetData.installation_notes || '');
+        } catch (err) {
+            console.error("Erro ao carregar orçamento", err);
+            setError("Orçamento não encontrado.");
+        } finally {
+            setIsLoadingData(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setSuccessMessage('');
+
+        if (!selectedKitId) {
+            setError('Selecione um Kit Solar para compor este orçamento.');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const payload = {
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_city: customerCity,
+                customer_state: customerState,
+                customer_email: customerEmail || null,
+
+                installation_location: installationLocation,
+                construction_type: constructionType,
+                supply_type: supplyType,
+                installation_warranty: Number(installationWarranty),
+
+                kit_id: selectedKitId,
+                proposal_validity_days: Number(validityDays),
+                installation_notes: notes || null
+            };
+
+            if (isEditing && id) {
+                await budgetService.updateBudget(id, payload);
+                setSuccessMessage('Orçamento atualizado com sucesso!');
+            } else {
+                await budgetService.createBudget(payload);
+                setSuccessMessage('Orçamento gerado e salvo com sucesso!');
+            }
+
+            // Redireciona para visão geral após 1.5s
+            setTimeout(() => {
+                navigate('/budget/list');
+            }, 1500);
+
+        } catch (err) {
+            console.error("Erro ao salvar orçamento:", err);
+            setError(err instanceof Error ? err.message : "Erro desconhecido ao salvar o orçamento.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const quillModules = {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['clean']
+        ],
+    };
+
+    if (isLoadingData) {
+        return (
+            <div className="flex items-center justify-center p-20">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="animate-fade-in space-y-6 pb-20">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <Calculator className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                    <h2 className="section-title !mb-0">{isEditing ? 'Editar Orçamento' : 'Novo Orçamento'}</h2>
+                    <p className="section-subtitle">{isEditing ? 'Atualize as informações da proposta financeira' : 'Gere propostas financeiras atreladas aos Kits Solares'}</p>
+                </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* Alertas */}
+                {error && (
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium">
+                        {error}
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        {successMessage}
+                    </div>
+                )}
+
+                {/* Bloco 1: Dados do Cliente */}
+                <div className="glass-card p-6 md:p-8">
+                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <User className="w-5 h-5 text-primary" />
+                        Dados do Cliente
+                    </h3>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Nome Completo</label>
+                            <input
+                                type="text"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                placeholder="João da Silva"
+                                className="form-input"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Telefone / WhatsApp</label>
+                            <input
+                                type="text"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                placeholder="(00) 00000-0000"
+                                className="form-input"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Cidade</label>
+                            <input
+                                type="text"
+                                value={customerCity}
+                                onChange={(e) => setCustomerCity(e.target.value)}
+                                placeholder="São Paulo"
+                                className="form-input"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Estado (UF)</label>
+                            <input
+                                type="text"
+                                value={customerState}
+                                onChange={(e) => setCustomerState(e.target.value)}
+                                placeholder="SP"
+                                className="form-input"
+                                maxLength={2}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium text-white/70">E-mail (Opcional)</label>
+                            <input
+                                type="email"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                placeholder="joao@email.com"
+                                className="form-input"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bloco 2: Informações da Instalação */}
+                <div className="glass-card p-6 md:p-8">
+                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <Home className="w-5 h-5 text-orange-400" />
+                        Informações da Instalação
+                    </h3>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Local de Instalação</label>
+                            <select
+                                value={installationLocation}
+                                onChange={(e) => setInstallationLocation(e.target.value as any)}
+                                className="form-input capitalize"
+                                required
+                            >
+                                {INSTALLATION_LOCATIONS.map(loc => (
+                                    <option key={loc} value={loc} className="bg-slate-900 capitalize">{loc}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Tipo de Construção</label>
+                            <select
+                                value={constructionType}
+                                onChange={(e) => setConstructionType(e.target.value as any)}
+                                className="form-input capitalize"
+                                required
+                            >
+                                {CONSTRUCTION_TYPES.map(type => (
+                                    <option key={type} value={type} className="bg-slate-900 capitalize">{type}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Tipo de Fornecimento</label>
+                            <select
+                                value={supplyType}
+                                onChange={(e) => setSupplyType(e.target.value as any)}
+                                className="form-input capitalize"
+                                required
+                            >
+                                {SUPPLY_TYPES.map(type => (
+                                    <option key={type} value={type} className="bg-slate-900 capitalize">{type}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Garantia da Instalação (Anos)</label>
+                            <input
+                                type="number"
+                                value={installationWarranty}
+                                onChange={(e) => setInstallationWarranty(e.target.value)}
+                                placeholder="Ex: 5"
+                                className="form-input"
+                                min="0"
+                                required
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bloco 3: Proposta Comercial */}
+                <div className="glass-card p-6 md:p-8">
+                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-emerald-400" />
+                        Proposta Comercial
+                    </h3>
+
+                    <div className="grid md:grid-cols-2 gap-6 mb-8">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Kit Solar do Orçamento</label>
+                            <select
+                                value={selectedKitId}
+                                onChange={(e) => setSelectedKitId(e.target.value)}
+                                className="form-input bg-primary/10 border-primary/20 text-white"
+                                required
+                            >
+                                <option value="" disabled className="bg-slate-900">Selecione um Kit Cadastrado</option>
+                                {availableKits.map(kit => (
+                                    <option key={kit.id} value={kit.id} className="bg-slate-900">
+                                        {kit.system_power}kWp - {kit.equipment_type} {kit.equipment_brand?.name || ''}
+                                        &nbsp;(R$ {Number(kit.kit_price).toLocaleString('pt-BR')})
+                                    </option>
+                                ))}
+                            </select>
+                            {availableKits.length === 0 && (
+                                <p className="text-xs text-red-400 mt-1">Nenhum kit encontrado. Cadastre um Kit Solar primeiro.</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Validade da Proposta (Dias)</label>
+                            <input
+                                type="number"
+                                value={validityDays}
+                                onChange={(e) => setValidityDays(e.target.value)}
+                                placeholder="Ex: 7"
+                                className="form-input"
+                                min="1"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-white/70">Observações / Escopo da Instalação</label>
+                        <div className="bg-slate-800/80 border border-white/[0.1] rounded-xl overflow-hidden [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/[0.1] [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:text-white [&_.ql-editor]:text-sm [&_.ql-editor]:font-medium [&_.ql-editor_p]:mb-4">
+                            <ReactQuill
+                                theme="snow"
+                                value={notes}
+                                onChange={setNotes}
+                                modules={quillModules}
+                                placeholder="Escreva aqui detalhes adicionais do serviço (ex: estrutura necessária, aterramento, prazos específicos...)"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-8 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting || availableKits.length === 0}
+                            className="bg-primary hover:bg-primary-hover text-primary-foreground px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <Save className="w-5 h-5" />
+                            )}
+                            {isEditing ? 'Atualizar Orçamento' : 'Salvar Proposta com Cliente'}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    );
+}

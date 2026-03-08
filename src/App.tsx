@@ -14,6 +14,11 @@ import BlogManager from "@/pages/BlogManager";
 import BlogEditor from "@/pages/BlogEditor";
 import CompanyInfo from "@/pages/CompanyInfo";
 import SeoConfig from "@/pages/SeoConfig";
+import BudgetOverview from "@/pages/BudgetOverview";
+import BudgetList from "@/pages/BudgetList";
+import BudgetKits from "@/pages/BudgetKits";
+import NewBudget from "@/pages/NewBudget";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +46,12 @@ function App() {
               <Route path="/blog/edit/:id" element={<BlogEditor />} />
               <Route path="/company" element={<CompanyInfo />} />
               <Route path="/seo" element={<SeoConfig />} />
+              <Route path="/budget" element={<BudgetOverview />} />
+              <Route path="/budget/list" element={<BudgetList />} />
+              <Route path="/budget/new" element={<NewBudget />} />
+              <Route path="/budget/edit/:id" element={<NewBudget />} />
+              <Route path="/budget/kits" element={<BudgetKits />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>
         </BrowserRouter>

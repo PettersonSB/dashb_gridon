@@ -144,3 +144,58 @@ export interface SeoConfig {
     keywords: string;
     updated_at: string;
 }
+
+export interface SolarBrand {
+    id: string;
+    name: string;
+    type: 'equipamento' | 'placa';
+    created_at: string;
+}
+
+export interface SolarKit {
+    id: string;
+    system_type: 'On Grid' | 'Off Grid' | 'Híbrido' | 'Backup Box';
+    equipment_type: 'Inversor' | 'Inversor Híbrido' | 'Micro Inversor' | 'Wallbox';
+    equipment_brand_id: string | null;
+    equipment_warranty: number | null;
+    estimated_generation: number | null;
+    panels_count: number;
+    panel_power: number;
+    panel_brand_id: string | null;
+    panel_warranty: number | null;
+    system_power: number;
+    kit_price: number;
+    image_url: string;
+    description: string;
+    created_at: string;
+    equipment_brand?: SolarBrand; // For joins
+    panel_brand?: SolarBrand;     // For joins
+}
+
+export interface SolarBudget {
+    id: string;
+
+    // Dados do Cliente
+    customer_name: string;
+    customer_phone: string;
+    customer_city: string;
+    customer_state: string;
+    customer_email: string | null;
+
+    // Informações da Instalação
+    installation_location: 'telhado fibrocimento' | 'telhado colonial' | 'telhado de concreto' | 'telhado zinco' | 'laje' | 'solo';
+    construction_type: 'residencial' | 'comercial' | 'industrial' | 'predio residencial' | 'predio comercial' | 'rural';
+    supply_type: 'monofasico' | 'bifasico' | 'trifasico';
+    installation_warranty: number;
+
+    // Proposta Comercial
+    kit_id: string;
+    proposal_validity_days: number;
+    installation_notes: string | null;
+    status: 'ativo' | 'suspenso' | 'vencido' | 'fechado';
+
+    // Auditoria e Joins
+    created_by: string | null;
+    created_at: string;
+    kit?: SolarKit; // For nested joins
+}
