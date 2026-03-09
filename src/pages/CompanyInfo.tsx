@@ -9,6 +9,7 @@ const CompanyInfoPage = () => {
         name: "", phone: "", whatsapp: "", email: "",
         address: "", city: "", state: "", zip: "",
         opening_hours: "", instagram: "", facebook: "", linkedin: "",
+        institutional_video_url: "",
     });
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -28,6 +29,7 @@ const CompanyInfoPage = () => {
                 instagram: company.instagram || "",
                 facebook: company.facebook || "",
                 linkedin: company.linkedin || "",
+                institutional_video_url: company.institutional_video_url || "",
             });
         }
     }, [company]);
@@ -135,6 +137,15 @@ const CompanyInfoPage = () => {
                         <label className="form-label">LinkedIn</label>
                         <input className="form-input" placeholder="URL" value={form.linkedin} onChange={(e) => set("linkedin", e.target.value)} />
                     </div>
+                </div>
+            </div>
+
+            <div className="glass-card p-6 space-y-5">
+                <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider">Apresentação da Empresa</h3>
+                <div>
+                    <label className="form-label">Link do Vídeo Institucional (YouTube)</label>
+                    <input className="form-input" placeholder="https://www.youtube.com/watch?v=..." value={form.institutional_video_url} onChange={(e) => set("institutional_video_url", e.target.value)} />
+                    <p className="text-xs text-white/40 mt-1">Este vídeo aparecerá automaticamente nas propostas de orçamento.</p>
                 </div>
             </div>
         </div>

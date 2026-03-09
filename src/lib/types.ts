@@ -132,6 +132,7 @@ export interface CompanyInfo {
     instagram: string;
     facebook: string;
     linkedin: string;
+    institutional_video_url?: string;
     updated_at: string;
 }
 
@@ -179,10 +180,13 @@ export interface SolarBudget {
     customer_name: string;
     customer_phone: string;
     customer_city: string;
+    customer_neighborhood: string;
     customer_state: string;
     customer_email: string | null;
 
     // Informações da Instalação
+    average_monthly_consumption: number | null;
+    energy_tariff: number | null;
     installation_location: 'telhado fibrocimento' | 'telhado colonial' | 'telhado de concreto' | 'telhado zinco' | 'laje' | 'solo';
     construction_type: 'residencial' | 'comercial' | 'industrial' | 'predio residencial' | 'predio comercial' | 'rural';
     supply_type: 'monofasico' | 'bifasico' | 'trifasico';

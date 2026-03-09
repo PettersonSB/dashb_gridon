@@ -203,7 +203,9 @@ export default function BudgetList() {
                                         <tr key={budget.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="font-medium text-white">{budget.customer_name}</div>
-                                                <div className="text-xs text-white/40 mt-0.5">{budget.customer_city} - {budget.customer_state}</div>
+                                                <div className="text-xs text-white/40 mt-0.5">
+                                                    {budget.customer_neighborhood ? `${budget.customer_neighborhood}, ` : ''}{budget.customer_city} - {budget.customer_state}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white/80">{new Date(budget.created_at).toLocaleDateString('pt-BR')}</div>
@@ -223,8 +225,8 @@ export default function BudgetList() {
                                                     <button
                                                         onClick={() => handleCopyLink(budget.id)}
                                                         className={`p-2 rounded-lg transition-colors ${copiedId === budget.id
-                                                                ? 'bg-emerald-500/10 text-emerald-400'
-                                                                : 'hover:bg-white/10 hover:text-primary'
+                                                            ? 'bg-emerald-500/10 text-emerald-400'
+                                                            : 'hover:bg-white/10 hover:text-primary'
                                                             }`}
                                                         title={copiedId === budget.id ? 'Link copiado!' : 'Copiar link do orçamento'}
                                                     >

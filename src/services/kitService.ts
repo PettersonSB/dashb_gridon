@@ -57,6 +57,18 @@ export const kitService = {
         return data as SolarKit;
     },
 
+    async updateKit(id: string, kit: Partial<Omit<SolarKit, 'id' | 'created_at' | 'equipment_brand' | 'panel_brand'>>) {
+        const { data, error } = await supabase
+            .from('solar_kits')
+            .update(kit)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data as SolarKit;
+    },
+
     async deleteKit(id: string) {
         const { error } = await supabase
             .from('solar_kits')

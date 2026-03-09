@@ -35,10 +35,13 @@ export default function NewBudget() {
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerCity, setCustomerCity] = useState('');
+    const [customerNeighborhood, setCustomerNeighborhood] = useState('');
     const [customerState, setCustomerState] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
 
     // Form State - Installation
+    const [averageMonthlyConsumption, setAverageMonthlyConsumption] = useState('');
+    const [energyTariff, setEnergyTariff] = useState('0.85'); // default value
     const [installationLocation, setInstallationLocation] = useState<SolarBudget['installation_location']>('telhado colonial');
     const [constructionType, setConstructionType] = useState<SolarBudget['construction_type']>('residencial');
     const [supplyType, setSupplyType] = useState<SolarBudget['supply_type']>('monofasico');
@@ -75,9 +78,12 @@ export default function NewBudget() {
             setCustomerName(budgetData.customer_name);
             setCustomerPhone(budgetData.customer_phone);
             setCustomerCity(budgetData.customer_city);
+            setCustomerNeighborhood(budgetData.customer_neighborhood || '');
             setCustomerState(budgetData.customer_state);
             setCustomerEmail(budgetData.customer_email || '');
 
+            setAverageMonthlyConsumption(budgetData.average_monthly_consumption?.toString() || '');
+            setEnergyTariff(budgetData.energy_tariff?.toString() || '0.85');
             setInstallationLocation(budgetData.installation_location);
             setConstructionType(budgetData.construction_type);
             setSupplyType(budgetData.supply_type);
@@ -111,9 +117,12 @@ export default function NewBudget() {
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 customer_city: customerCity,
+                customer_neighborhood: customerNeighborhood,
                 customer_state: customerState,
                 customer_email: customerEmail || null,
 
+                average_monthly_consumption: averageMonthlyConsumption ? Number(averageMonthlyConsumption) : null,
+                energy_tariff: energyTariff ? Number(energyTariff.replace(',', '.')) : 0.85,
                 installation_location: installationLocation,
                 construction_type: constructionType,
                 supply_type: supplyType,
@@ -221,6 +230,17 @@ export default function NewBudget() {
                             />
                         </div>
                         <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Bairro</label>
+                            <input
+                                type="text"
+                                value={customerNeighborhood}
+                                onChange={(e) => setCustomerNeighborhood(e.target.value)}
+                                placeholder="Centro"
+                                className="form-input"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-sm font-medium text-white/70">Cidade</label>
                             <input
                                 type="text"
@@ -264,6 +284,35 @@ export default function NewBudget() {
                     </h3>
 
                     <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-red-400">Consumo Médio Mensal do Cliente (kWh)</label>
+                            <input
+                                type="number"
+                                value={averageMonthlyConsumption}
+                                onChange={(e) => setAverageMonthlyConsumption(e.target.value)}
+                                placeholder="Ex: 450"
+                                className="form-input bg-red-500/5 focus:bg-red-500/10 border-red-500/20 text-white placeholder:text-white/20"
+                                min="0"
+                                required
+                            />
+                            <p className="text-[11px] text-white/40 mt-1">* Usado para gerar os gráficos no orçamento.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-emerald-400">Tarifa de Energia (R$/kWh)</label>
+                            <input
+                                type="number"
+                                value={energyTariff}
+                                onChange={(e) => setEnergyTariff(e.target.value)}
+                                placeholder="Ex: 0.85"
+                                className="form-input bg-emerald-500/5 focus:bg-emerald-500/10 border-emerald-500/20 text-white"
+                                min="0"
+                                step="0.01"
+                                required
+                            />
+                            <p className="text-[11px] text-white/40 mt-1">* Usado como base para cálculos financeiros e economia.</p>
+                        </div>
+
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-white/70">Local de Instalação</label>
                             <select
