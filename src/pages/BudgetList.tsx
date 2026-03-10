@@ -302,7 +302,7 @@ export default function BudgetList() {
                                                     )}
 
                                                     {/* Suspender/Reativar */}
-                                                    {calculatedStatus !== 'vencido' && calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && (
+                                                    {calculatedStatus !== 'vencido' && calculatedStatus !== 'recusado' && (
                                                         <button
                                                             onClick={() => handleUpdateStatus(budget.id, budget.status === 'suspenso' ? 'novo' : 'suspenso')}
                                                             className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${budget.status === 'suspenso' ? 'hover:text-amber-400' : 'hover:text-orange-400'}`}
