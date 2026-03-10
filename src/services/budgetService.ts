@@ -45,6 +45,7 @@ export const budgetService = {
             .from('solar_budgets')
             .insert([{
                 ...budget,
+                status: 'novo',
                 created_by: userData.user?.id || null
             }])
             .select()
