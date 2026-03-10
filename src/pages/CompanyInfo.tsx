@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Save, Loader2, CheckCircle } from "lucide-react";
 import { useSupabaseSingle, upsertRow } from "@/hooks/useSupabase";
 import type { CompanyInfo as CompanyInfoType } from "@/lib/types";
+import { PortfolioManager } from "@/components/PortfolioManager";
 
 const CompanyInfoPage = () => {
     const { data: company, loading } = useSupabaseSingle<CompanyInfoType>("company_info");
@@ -147,6 +148,10 @@ const CompanyInfoPage = () => {
                     <input className="form-input" placeholder="https://www.youtube.com/watch?v=..." value={form.institutional_video_url} onChange={(e) => set("institutional_video_url", e.target.value)} />
                     <p className="text-xs text-white/40 mt-1">Este vídeo aparecerá automaticamente nas propostas de orçamento.</p>
                 </div>
+            </div>
+
+            <div className="glass-card p-6 space-y-5">
+                <PortfolioManager />
             </div>
         </div>
     );
