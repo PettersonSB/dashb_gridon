@@ -50,6 +50,7 @@ export default function NewBudget() {
     // Form State - Proposal
     const [selectedKitId, setSelectedKitId] = useState('');
     const [validityDays, setValidityDays] = useState('7');
+    const [includeNotes, setIncludeNotes] = useState(true);
     const [notes, setNotes] = useState('');
 
     useEffect(() => {
@@ -91,7 +92,9 @@ export default function NewBudget() {
 
             setSelectedKitId(budgetData.kit_id);
             setValidityDays(budgetData.proposal_validity_days.toString());
-            setNotes(budgetData.installation_notes || '');
+            const savedNotes = budgetData.installation_notes || '';
+            setNotes(savedNotes);
+            setIncludeNotes(savedNotes.trim().length > 0 && savedNotes !== '<p><br></p>');
         } catch (err) {
             console.error("Erro ao carregar orçamento", err);
             setError("Orçamento não encontrado.");
@@ -130,7 +133,7 @@ export default function NewBudget() {
 
                 kit_id: selectedKitId,
                 proposal_validity_days: Number(validityDays),
-                installation_notes: notes || null
+                installation_notes: includeNotes ? (notes || null) : null
             };
 
             if (isEditing && id) {
@@ -413,17 +416,31 @@ export default function NewBudget() {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-white/70">Observações / Escopo da Instalação</label>
-                        <div className="bg-slate-800/80 border border-white/[0.1] rounded-xl overflow-hidden [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/[0.1] [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:text-white [&_.ql-editor]:text-sm [&_.ql-editor]:font-medium [&_.ql-editor_p]:mb-4">
-                            <ReactQuill
-                                theme="snow"
-                                value={notes}
-                                onChange={setNotes}
-                                modules={quillModules}
-                                placeholder="Escreva aqui detalhes adicionais do serviço (ex: estrutura necessária, aterramento, prazos específicos...)"
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="includeNotes"
+                                checked={includeNotes}
+                                onChange={(e) => setIncludeNotes(e.target.checked)}
+                                className="w-4 h-4 rounded bg-white/[0.05] border-white/20 text-primary focus:ring-primary focus:ring-offset-background"
                             />
+                            <label htmlFor="includeNotes" className="text-sm font-medium text-white/70 cursor-pointer select-none">
+                                Incluir Observações / Escopo da Instalação no orçamento do cliente
+                            </label>
                         </div>
+
+                        {includeNotes && (
+                            <div className="bg-slate-800/80 border border-white/[0.1] rounded-xl overflow-hidden [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/[0.1] [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:text-white [&_.ql-editor]:text-sm [&_.ql-editor]:font-medium [&_.ql-editor_p]:mb-4 animate-fade-in-up">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={notes}
+                                    onChange={setNotes}
+                                    modules={quillModules}
+                                    placeholder="Escreva aqui detalhes adicionais do serviço (ex: estrutura necessária, aterramento, prazos específicos...)"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="pt-8 flex justify-end">
