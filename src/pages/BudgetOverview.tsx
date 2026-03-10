@@ -1,22 +1,92 @@
-import { Calculator, CheckCircle2, Clock, XCircle, FilePlus, Download, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Calculator, CheckCircle2, Clock, FilePlus, Download, TrendingUp, Loader2 } from "lucide-react";
+import { budgetService } from "@/services/budgetService";
+import { SolarBudget } from "@/lib/types";
 
-// Mock data for the budget overview
-const budgetStats = [
-    { label: "Total Recebidos", value: "142", icon: Calculator, color: "text-blue-400" },
-    { label: "Em Análise", value: "12", icon: Clock, color: "text-amber-400" },
-    { label: "Aprovados (Mês)", value: "24", icon: CheckCircle2, color: "text-emerald-400" },
-    { label: "Taxa de Conversão", value: "68%", icon: TrendingUp, color: "text-violet-400" },
-];
+export default function BudgetOverview() {
+    const [budgets, setBudgets] = useState<SolarBudget[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-const recentBudgets = [
-    { id: "ORC-001", client: "João Silva", service: "Residencial (8 Módulos)", status: "Novo", date: "Hoje, 10:45", amount: "R$ 15.400" },
-    { id: "ORC-002", client: "Empresa XPTO Ltda", service: "Comercial (32 Módulos)", status: "Em Análise", date: "Ontem, 16:30", amount: "R$ 48.200" },
-    { id: "ORC-003", client: "Maria Oliveira", service: "Residencial (12 Módulos)", status: "Aprovado", date: "04 Mar, 09:15", amount: "R$ 21.000" },
-    { id: "ORC-004", client: "Fazenda Boa Vista", service: "Rural (Agro)", status: "Aprovado", date: "02 Mar, 14:20", amount: "R$ 115.000" },
-    { id: "ORC-005", client: "Carlos Souza", service: "Manutenção Preventiva", status: "Recusado", date: "28 Fev, 11:00", amount: "R$ 850" },
-];
+    useEffect(() => {
+        const loadBudgets = async () => {
+            try {
+                const data = await budgetService.getBudgets();
+                setBudgets(data);
+            } catch (err) {
+                console.error("Erro ao carregar orçamentos:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadBudgets();
+    }, []);
 
-const BudgetOverview = () => {
+    // Calcula os stats
+    const totalRecebidos = budgets.length;
+    const emAnalise = budgets.filter(b => b.status === "em analise" || b.status === "visualizado").length;
+
+    // Calcula aprovados no mês atual
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const aprovadosThisMonth = budgets.filter(b => {
+        const date = new Date(b.created_at);
+        return b.status === "aprovado" && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    }).length;
+
+    const totalResolvidos = budgets.filter(b => b.status === "aprovado" || b.status === "recusado").length;
+    const taxaConversao = totalResolvidos > 0
+        ? Math.round((budgets.filter(b => b.status === "aprovado").length / totalResolvidos) * 100)
+        : 0;
+
+    const budgetStats = [
+        { label: "Total Recebidos", value: totalRecebidos.toString(), icon: Calculator, color: "text-blue-400" },
+        { label: "Em Negociação", value: emAnalise.toString(), icon: Clock, color: "text-amber-400" },
+        { label: "Aprovados (Mês)", value: aprovadosThisMonth.toString(), icon: CheckCircle2, color: "text-emerald-400" },
+        { label: "Taxa de Conversão", value: `${taxaConversao}%`, icon: TrendingUp, color: "text-violet-400" },
+    ];
+
+    const formatCurrency = (value: number | undefined) => {
+        if (value === undefined) return "R$ 0,00";
+        return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    };
+
+    const StatusBadge = ({ status }: { status: SolarBudget['status'] }) => {
+        const styles = {
+            'novo': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+            'em analise': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+            'visualizado': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+            'aprovado': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            'recusado': 'bg-red-500/10 text-red-500 border-red-500/20',
+            'suspenso': 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20',
+            'vencido': 'bg-red-500/10 text-red-400 border-red-500/20',
+        };
+        const labels = {
+            'novo': 'Novo',
+            'em analise': 'Em Análise',
+            'visualizado': 'Visualizado',
+            'aprovado': 'Aprovado',
+            'recusado': 'Recusado',
+            'suspenso': 'Suspenso',
+            'vencido': 'Vencido',
+        };
+        const fallbackStyle = 'bg-white/10 text-white/60 border-white/20';
+
+        return (
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${styles[status] || fallbackStyle}`}>
+                {labels[status] || status}
+            </span>
+        );
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center p-20">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
         <div className="animate-fade-in space-y-8 pb-20">
             <div>
@@ -41,24 +111,33 @@ const BudgetOverview = () => {
             <div>
                 <h3 className="text-lg font-display font-semibold text-white mb-4">Ações Rápidas</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                        { label: "Adicionar Manual", desc: "Criar novo orçamento interno", icon: FilePlus, color: "text-primary" },
-                        { label: "Exportar Relatório", desc: "Baixar PDF do último mês", icon: Download, color: "text-emerald-400" },
-                        { label: "Configurar Preços", desc: "Alterar tabela base de cálculo", icon: Calculator, color: "text-amber-400" },
-                    ].map((action, idx) => (
-                        <button
-                            key={idx}
-                            className="glass-card-hover p-5 flex items-start gap-4 group text-left w-full"
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
-                                <action.icon className={`w-5 h-5 ${action.color}`} />
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-white text-sm group-hover:text-primary transition-colors">{action.label}</h4>
-                                <p className="text-xs text-white/30 mt-0.5">{action.desc}</p>
-                            </div>
-                        </button>
-                    ))}
+                    <Link to="/budget/new" className="glass-card-hover p-5 flex items-start gap-4 group text-left w-full">
+                        <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
+                            <FilePlus className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                            <h4 className="font-medium text-white text-sm group-hover:text-primary transition-colors">Adicionar Manual</h4>
+                            <p className="text-xs text-white/30 mt-0.5">Criar novo orçamento interno</p>
+                        </div>
+                    </Link>
+                    <button className="glass-card-hover p-5 flex items-start gap-4 group text-left w-full">
+                        <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
+                            <Download className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div>
+                            <h4 className="font-medium text-white text-sm group-hover:text-primary transition-colors">Exportar Relatório</h4>
+                            <p className="text-xs text-white/30 mt-0.5">Baixar PDF do último mês</p>
+                        </div>
+                    </button>
+                    <Link to="/products" className="glass-card-hover p-5 flex items-start gap-4 group text-left w-full">
+                        <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
+                            <Calculator className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div>
+                            <h4 className="font-medium text-white text-sm group-hover:text-primary transition-colors">Configurar Kits</h4>
+                            <p className="text-xs text-white/30 mt-0.5">Alterar produtos e valores</p>
+                        </div>
+                    </Link>
                 </div>
             </div>
 
@@ -66,15 +145,14 @@ const BudgetOverview = () => {
             <div className="glass-card p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-display font-semibold text-white">Solicitações Recentes</h3>
-                    <button className="text-sm text-primary hover:text-white transition-colors">Ver todas</button>
+                    <Link to="/budget" className="text-sm text-primary hover:text-white transition-colors">Ver todas</Link>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="text-xs text-white/40 uppercase bg-white/[0.02]">
                             <tr>
-                                <th className="px-4 py-3 font-medium rounded-l-xl">ID</th>
-                                <th className="px-4 py-3 font-medium">Cliente</th>
+                                <th className="px-4 py-3 font-medium rounded-l-xl">Cliente</th>
                                 <th className="px-4 py-3 font-medium">Serviço/Tamanho</th>
                                 <th className="px-4 py-3 font-medium">Data</th>
                                 <th className="px-4 py-3 font-medium">Valor Est.</th>
@@ -82,30 +160,37 @@ const BudgetOverview = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {recentBudgets.map((budget, i) => (
+                            {budgets.slice(0, 5).map((budget) => (
                                 <tr key={budget.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
-                                    <td className="px-4 py-4 font-medium text-white/70">{budget.id}</td>
-                                    <td className="px-4 py-4 text-white">{budget.client}</td>
-                                    <td className="px-4 py-4 text-white/60">{budget.service}</td>
-                                    <td className="px-4 py-4 text-white/40">{budget.date}</td>
-                                    <td className="px-4 py-4 text-white/80">{budget.amount}</td>
+                                    <td className="px-4 py-4 text-white">
+                                        <div className="font-medium">{budget.customer_name}</div>
+                                        <div className="text-xs text-white/40 mt-0.5">{budget.customer_city} - {budget.customer_state}</div>
+                                    </td>
+                                    <td className="px-4 py-4 text-white/60">
+                                        {budget.kit ? `${budget.kit.system_power} kWp (${budget.kit.panels_count} Módulos)` : 'Personalizado'}
+                                    </td>
+                                    <td className="px-4 py-4 text-white/40">
+                                        {new Date(budget.created_at).toLocaleDateString('pt-BR')}
+                                    </td>
+                                    <td className="px-4 py-4 text-white/80">
+                                        {formatCurrency(budget.kit?.kit_price)}
+                                    </td>
                                     <td className="px-4 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${budget.status === 'Novo' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                                budget.status === 'Em Análise' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                    budget.status === 'Aprovado' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                        'bg-red-500/10 text-red-400 border-red-500/20'
-                                            }`}>
-                                            {budget.status}
-                                        </span>
+                                        <StatusBadge status={budget.status} />
                                     </td>
                                 </tr>
                             ))}
+                            {budgets.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-4 py-8 text-center text-white/40">
+                                        Nenhum orçamento encontrado.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     );
-};
-
-export default BudgetOverview;
+}

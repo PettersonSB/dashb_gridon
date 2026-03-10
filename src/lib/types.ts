@@ -196,7 +196,7 @@ export interface SolarBudget {
     kit_id: string;
     proposal_validity_days: number;
     installation_notes: string | null;
-    status: 'ativo' | 'suspenso' | 'vencido' | 'fechado';
+    status: 'novo' | 'em analise' | 'visualizado' | 'aprovado' | 'recusado' | 'suspenso' | 'vencido';
 
     // Auditoria e Joins
     created_by: string | null;

@@ -18,6 +18,7 @@ import BudgetOverview from "@/pages/BudgetOverview";
 import BudgetList from "@/pages/BudgetList";
 import BudgetKits from "@/pages/BudgetKits";
 import NewBudget from "@/pages/NewBudget";
+import BudgetPreview from "@/pages/BudgetPreview";
 import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ function App() {
               <Route path="/budget/list" element={<BudgetList />} />
               <Route path="/budget/new" element={<NewBudget />} />
               <Route path="/budget/edit/:id" element={<NewBudget />} />
+              <Route path="/budget/preview/:id" element={<BudgetPreview />} />
               <Route path="/budget/kits" element={<BudgetKits />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

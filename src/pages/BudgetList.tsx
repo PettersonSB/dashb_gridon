@@ -10,7 +10,10 @@ import {
     FileText,
     Loader2,
     Link2,
-    CheckCheck
+    CheckCheck,
+    Eye,
+    ThumbsUp,
+    ThumbsDown
 } from "lucide-react";
 import { budgetService } from "@/services/budgetService";
 import { SolarBudget } from "@/lib/types";
@@ -27,7 +30,10 @@ export default function BudgetList() {
 
     // Calcula o status dinâmico (se está vencido baseado na data e validade)
     const getCalculatedStatus = (budget: SolarBudget): SolarBudget['status'] => {
-        if (budget.status !== 'ativo') return budget.status; // Se já está suspenso ou fechado, mantém.
+        // Se já foi finalizado ou suspenso, não muda de status
+        if (budget.status === 'aprovado' || budget.status === 'recusado' || budget.status === 'suspenso') {
+            return budget.status;
+        }
 
         const createdDate = new Date(budget.created_at);
         const today = new Date();
@@ -37,7 +43,7 @@ export default function BudgetList() {
         if (diffDays > budget.proposal_validity_days) {
             return 'vencido';
         }
-        return 'ativo';
+        return budget.status;
     };
 
     const loadBudgets = async () => {
@@ -58,7 +64,7 @@ export default function BudgetList() {
     }, []);
 
     const handleStatusToggle = async (id: string, currentStatus: SolarBudget['status']) => {
-        const newStatus = currentStatus === 'suspenso' ? 'ativo' : 'suspenso';
+        const newStatus = currentStatus === 'suspenso' ? 'novo' : 'suspenso';
         try {
             await budgetService.updateBudgetStatus(id, newStatus);
             loadBudgets();
@@ -92,11 +98,21 @@ export default function BudgetList() {
         b.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleCopyLink = (id: string) => {
-        const url = `${BUDGET_BASE_URL}/${id}`;
-        navigator.clipboard.writeText(url).then(() => {
-            setCopiedId(id);
+    const handleCopyLink = async (budget: SolarBudget) => {
+        const url = `${BUDGET_BASE_URL}/${budget.id}`;
+        navigator.clipboard.writeText(url).then(async () => {
+            setCopiedId(budget.id);
             setTimeout(() => setCopiedId(null), 2000);
+
+            // Muda para em análise somente se for novo
+            if (budget.status === 'novo' || !budget.status) {
+                try {
+                    await budgetService.updateBudgetStatus(budget.id, 'em analise');
+                    loadBudgets();
+                } catch (e) {
+                    console.error("Erro ao mudar status para em análise", e);
+                }
+            }
         });
     };
 
@@ -107,22 +123,30 @@ export default function BudgetList() {
 
     const StatusBadge = ({ status }: { status: SolarBudget['status'] }) => {
         const styles = {
-            ativo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-            suspenso: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-            vencido: 'bg-red-500/10 text-red-400 border-red-500/20',
-            fechado: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+            'novo': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+            'em analise': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+            'visualizado': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+            'aprovado': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            'recusado': 'bg-red-500/10 text-red-500 border-red-500/20',
+            'suspenso': 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20',
+            'vencido': 'bg-red-500/10 text-red-400 border-red-500/20',
         };
 
         const labels = {
-            ativo: 'Ativo',
-            suspenso: 'Suspenso',
-            vencido: 'Vencido',
-            fechado: 'Fechado/Vendido'
+            'novo': 'Novo',
+            'em analise': 'Em Análise',
+            'visualizado': 'Visualizado',
+            'aprovado': 'Aprovado',
+            'recusado': 'Recusado',
+            'suspenso': 'Suspenso',
+            'vencido': 'Vencido',
         };
 
+        const fallbackStyle = 'bg-white/10 text-white/60 border-white/20';
+
         return (
-            <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${styles[status]}`}>
-                {labels[status]}
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${styles[status] || fallbackStyle}`}>
+                {labels[status] || status}
             </span>
         );
     };
@@ -223,7 +247,7 @@ export default function BudgetList() {
 
                                                     {/* Copiar Link do Orçamento */}
                                                     <button
-                                                        onClick={() => handleCopyLink(budget.id)}
+                                                        onClick={() => handleCopyLink(budget)}
                                                         className={`p-2 rounded-lg transition-colors ${copiedId === budget.id
                                                             ? 'bg-emerald-500/10 text-emerald-400'
                                                             : 'hover:bg-white/10 hover:text-primary'
@@ -235,6 +259,37 @@ export default function BudgetList() {
                                                             : <Link2 className="w-4 h-4" />
                                                         }
                                                     </button>
+
+                                                    {/* Prévia do Orçamento */}
+                                                    <button
+                                                        onClick={() => navigate(`/budget/preview/${budget.id}`)}
+                                                        className="p-2 hover:bg-white/10 hover:text-blue-400 rounded-lg transition-colors"
+                                                        title="Ver Prévia"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Aprovar Orçamento */}
+                                                    {calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && calculatedStatus !== 'vencido' && (
+                                                        <button
+                                                            onClick={() => handleStatusToggle(budget.id, 'aprovado' as any)}
+                                                            className="p-2 hover:bg-emerald-500/10 hover:text-emerald-400 rounded-lg transition-colors"
+                                                            title="Aprovar Orçamento"
+                                                        >
+                                                            <ThumbsUp className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+
+                                                    {/* Recusar Orçamento */}
+                                                    {calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && calculatedStatus !== 'vencido' && (
+                                                        <button
+                                                            onClick={() => handleStatusToggle(budget.id, 'recusado' as any)}
+                                                            className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors"
+                                                            title="Recusar Orçamento"
+                                                        >
+                                                            <ThumbsDown className="w-4 h-4" />
+                                                        </button>
+                                                    )}
 
                                                     {/* Renovar - Apenas visível se estiver vencido */}
                                                     {calculatedStatus === 'vencido' && (
@@ -248,13 +303,15 @@ export default function BudgetList() {
                                                     )}
 
                                                     {/* Suspender/Reativar */}
-                                                    <button
-                                                        onClick={() => handleStatusToggle(budget.id, budget.status)}
-                                                        className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${budget.status === 'suspenso' ? 'hover:text-amber-400' : 'hover:text-orange-400'}`}
-                                                        title={budget.status === 'suspenso' ? "Reativar" : "Suspender"}
-                                                    >
-                                                        {budget.status === 'suspenso' ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
-                                                    </button>
+                                                    {calculatedStatus !== 'vencido' && calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && (
+                                                        <button
+                                                            onClick={() => handleStatusToggle(budget.id, budget.status === 'suspenso' ? 'novo' : 'suspenso' as any)}
+                                                            className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${budget.status === 'suspenso' ? 'hover:text-amber-400' : 'hover:text-orange-400'}`}
+                                                            title={budget.status === 'suspenso' ? "Reativar" : "Suspender"}
+                                                        >
+                                                            {budget.status === 'suspenso' ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                                                        </button>
+                                                    )}
 
                                                     {/* Editar */}
                                                     <button
