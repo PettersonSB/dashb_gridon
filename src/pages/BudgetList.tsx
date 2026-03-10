@@ -63,8 +63,7 @@ export default function BudgetList() {
         loadBudgets();
     }, []);
 
-    const handleStatusToggle = async (id: string, currentStatus: SolarBudget['status']) => {
-        const newStatus = currentStatus === 'suspenso' ? 'novo' : 'suspenso';
+    const handleUpdateStatus = async (id: string, newStatus: SolarBudget['status']) => {
         try {
             await budgetService.updateBudgetStatus(id, newStatus);
             loadBudgets();
@@ -272,7 +271,7 @@ export default function BudgetList() {
                                                     {/* Aprovar Orçamento */}
                                                     {calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && calculatedStatus !== 'vencido' && (
                                                         <button
-                                                            onClick={() => handleStatusToggle(budget.id, 'aprovado' as any)}
+                                                            onClick={() => handleUpdateStatus(budget.id, 'aprovado')}
                                                             className="p-2 hover:bg-emerald-500/10 hover:text-emerald-400 rounded-lg transition-colors"
                                                             title="Aprovar Orçamento"
                                                         >
@@ -283,7 +282,7 @@ export default function BudgetList() {
                                                     {/* Recusar Orçamento */}
                                                     {calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && calculatedStatus !== 'vencido' && (
                                                         <button
-                                                            onClick={() => handleStatusToggle(budget.id, 'recusado' as any)}
+                                                            onClick={() => handleUpdateStatus(budget.id, 'recusado')}
                                                             className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors"
                                                             title="Recusar Orçamento"
                                                         >
@@ -305,7 +304,7 @@ export default function BudgetList() {
                                                     {/* Suspender/Reativar */}
                                                     {calculatedStatus !== 'vencido' && calculatedStatus !== 'aprovado' && calculatedStatus !== 'recusado' && (
                                                         <button
-                                                            onClick={() => handleStatusToggle(budget.id, budget.status === 'suspenso' ? 'novo' : 'suspenso' as any)}
+                                                            onClick={() => handleUpdateStatus(budget.id, budget.status === 'suspenso' ? 'novo' : 'suspenso')}
                                                             className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${budget.status === 'suspenso' ? 'hover:text-amber-400' : 'hover:text-orange-400'}`}
                                                             title={budget.status === 'suspenso' ? "Reativar" : "Suspender"}
                                                         >
