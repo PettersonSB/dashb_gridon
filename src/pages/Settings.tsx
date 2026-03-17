@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/services/profileService';
-import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { settingsService } from '@/services/settingsService';
+import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon } from 'lucide-react';
 
 export default function Settings() {
     const { user } = useAuth();
@@ -19,7 +20,20 @@ export default function Settings() {
     const [isSavingPassword, setIsSavingPassword] = useState(false);
     const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
 
+    // Form State - Global Settings
+    const [siteTheme, setSiteTheme] = useState('dark');
+    const [isSavingSiteTheme, setIsSavingSiteTheme] = useState(false);
+    const [themeMessage, setThemeMessage] = useState({ type: '', text: '' });
+
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            const theme = await settingsService.getSetting('site_theme', 'dark');
+            setSiteTheme(theme);
+        };
+        loadSettings();
+    }, []);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -73,6 +87,20 @@ export default function Settings() {
             setPasswordMessage({ type: 'error', text: 'Erro ao atualizar a senha.' });
         } finally {
             setIsSavingPassword(false);
+        }
+    };
+
+    const handleSaveTheme = async () => {
+        setIsSavingSiteTheme(true);
+        setThemeMessage({ type: '', text: '' });
+        try {
+            await settingsService.updateSetting('site_theme', siteTheme);
+            setThemeMessage({ type: 'success', text: 'Tema atualizado com sucesso!' });
+            setTimeout(() => setThemeMessage({ type: '', text: '' }), 3000);
+        } catch (error) {
+            setThemeMessage({ type: 'error', text: 'Erro ao atualizar o tema.' });
+        } finally {
+            setIsSavingSiteTheme(false);
         }
     };
 
@@ -217,6 +245,63 @@ export default function Settings() {
                             {isSavingPassword ? 'Atualizando...' : 'Atualizar Senha'}
                         </button>
                     </form>
+                </div>
+
+                {/* Bloco: Aparência do Site Principal (Full Width) */}
+                <div className="glass-card p-6 md:col-span-2">
+                    <h3 className="text-lg font-medium text-white mb-2 flex items-center gap-2">
+                        <Globe className="w-5 h-5 text-blue-400" />
+                        Aparência do Site Principal
+                    </h3>
+                    <p className="text-sm text-white/50 mb-6 font-normal">
+                        Escolha o tema (Light ou Dark) que será exibido para todos os visitantes do site solar-shine-web.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <button
+                                onClick={() => setSiteTheme('light')}
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl border transition-all ${siteTheme === 'light'
+                                    ? 'bg-primary/10 border-primary text-primary'
+                                    : 'bg-white/[0.04] border-white/10 text-white/50 hover:bg-white/[0.08] hover:text-white'
+                                    }`}
+                            >
+                                <Sun className="w-5 h-5" />
+                                <span className="font-medium">Tema Claro</span>
+                            </button>
+
+                            <button
+                                onClick={() => setSiteTheme('dark')}
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl border transition-all ${siteTheme === 'dark'
+                                    ? 'bg-primary/10 border-primary text-primary'
+                                    : 'bg-white/[0.04] border-white/10 text-white/50 hover:bg-white/[0.08] hover:text-white'
+                                    }`}
+                            >
+                                <Moon className="w-5 h-5" />
+                                <span className="font-medium">Tema Escuro</span>
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={handleSaveTheme}
+                            disabled={isSavingSiteTheme}
+                            className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 sm:ml-auto"
+                        >
+                            {isSavingSiteTheme ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
+                            {isSavingSiteTheme ? 'Salvando...' : 'Aplicar Tema'}
+                        </button>
+                    </div>
+
+                    {themeMessage.text && (
+                        <div className={`mt-4 flex items-center gap-2 p-3 rounded-xl text-sm ${themeMessage.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                            {themeMessage.type === 'error' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                            {themeMessage.text}
+                        </div>
+                    )}
                 </div>
 
             </div>

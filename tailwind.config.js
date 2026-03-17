@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: "class",
     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         extend: {
@@ -8,23 +9,23 @@ export default {
                 display: ["Space Grotesk", "system-ui", "sans-serif"],
             },
             colors: {
-                background: "hsl(228 30% 6%)",
-                foreground: "hsl(0 0% 98%)",
-                card: "hsl(228 25% 10%)",
-                "card-foreground": "hsl(0 0% 98%)",
-                primary: "hsl(195 100% 50%)",
-                "primary-foreground": "hsl(228 30% 6%)",
-                secondary: "hsl(228 20% 15%)",
-                "secondary-foreground": "hsl(0 0% 98%)",
-                muted: "hsl(228 15% 18%)",
-                "muted-foreground": "hsl(228 10% 55%)",
-                accent: "hsl(220 80% 55%)",
-                "accent-foreground": "hsl(0 0% 98%)",
-                destructive: "hsl(0 62% 50%)",
-                "destructive-foreground": "hsl(0 0% 98%)",
-                border: "hsl(228 15% 15%)",
-                input: "hsl(228 15% 15%)",
-                ring: "hsl(195 100% 50%)",
+                background: "hsl(var(--background))",
+                foreground: "hsl(var(--foreground))",
+                card: "hsl(var(--card))",
+                "card-foreground": "hsl(var(--card-foreground))",
+                primary: "hsl(var(--primary))",
+                "primary-foreground": "hsl(var(--primary-foreground))",
+                secondary: "hsl(var(--secondary))",
+                "secondary-foreground": "hsl(var(--secondary-foreground))",
+                muted: "hsl(var(--muted))",
+                "muted-foreground": "hsl(var(--muted-foreground))",
+                accent: "hsl(var(--accent))",
+                "accent-foreground": "hsl(var(--accent-foreground))",
+                destructive: "hsl(var(--destructive))",
+                "destructive-foreground": "hsl(var(--destructive-foreground))",
+                border: "hsl(var(--border))",
+                input: "hsl(var(--input))",
+                ring: "hsl(var(--ring))",
             },
             borderRadius: {
                 lg: "0.75rem",
@@ -34,8 +35,8 @@ export default {
                 "2xl": "1.25rem",
             },
             boxShadow: {
-                glow: "0 0 20px hsl(195 100% 50% / 0.15)",
-                "glow-lg": "0 0 40px hsl(195 100% 50% / 0.2)",
+                glow: "var(--shadow-glow)",
+                "glow-lg": "var(--shadow-glow-lg)",
             },
             keyframes: {
                 "fade-in": {

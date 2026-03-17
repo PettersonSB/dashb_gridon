@@ -5,6 +5,50 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 228 30% 6%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 30% 6%;
+    --primary: 195 100% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 228 15% 90%;
+    --secondary-foreground: 228 30% 6%;
+    --muted: 228 15% 94%;
+    --muted-foreground: 228 10% 45%;
+    --accent: 220 80% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 228 15% 90%;
+    --input: 228 15% 90%;
+    --ring: 195 100% 50%;
+    --shadow-glow: 0 0 20px hsl(195 100% 50% / 0.15);
+    --shadow-glow-lg: 0 0 40px hsl(195 100% 50% / 0.2);
+  }
+
+  .dark {
+    --background: 228 30% 6%;
+    --foreground: 0 0% 98%;
+    --card: 228 25% 10%;
+    --card-foreground: 0 0% 98%;
+    --primary: 195 100% 50%;
+    --primary-foreground: 228 30% 6%;
+    --secondary: 228 20% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 228 15% 18%;
+    --muted-foreground: 228 10% 55%;
+    --accent: 220 80% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 228 15% 15%;
+    --input: 228 15% 15%;
+    --ring: 195 100% 50%;
+    --shadow-glow: 0 0 20px hsl(195 100% 50% / 0.15);
+    --shadow-glow-lg: 0 0 40px hsl(195 100% 50% / 0.2);
+  }
+
   * {
     @apply border-border;
   }
