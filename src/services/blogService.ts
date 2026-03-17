@@ -10,7 +10,7 @@ export const blogService = {
     async getPosts() {
         const { data, error } = await supabase
             .from('blog_posts')
-            .select('*')
+            .select('id, title, slug, category, image_url, author, read_time, published, published_at, created_at, updated_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -86,5 +86,27 @@ export const blogService = {
 
         if (error) throw error;
         return true;
+    },
+
+    // Upload an image for the blog cover
+    async uploadImage(file: File): Promise<string> {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('blog-images')
+            .upload(filePath, file, { cacheControl: '31536000', upsert: false });
+
+        if (uploadError) {
+            console.error('Blog Upload Error:', uploadError);
+            throw new Error(`Erro ao fazer upload da imagem do blog: ${uploadError.message}`);
+        }
+
+        const { data } = supabase.storage
+            .from('blog-images')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
     }
 };

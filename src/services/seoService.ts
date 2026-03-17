@@ -15,7 +15,7 @@ export const seoService = {
     async getSettings(): Promise<SeoSettings[]> {
         const { data, error } = await supabase
             .from('page_seo_settings')
-            .select('*')
+            .select('id, page_name, title, description, keywords, og_image')
             .order('page_name', { ascending: true });
 
         if (error) {

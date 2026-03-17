@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { emitToast } from "@/components/ui/Toaster";
 import { Link, useNavigate } from "react-router-dom";
 import {
     Search,
@@ -13,12 +14,84 @@ import {
     CheckCheck,
     Eye,
     ThumbsUp,
-    ThumbsDown
+    ThumbsDown,
+    Clock
 } from "lucide-react";
 import { budgetService } from "@/services/budgetService";
 import { SolarBudget } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 const BUDGET_BASE_URL = 'http://gridon.com.br/orcamento';
+
+/* ─── Countdown helper for budget list ─── */
+const BudgetCountdown = ({ budget, calculatedStatus }: { budget: SolarBudget; calculatedStatus: SolarBudget['status'] }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        if (calculatedStatus === 'aprovado' || calculatedStatus === 'recusado') return;
+
+        const targetDate = new Date(new Date(budget.created_at).getTime() + budget.proposal_validity_days * 24 * 60 * 60 * 1000);
+
+        const update = () => {
+            const now = new Date().getTime();
+            const diff = targetDate.getTime() - now;
+
+            if (diff <= 0) {
+                setIsExpired(true);
+                setTimeLeft('');
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const mins = Math.floor((diff / (1000 * 60)) % 60);
+            const secs = Math.floor((diff / 1000) % 60);
+
+            const pad = (n: number) => n.toString().padStart(2, '0');
+
+            if (days > 0) {
+                setTimeLeft(`${days}d ${pad(hours)}h ${pad(mins)}m`);
+            } else {
+                setTimeLeft(`${pad(hours)}h ${pad(mins)}m ${pad(secs)}s`);
+            }
+        };
+
+        update();
+        const id = setInterval(update, 1000);
+        return () => clearInterval(id);
+    }, [budget.created_at, budget.proposal_validity_days, calculatedStatus]);
+
+    if (calculatedStatus === 'aprovado') {
+        return (
+            <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-semibold">
+                <CheckCheck className="w-3.5 h-3.5" /> Aprovado
+            </span>
+        );
+    }
+
+    if (calculatedStatus === 'recusado') {
+        return (
+            <span className="inline-flex items-center gap-1.5 text-red-400 text-xs font-semibold">
+                <ThumbsDown className="w-3.5 h-3.5" /> Recusado
+            </span>
+        );
+    }
+
+    if (isExpired || calculatedStatus === 'vencido') {
+        return (
+            <span className="inline-flex items-center gap-1.5 text-red-400/80 text-xs font-semibold">
+                <Clock className="w-3.5 h-3.5" /> Expirado
+            </span>
+        );
+    }
+
+    return (
+        <span className="inline-flex items-center gap-1.5 text-amber-400 text-xs font-mono font-medium tabular-nums">
+            <Clock className="w-3.5 h-3.5 animate-pulse" /> {timeLeft}
+        </span>
+    );
+};
 
 export default function BudgetList() {
     const navigate = useNavigate();
@@ -68,27 +141,27 @@ export default function BudgetList() {
             await budgetService.updateBudgetStatus(id, newStatus);
             loadBudgets();
         } catch (error) {
-            alert("Erro ao alterar o status do orçamento.");
+            emitToast({ title: "Erro", description: "Erro ao alterar o status do orçamento.", variant: "destructive" });
         }
     };
 
     const handleRenew = async (id: string) => {
-        if (!confirm("Isso irá renovar a contagem de validade a partir de hoje. Confirmar?")) return;
+        if (!await confirmAction({ title: "Renovar Validade", message: "Isso irá renovar a contagem de validade a partir de hoje. Confirmar?", variant: "info" })) return;
         try {
             await budgetService.renewBudget(id);
             loadBudgets();
         } catch (error) {
-            alert("Erro ao renovar o orçamento.");
+            emitToast({ title: "Erro", description: "Erro ao renovar o orçamento.", variant: "destructive" });
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Tem certeza que deseja excluir esse orçamento permanentemente?")) return;
+        if (!await confirmAction({ title: "Excluir Orçamento", message: "Tem certeza que deseja excluir esse orçamento permanentemente?", variant: "danger" })) return;
         try {
             await budgetService.deleteBudget(id);
             loadBudgets();
         } catch (error) {
-            alert("Erro ao excluir o orçamento.");
+            emitToast({ title: "Erro", description: "Erro ao excluir o orçamento.", variant: "destructive" });
         }
     };
 
@@ -207,6 +280,7 @@ export default function BudgetList() {
                                 <th className="px-6 py-4 font-medium">Cliente</th>
                                 <th className="px-6 py-4 font-medium">Data de Criação</th>
                                 <th className="px-6 py-4 font-medium">Potência / Valor Est.</th>
+                                <th className="px-6 py-4 font-medium text-center">Expira em</th>
                                 <th className="px-6 py-4 font-medium text-center">Status</th>
                                 <th className="px-6 py-4 font-medium text-right">Ações</th>
                             </tr>
@@ -214,7 +288,7 @@ export default function BudgetList() {
                         <tbody>
                             {filteredBudgets.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-white/40">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-white/40">
                                         Nenhum orçamento encontrado.
                                     </td>
                                 </tr>
@@ -229,6 +303,9 @@ export default function BudgetList() {
                                                 <div className="text-xs text-white/40 mt-0.5">
                                                     {budget.customer_neighborhood ? `${budget.customer_neighborhood}, ` : ''}{budget.customer_city} - {budget.customer_state}
                                                 </div>
+                                                <div className="text-[10px] font-mono text-white/20 mt-1 uppercase tracking-tighter">
+                                                    ID: {budget.id}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white/80">{new Date(budget.created_at).toLocaleDateString('pt-BR')}</div>
@@ -237,6 +314,9 @@ export default function BudgetList() {
                                             <td className="px-6 py-4">
                                                 <div className="text-white font-medium">{budget.kit?.system_power} kWp</div>
                                                 <div className="text-primary text-xs mt-0.5">{formatCurrency(budget.kit?.kit_price)}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <BudgetCountdown budget={budget} calculatedStatus={calculatedStatus} />
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <StatusBadge status={calculatedStatus} />

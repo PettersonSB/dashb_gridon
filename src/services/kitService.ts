@@ -1,13 +1,13 @@
 import { supabase } from '@/lib/supabase';
-import { SolarBrand, SolarKit } from '@/lib/types';
+import { SolarBrand, SolarKit, SolarProduct, SolarKitItem } from '@/lib/types';
 
 export const kitService = {
     // --- Brands ---
 
-    async getBrands(type?: 'equipamento' | 'placa') {
+    async getBrands(type?: 'aparelho' | 'placas' | 'carregador') {
         let query = supabase
             .from('solar_brands')
-            .select('*')
+            .select('id, name, type')
             .order('name', { ascending: true });
 
         if (type) {
@@ -19,7 +19,7 @@ export const kitService = {
         return data as SolarBrand[];
     },
 
-    async createBrand(name: string, type: 'equipamento' | 'placa') {
+    async createBrand(name: string, type: 'aparelho' | 'placas' | 'carregador') {
         const { data, error } = await supabase
             .from('solar_brands')
             .insert([{ name, type }])
@@ -36,17 +36,18 @@ export const kitService = {
         const { data, error } = await supabase
             .from('solar_kits')
             .select(`
-        *,
-        equipment_brand:equipment_brand_id(*),
-        panel_brand:panel_brand_id(*)
-      `)
+                *,
+                equipment_brand:equipment_brand_id(id, name),
+                panel_brand:panel_brand_id(id, name),
+                items:solar_kit_items(id, quantity, product:product_id(*, brand:brand_id(name)))
+            `)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
         return data as SolarKit[];
     },
 
-    async createKit(kit: Omit<SolarKit, 'id' | 'created_at' | 'equipment_brand' | 'panel_brand'>) {
+    async createKit(kit: Omit<SolarKit, 'id' | 'created_at' | 'equipment_brand' | 'panel_brand' | 'items'>, items: { product_id: string, quantity: number }[]) {
         const { data, error } = await supabase
             .from('solar_kits')
             .insert([kit])
@@ -54,10 +55,15 @@ export const kitService = {
             .single();
 
         if (error) throw error;
+        
+        if (items.length > 0) {
+            await this.saveKitItems(data.id, items);
+        }
+        
         return data as SolarKit;
     },
 
-    async updateKit(id: string, kit: Partial<Omit<SolarKit, 'id' | 'created_at' | 'equipment_brand' | 'panel_brand'>>) {
+    async updateKit(id: string, kit: Partial<Omit<SolarKit, 'id' | 'created_at' | 'equipment_brand' | 'panel_brand' | 'items'>>, items: { product_id: string, quantity: number }[]) {
         const { data, error } = await supabase
             .from('solar_kits')
             .update(kit)
@@ -66,12 +72,78 @@ export const kitService = {
             .single();
 
         if (error) throw error;
+        
+        await this.saveKitItems(id, items);
+        
         return data as SolarKit;
     },
 
+    async saveKitItems(kitId: string, items: { product_id: string, quantity: number }[]) {
+        // Delete old items
+        await supabase.from('solar_kit_items').delete().eq('kit_id', kitId);
+        
+        if (items.length > 0) {
+            const newItems = items.map(item => ({
+                kit_id: kitId,
+                product_id: item.product_id,
+                quantity: item.quantity
+            }));
+            const { error } = await supabase.from('solar_kit_items').insert(newItems);
+            if (error) throw error;
+        }
+    },
+
     async deleteKit(id: string) {
+        // Since solar_kit_items has ON DELETE CASCADE, deleting the kit deletes the items automatically
         const { error } = await supabase
             .from('solar_kits')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    },
+
+    // --- Products ---
+
+    async getProducts() {
+        const { data, error } = await supabase
+            .from('solar_products')
+            .select(`
+                *,
+                brand:brand_id(id, name)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data as SolarProduct[];
+    },
+
+    async createProduct(product: Omit<SolarProduct, 'id' | 'created_at' | 'brand'>) {
+        const { data, error } = await supabase
+            .from('solar_products')
+            .insert([product])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data as SolarProduct;
+    },
+
+    async updateProduct(id: string, product: Partial<Omit<SolarProduct, 'id' | 'created_at' | 'brand'>>) {
+        const { data, error } = await supabase
+            .from('solar_products')
+            .update(product)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data as SolarProduct;
+    },
+
+    async deleteProduct(id: string) {
+        const { error } = await supabase
+            .from('solar_products')
             .delete()
             .eq('id', id);
 
@@ -89,7 +161,7 @@ export const kitService = {
         const { error: uploadError } = await supabase.storage
             .from('kit-images')
             .upload(filePath, file, {
-                cacheControl: '3600',
+                cacheControl: '31536000',
                 upsert: false
             });
 

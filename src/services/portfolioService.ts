@@ -12,7 +12,7 @@ export const portfolioService = {
     getItems: async (): Promise<PortfolioItem[]> => {
         const { data, error } = await supabase
             .from('portfolio_items')
-            .select('*')
+            .select('id, image_url, location, created_at')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -32,7 +32,7 @@ export const portfolioService = {
         const { error: uploadError } = await supabase.storage
             .from('portfolio-images')
             .upload(filePath, file, {
-                cacheControl: '3600',
+                cacheControl: '31536000',
                 upsert: false
             });
 

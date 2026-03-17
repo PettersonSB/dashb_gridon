@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { blogService } from "@/services/blogService";
-import { ArrowLeft, Save, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Image as ImageIcon, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const modules = {
@@ -34,8 +34,11 @@ const BlogEditor = () => {
         image_url: "",
         author: "Equipe Gridon",
         read_time: "",
-        published: false
+        published: false,
+        published_at: null as string | null
     });
+
+    const [uploadingImage, setUploadingImage] = useState(false);
 
     const { data: post, isLoading: isLoadingPost } = useQuery({
         queryKey: ["blogPost", id],
@@ -54,7 +57,8 @@ const BlogEditor = () => {
                 image_url: post.image_url || "",
                 author: post.author || "Equipe Gridon",
                 read_time: post.read_time || "",
-                published: post.published || false
+                published: post.published || false,
+                published_at: post.published_at || null
             });
         }
     }, [post]);
@@ -103,7 +107,11 @@ const BlogEditor = () => {
             setFormData(prev => ({ ...prev, slug: currentSlug }));
         }
 
-        mutation.mutate({ ...formData, slug: currentSlug });
+        mutation.mutate({ 
+            ...formData, 
+            slug: currentSlug,
+            published_at: (formData.published && !post?.published_at) ? new Date().toISOString() : (post?.published_at || null)
+        });
     };
 
     if (isEditing && isLoadingPost) {
@@ -278,27 +286,45 @@ const BlogEditor = () => {
                                         onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
                                         className="text-white text-sm hover:underline"
                                     >
-                                        Remover
+                                        Remover imagem
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="h-40 rounded-xl border border-dashed border-white/[0.1] bg-white/[0.01] flex flex-col items-center justify-center text-white/30 gap-3">
-                                <ImageIcon className="w-8 h-8 opacity-50" />
-                                <span className="text-sm">Nenhuma imagem</span>
+                            <div className="h-40 rounded-xl border border-dashed border-white/[0.1] bg-white/[0.01] flex flex-col items-center justify-center text-white/30 gap-3 relative">
+                                {uploadingImage ? (
+                                    <>
+                                        <Loader2 className="w-8 h-8 opacity-50 animate-spin" />
+                                        <span className="text-sm">Enviando foto...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <UploadCloud className="w-8 h-8 opacity-50" />
+                                        <span className="text-sm text-center px-4">Clique para anexar foto de capa principal do post</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                try {
+                                                    setUploadingImage(true);
+                                                    const url = await blogService.uploadImage(file);
+                                                    setFormData(prev => ({ ...prev, image_url: url }));
+                                                    toast({ title: 'Sucesso', description: 'Capa anexada!' });
+                                                } catch (err: any) {
+                                                    toast({ title: 'Falha', description: err.message, variant: 'destructive' });
+                                                } finally {
+                                                    setUploadingImage(false);
+                                                }
+                                            }}
+                                        />
+                                    </>
+                                )}
                             </div>
                         )}
-
-                        <div>
-                            <label className="form-label text-xs">URL da Imagem</label>
-                            <input
-                                name="image_url"
-                                value={formData.image_url}
-                                onChange={handleChange}
-                                placeholder="https://exemplo.com/imagem.jpg"
-                                className="form-input text-sm"
-                            />
-                        </div>
                     </div>
                 </div>
             </div>

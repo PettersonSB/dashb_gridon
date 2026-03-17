@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, GripVertical, Save, Check, X, Loader2, CheckCircle } from "lucide-react";
 import { useSupabaseQuery, bulkUpsert, insertRow, deleteRow } from "@/hooks/useSupabase";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 interface ServiceItem {
     id: string;
@@ -39,7 +40,7 @@ const ServicesEditor = () => {
     };
 
     const removeItem = async (id: string) => {
-        if (confirm("Excluir este serviço?")) {
+        if (await confirmAction({ title: "Excluir Serviço", message: "Tem certeza que deseja excluir este serviço?", variant: "danger" })) {
             await deleteRow("services", id);
             setItems(items.filter((s) => s.id !== id));
         }

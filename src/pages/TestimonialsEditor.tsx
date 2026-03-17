@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Save, Check, X, Loader2, CheckCircle } from "lucide-react";
 import { useSupabaseQuery, bulkUpsert, insertRow, deleteRow } from "@/hooks/useSupabase";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 interface TestimonialItem {
     id: string;
@@ -37,7 +38,7 @@ const TestimonialsEditor = () => {
     };
 
     const remove = async (id: string) => {
-        if (confirm("Excluir este depoimento?")) {
+        if (await confirmAction({ title: "Excluir Depoimento", message: "Tem certeza que deseja excluir este depoimento?", variant: "danger" })) {
             await deleteRow("testimonials", id);
             setItems(items.filter((t) => t.id !== id));
         }

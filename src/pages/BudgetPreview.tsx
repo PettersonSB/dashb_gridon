@@ -4,8 +4,9 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 export default function BudgetPreview() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const publicUrl = `http://gridon.com.br/orcamento/${id}`;
-    const previewUrl = `http://gridon.com.br/orcamento/${id}?preview=true`;
+    // Aponta para a porta local do storefront para desenvolvimento
+    const publicUrl = `http://localhost:8080/orcamento/${id}`;
+    const previewUrl = `http://localhost:8080/orcamento/${id}?preview=true`;
 
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)] animate-fade-in">

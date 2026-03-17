@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Edit, Trash2, Eye, EyeOff, Search } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 import { blogService } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,8 +42,8 @@ const BlogManager = () => {
         togglePublishMutation.mutate({ id, published: currentStatus });
     };
 
-    const removePost = (id: string) => {
-        if (confirm("Tem certeza que deseja excluir este post? Essa ação não pode ser desfeita.")) {
+    const removePost = async (id: string) => {
+        if (await confirmAction({ title: "Excluir Post", message: "Tem certeza que deseja excluir este post? Essa ação não pode ser desfeita.", variant: "danger" })) {
             deleteMutation.mutate(id);
         }
     };

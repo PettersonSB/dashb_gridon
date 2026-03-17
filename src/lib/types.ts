@@ -149,28 +149,56 @@ export interface SeoConfig {
 export interface SolarBrand {
     id: string;
     name: string;
-    type: 'equipamento' | 'placa';
+    type: 'aparelho' | 'placas' | 'carregador';
     created_at: string;
+}
+
+export interface SolarProduct {
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    price: number;
+    brand_id: string | null;
+    model: string;
+    power: number;
+    voltage: string;
+    warranty: number | null;
+    image_url: string;
+    created_at: string;
+    brand?: SolarBrand; // for joins
+}
+
+export interface SolarKitItem {
+    id: string;
+    kit_id: string;
+    product_id: string;
+    quantity: number;
+    created_at: string;
+    product?: SolarProduct; // for joins
 }
 
 export interface SolarKit {
     id: string;
+    name: string;
     system_type: 'On Grid' | 'Off Grid' | 'Híbrido' | 'Backup Box';
-    equipment_type: 'Inversor' | 'Inversor Híbrido' | 'Micro Inversor' | 'Wallbox';
-    equipment_brand_id: string | null;
-    equipment_warranty: number | null;
+    equipment_type?: 'Inversor' | 'Inversor Híbrido' | 'Micro Inversor' | 'Wallbox'; // optional/legacy
+    equipment_brand_id?: string | null; // legacy
+    equipment_warranty?: number | null; // legacy
     estimated_generation: number | null;
-    panels_count: number;
-    panel_power: number;
-    panel_brand_id: string | null;
-    panel_warranty: number | null;
+    panels_count?: number; // legacy
+    panel_power?: number;  // legacy
+    panel_brand_id?: string | null; // legacy
+    panel_warranty?: number | null; // legacy
     system_power: number;
     kit_price: number;
+    is_price_auto: boolean;
     image_url: string;
     description: string;
     created_at: string;
-    equipment_brand?: SolarBrand; // For joins
-    panel_brand?: SolarBrand;     // For joins
+    equipment_brand?: SolarBrand; // legacy
+    panel_brand?: SolarBrand;     // legacy
+    items?: SolarKitItem[];       // NEW REALATION
 }
 
 export interface SolarBudget {

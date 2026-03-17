@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, Loader2, User, Home, Zap, MapPin, Calculator } from 'lucide-react';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, Tool, BarChart3, Pencil, Plus } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
@@ -50,8 +50,30 @@ export default function NewBudget() {
     // Form State - Proposal
     const [selectedKitId, setSelectedKitId] = useState('');
     const [validityDays, setValidityDays] = useState('7');
-    const [includeNotes, setIncludeNotes] = useState(true);
     const [notes, setNotes] = useState('');
+    const [includeNotes, setIncludeNotes] = useState(true);
+
+    // Form State - Financial
+    const [laborCost, setLaborCost] = useState<string>('0');
+    const [engineeringCost, setEngineeringCost] = useState<string>('0');
+    
+    const [profitType, setProfitType] = useState<'percentage' | 'fixed'>('percentage');
+    const [profitValue, setProfitValue] = useState<string>('0');
+    
+    const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage');
+    const [commissionValue, setCommissionValue] = useState<string>('0');
+    
+    const [taxType, setTaxType] = useState<'percentage' | 'fixed'>('percentage');
+    const [taxValue, setTaxValue] = useState<string>('0');
+
+    // Form State - Payment Methods
+    const [cashDiscount, setCashDiscount] = useState<string>('0');
+    const [pixDiscount, setPixDiscount] = useState<string>('0');
+    
+    const [financingOptions, setFinancingOptions] = useState([
+        { id: 1, name: 'Parcelamento 1', installments: 12, interest: 0, enabled: true, calculationMode: 'automatic' },
+        { id: 2, name: 'Parcelamento 2', installments: 24, interest: 0, enabled: false, calculationMode: 'automatic' }
+    ]);
 
     useEffect(() => {
         const init = async () => {
@@ -157,6 +179,68 @@ export default function NewBudget() {
         }
     };
 
+    const addFinancingOption = () => {
+        if (financingOptions.length >= 4) return;
+        const newId = Math.max(...financingOptions.map(o => o.id)) + 1;
+        setFinancingOptions([...financingOptions, {
+            id: newId,
+            name: `Parcelamento ${financingOptions.length + 1}`,
+            installments: 36,
+            interest: 0,
+            enabled: false,
+            calculationMode: 'automatic'
+        }]);
+    };
+
+    // Derived Financial Values
+    const selectedKit = availableKits.find(k => k.id === selectedKitId);
+    const subtotal = Number(selectedKit?.kit_price || 0);
+    
+    const labor = Number(laborCost) || 0;
+    const engineering = Number(engineeringCost) || 0;
+    
+    const profitAmt = profitType === 'percentage' 
+        ? (subtotal * (Number(profitValue) || 0) / 100) 
+        : (Number(profitValue) || 0);
+        
+    const commissionAmt = commissionType === 'percentage' 
+        ? (subtotal * (Number(commissionValue) || 0) / 100) 
+        : (Number(commissionValue) || 0);
+        
+    const taxAmt = taxType === 'percentage' 
+        ? (subtotal * (Number(taxValue) || 0) / 100) 
+        : (Number(taxValue) || 0);
+
+    const totalValue = subtotal + labor + engineering + profitAmt + commissionAmt + taxAmt;
+
+    // Payment Methods Calculations
+    const cashTotal = totalValue * (1 - (Number(cashDiscount) || 0) / 100);
+    const pixTotal = totalValue * (1 - (Number(pixDiscount) || 0) / 100);
+    
+    const calculatedFinancing = financingOptions.map(opt => {
+        const principal = totalValue;
+        const months = opt.installments;
+        const monthlyRate = (opt.interest || 0) / 100;
+        
+        let monthlyPayment = 0;
+        let totalFinanced = 0;
+        
+        if (monthlyRate === 0) {
+            monthlyPayment = principal / months;
+            totalFinanced = principal;
+        } else {
+            // Price Table installments formula: PMT = P * [i * (1 + i)^n] / [(1 + i)^n - 1]
+            monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+            totalFinanced = monthlyPayment * months;
+        }
+        
+        return {
+            ...opt,
+            monthlyPayment,
+            totalFinanced
+        };
+    });
+
     const quillModules = {
         toolbar: [
             [{ 'header': [1, 2, 3, false] }],
@@ -187,7 +271,9 @@ export default function NewBudget() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="grid lg:grid-cols-12 gap-8 items-start">
+                {/* Coluna Esquerda: Dados do Formulário */}
+                <div className="lg:col-span-8 space-y-6">
 
                 {/* Alertas */}
                 {error && (
@@ -454,8 +540,360 @@ export default function NewBudget() {
                             ) : (
                                 <Save className="w-5 h-5" />
                             )}
-                            {isEditing ? 'Atualizar Orçamento' : 'Salvar Proposta com Cliente'}
                         </button>
+                    </div>
+                </div>
+
+                </div>
+
+                {/* Coluna Direita: Sidebar Financeira */}
+                <div className="lg:col-span-4 space-y-6 sticky top-6">
+                    {/* Bloco: Resumo Financeiro */}
+                    <div className="glass-card p-6 border-emerald-500/20 bg-emerald-500/[0.02]">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                <BarChart3 className="w-4 h-4 text-emerald-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-white">Resumo Financeiro</h3>
+                                <p className="text-[10px] text-white/40 uppercase tracking-wider">Subtotal, extras e total</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 pb-6 border-b border-white/5">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Subtotal (Kit)</span>
+                                <span className="text-white font-medium">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Mão de Obra</span>
+                                <span className="text-white font-medium">{labor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Engenharia</span>
+                                <span className="text-white font-medium">{engineering.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Lucro</span>
+                                <span className="text-emerald-400 font-medium">+{profitAmt.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Comissão</span>
+                                <span className="text-white font-medium">+{commissionAmt.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/50">Impostos</span>
+                                <span className="text-white font-medium">+{taxAmt.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                        </div>
+
+                        <div className="pt-6">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Valor Total do Orçamento</span>
+                                <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                                    {totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bloco: Custos e Acréscimos */}
+                    <div className="glass-card p-6 border-primary/10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                <HandCoins className="w-4 h-4 text-orange-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-white">Custos e Acréscimos</h3>
+                                <p className="text-[10px] text-white/40 uppercase tracking-wider">Configuração de margens</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-5">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-medium text-white/50 flex items-center gap-1.5">
+                                        <HardHat className="w-3 h-3" /> Mão de Obra (R$)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={laborCost}
+                                        onChange={(e) => setLaborCost(e.target.value)}
+                                        className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-medium text-white/50 flex items-center gap-1.5">
+                                        <Pencil className="w-3 h-3" /> Engenharia (R$)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={engineeringCost}
+                                        onChange={(e) => setEngineeringCost(e.target.value)}
+                                        className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Lucro */}
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-medium text-white/50 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5"><TrendingUp className="w-3 h-3" /> Lucro</span>
+                                    <div className="flex bg-white/5 rounded-md p-0.5">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setProfitType('percentage')}
+                                            className={`px-2 py-0.5 text-[9px] rounded-sm transition-all ${profitType === 'percentage' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            %
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setProfitType('fixed')}
+                                            className={`px-2 py-0.5 text-[9px] rounded-sm transition-all ${profitType === 'fixed' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            R$
+                                        </button>
+                                    </div>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={profitValue}
+                                        onChange={(e) => setProfitValue(e.target.value)}
+                                        className="form-input !py-2 !text-sm !pr-10 bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 text-xs font-bold">
+                                        {profitType === 'percentage' ? '%' : 'R$'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Comissão */}
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-medium text-white/50 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5"><HandCoins className="w-3 h-3" /> Comissão</span>
+                                    <div className="flex bg-white/5 rounded-md p-0.5">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setCommissionType('percentage')}
+                                            className={`px-2 py-0.5 text-[9px] rounded-sm transition-all ${commissionType === 'percentage' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            %
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setCommissionType('fixed')}
+                                            className={`px-2 py-0.5 text-[9px] rounded-sm transition-all ${commissionType === 'fixed' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            R$
+                                        </button>
+                                    </div>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={commissionValue}
+                                        onChange={(e) => setCommissionValue(e.target.value)}
+                                        className="form-input !py-2 !text-sm !pr-10 bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 text-xs font-bold">
+                                        {commissionType === 'percentage' ? '%' : 'R$'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Impostos */}
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-medium text-white/50 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5"><Receipt className="w-3 h-3" /> Impostos</span>
+                                    <div className="flex bg-white/5 rounded-md p-0.5">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setTaxType('percentage')}
+                                            className={`px-2 py-0.5 text-[9px] rounded-sm transition-all ${taxType === 'percentage' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            %
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setTaxType('fixed')}
+                                            className={`px-2 py-0.5 text-[9px] rounded-sm transition-all ${taxType === 'fixed' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-white/40 hover:text-white'}`}
+                                        >
+                                            R$
+                                        </button>
+                                    </div>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={taxValue}
+                                        onChange={(e) => setTaxValue(e.target.value)}
+                                        className="form-input !py-2 !text-sm !pr-10 bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 text-xs font-bold">
+                                        {taxType === 'percentage' ? '%' : 'R$'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bloco: Formas de Pagamento */}
+                    <div className="glass-card p-6 border-white/10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <DollarSign className="w-4 h-4 text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-white">Formas de Pagamento</h3>
+                                <p className="text-[10px] text-white/40 uppercase tracking-wider">Mostre as opções ao cliente</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* À Vista */}
+                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-bold text-white">À vista</span>
+                                    <span className="text-sm font-bold text-white">
+                                        {cashTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-medium text-white/50">Desconto (%)</label>
+                                    <input
+                                        type="number"
+                                        value={cashDiscount}
+                                        onChange={(e) => setCashDiscount(e.target.value)}
+                                        className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Pix */}
+                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-bold text-white">Pix</span>
+                                    <span className="text-sm font-bold text-white">
+                                        {pixTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-medium text-white/50">Desconto (%)</label>
+                                    <input
+                                        type="number"
+                                        value={pixDiscount}
+                                        onChange={(e) => setPixDiscount(e.target.value)}
+                                        className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Opções de Parcelamento */}
+                            {financingOptions.map((opt, idx) => {
+                                const calc = calculatedFinancing[idx];
+                                return (
+                                    <div key={opt.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-medium text-white/50">Nome da Opção</label>
+                                            <input
+                                                type="text"
+                                                value={opt.name}
+                                                onChange={(e) => {
+                                                    const newOptions = [...financingOptions];
+                                                    newOptions[idx].name = e.target.value;
+                                                    setFinancingOptions(newOptions);
+                                                }}
+                                                className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                            />
+                                        </div>
+
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-xs font-bold text-white">{opt.name}</p>
+                                                <p className="text-[10px] text-white/40">
+                                                    {opt.installments}x de {calc.monthlyPayment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-white">
+                                                    {calc.totalFinanced.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-medium text-white/50">Nº Parcelas</label>
+                                                <input
+                                                    type="number"
+                                                    value={opt.installments}
+                                                    onChange={(e) => {
+                                                        const newOptions = [...financingOptions];
+                                                        newOptions[idx].installments = Number(e.target.value) || 1;
+                                                        setFinancingOptions(newOptions);
+                                                    }}
+                                                    className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-medium text-white/50">Juros/mês (%)</label>
+                                                <input
+                                                    type="number"
+                                                    value={opt.interest}
+                                                    onChange={(e) => {
+                                                        const newOptions = [...financingOptions];
+                                                        newOptions[idx].interest = Number(e.target.value) || 0;
+                                                        setFinancingOptions(newOptions);
+                                                    }}
+                                                    className="form-input !py-2 !text-sm bg-white/[0.03]"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={opt.enabled}
+                                                onChange={(e) => {
+                                                    const newOptions = [...financingOptions];
+                                                    newOptions[idx].enabled = e.target.checked;
+                                                    setFinancingOptions(newOptions);
+                                                }}
+                                                className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20"
+                                            />
+                                            <label className="text-xs text-white/70">Habilitar</label>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {financingOptions.length < 4 && (
+                                <button
+                                    type="button"
+                                    onClick={addFinancingOption}
+                                    className="w-full py-3 rounded-xl border border-dashed border-white/10 hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group"
+                                >
+                                    <Plus className="w-4 h-4 text-white/40 group-hover:text-primary" />
+                                    <span className="text-xs font-medium text-white/40 group-hover:text-primary">Adicionar Opção de Parcelamento</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-primary/20 border border-primary/30">
+                        <p className="text-[11px] text-white/90 leading-relaxed">
+                            <Zap className="w-3 h-3 inline mr-1 mb-0.5 text-primary" />
+                            Os valores acima são calculados automaticamente e serão exibidos na proposta final do cliente.
+                        </p>
                     </div>
                 </div>
             </form>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { portfolioService, PortfolioItem } from '@/services/portfolioService';
 import { useToast } from '@/hooks/use-toast';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
 export const PortfolioManager = () => {
     const [items, setItems] = useState<PortfolioItem[]>([]);
@@ -100,7 +101,7 @@ export const PortfolioManager = () => {
 
     const handleDelete = async (id: string) => {
         // Confirmation dialog
-        if (!window.confirm("Certeza que deseja excluir esta foto do portfólio?")) {
+        if (!await confirmAction({ title: "Excluir Foto", message: "Certeza que deseja excluir esta foto do portfólio?", variant: "danger" })) {
             return;
         }
 
