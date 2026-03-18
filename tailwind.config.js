@@ -27,6 +27,10 @@ export default {
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
             },
+            colors: {
+                white: 'rgb(var(--color-white) / <alpha-value>)',
+                black: 'rgb(var(--color-black) / <alpha-value>)'
+            },
             borderRadius: {
                 lg: "0.75rem",
                 md: "0.5rem",

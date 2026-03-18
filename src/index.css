@@ -6,6 +6,8 @@
 
 @layer base {
   :root {
+    --color-white: 15 23 42; /* Dark color for light mode white */
+    --color-black: 255 255 255;
     --background: 0 0% 98%;
     --foreground: 228 30% 6%;
     --card: 0 0% 100%;
@@ -28,6 +30,8 @@
   }
 
   .dark {
+    --color-white: 255 255 255;
+    --color-black: 0 0 0;
     --background: 228 30% 6%;
     --foreground: 0 0% 98%;
     --card: 228 25% 10%;
