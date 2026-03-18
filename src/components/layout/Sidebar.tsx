@@ -67,16 +67,13 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[hsl(228,25%,7%)] border-r border-white/[0.04] flex flex-col z-40">
+        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-background dark:bg-[hsl(228,25%,7%)] border-r border-border dark:border-white/[0.04] flex flex-col z-40">
             {/* Logo */}
             <div className="h-20 flex items-center justify-center border-b border-white/[0.04] px-4">
                 <img
                     src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-CuReGPKe.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLUN1UmVHUEtlLnBuZyIsImlhdCI6MTc3MjkzNDQwNCwiZXhwIjo0OTI2NTM0NDA0fQ.O2WN8HLKj9zWa95-AVfUtG0qKGGP8lIT6YjdUpSC0GI"
                     alt="Gridon"
-                    className="h-10 w-auto object-contain brightness-0 invert opacity-90 transition-all dark:brightness-0 dark:invert dark:opacity-90"
-                /* The class 'brightness-0 invert' forces the logo to be solid white.
-                   If a light theme is implemented later, removing the dark prefix 
-                   will allow the original colored logo to show normally */
+                    className="h-10 w-auto object-contain dark:brightness-0 dark:invert opacity-90 transition-all"
                 />
             </div>
 
