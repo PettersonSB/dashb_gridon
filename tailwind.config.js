@@ -26,10 +26,8 @@ export default {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
-            },
-            colors: {
-                white: 'rgb(var(--color-white) / <alpha-value>)',
-                black: 'rgb(var(--color-black) / <alpha-value>)'
+                white: "rgb(var(--color-white) / <alpha-value>)",
+                black: "rgb(var(--color-black) / <alpha-value>)"
             },
             borderRadius: {
                 lg: "0.75rem",
