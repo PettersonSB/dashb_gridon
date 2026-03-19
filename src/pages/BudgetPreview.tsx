@@ -6,7 +6,7 @@ import { SolarBudget } from "@/lib/types";
 
 const BUDGET_BASE_URL = "http://gridon.com.br/orcamento";
 
-function formatCurrency(v?: number) {
+function formatCurrency(v?: number | null) {
     if (v === undefined || v === null) return "—";
     return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -56,12 +56,12 @@ export default function BudgetPreview() {
     }
 
     const kit = budget.kit;
+    const consumption = budget.average_monthly_consumption ?? 200;
+    const monthlySavings = consumption * 0.9 * 0.85 * 0.97;
     const roi = kit?.kit_price
-        ? Math.round((kit.kit_price / ((budget.monthly_consumption ?? 200) * 0.9 * 0.85 * 12)) * 10) / 10
+        ? Math.round((kit.kit_price / (monthlySavings * 12)) * 10) / 10
         : null;
-    const savings25 = kit?.kit_price
-        ? Math.round((budget.monthly_consumption ?? 200) * 0.9 * 0.85 * 12 * 25 * 0.97)
-        : null;
+    const savings25 = Math.round(monthlySavings * 12 * 25);
 
     return (
         <div className="animate-fade-in space-y-6 pb-10">
@@ -116,7 +116,9 @@ export default function BudgetPreview() {
                         </div>
                         <div>
                             <p className="text-lg font-bold text-white font-display">{budget.customer_name}</p>
-                            <p className="text-sm text-white/40 mt-0.5">{budget.customer_email}</p>
+                            {budget.customer_email && (
+                                <p className="text-sm text-white/40 mt-0.5">{budget.customer_email}</p>
+                            )}
                             {budget.customer_phone && (
                                 <p className="text-sm text-white/40">{budget.customer_phone}</p>
                             )}
@@ -124,17 +126,16 @@ export default function BudgetPreview() {
                         <div className="flex items-start gap-2 text-sm text-white/40">
                             <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary/60" />
                             <span>
-                                {[budget.customer_street, budget.customer_number, budget.customer_neighborhood,
-                                  budget.customer_city, budget.customer_state]
+                                {[budget.customer_neighborhood, budget.customer_city, budget.customer_state]
                                     .filter(Boolean).join(", ")}
                             </span>
                         </div>
                     </div>
 
-                    {/* Dates */}
+                    {/* Dates & Consumption */}
                     <div className="glass-card p-5 space-y-3">
                         <div className="flex items-center gap-2 text-xs font-semibold text-white/30 uppercase tracking-widest">
-                            <Calendar className="w-3.5 h-3.5" /> Validade
+                            <Calendar className="w-3.5 h-3.5" /> Dados da Proposta
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
@@ -148,9 +149,15 @@ export default function BudgetPreview() {
                                 <span className="text-white font-medium">{budget.proposal_validity_days} dias</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-white/40">Consumo Mensal</span>
-                                <span className="text-white font-medium">{budget.monthly_consumption ?? "—"} kWh</span>
+                                <span className="text-white/40">Consumo Médio</span>
+                                <span className="text-white font-medium">{budget.average_monthly_consumption ?? "—"} kWh/mês</span>
                             </div>
+                            {budget.energy_tariff && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-white/40">Tarifa de Energia</span>
+                                    <span className="text-white font-medium">R$ {budget.energy_tariff.toFixed(2)}/kWh</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -170,11 +177,13 @@ export default function BudgetPreview() {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-white/40">Tipo de Imóvel</span>
-                                <span className="text-white font-medium capitalize">{budget.property_type ?? "—"}</span>
+                                <span className="text-white font-medium capitalize">{budget.construction_type ?? "—"}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-white/40">Garantia Instalação</span>
-                                <span className="text-white font-medium">{budget.installation_warranty ? `${budget.installation_warranty} anos` : "—"}</span>
+                                <span className="text-white font-medium">
+                                    {budget.installation_warranty ? `${budget.installation_warranty} anos` : "—"}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -199,12 +208,16 @@ export default function BudgetPreview() {
                                         <p className="text-lg font-bold text-emerald-400 font-mono mt-1">{formatCurrency(kit.kit_price)}</p>
                                     </div>
                                     <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
-                                        <p className="text-[10px] text-white/30 uppercase tracking-widest">Geração Mensal</p>
-                                        <p className="text-base font-bold text-white font-mono mt-1">{kit.monthly_generation ?? "—"} kWh</p>
+                                        <p className="text-[10px] text-white/30 uppercase tracking-widest">Geração Estimada</p>
+                                        <p className="text-base font-bold text-white font-mono mt-1">
+                                            {kit.estimated_generation ? `${kit.estimated_generation} kWh` : "—"}
+                                        </p>
                                     </div>
                                     <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
                                         <p className="text-[10px] text-white/30 uppercase tracking-widest">Painéis</p>
-                                        <p className="text-base font-bold text-white font-mono mt-1">{kit.panel_quantity ?? "—"}</p>
+                                        <p className="text-base font-bold text-white font-mono mt-1">
+                                            {kit.panels_count ?? "—"}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -215,16 +228,20 @@ export default function BudgetPreview() {
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
+                                        <span className="text-white/40">Tipo de Sistema</span>
+                                        <span className="text-white font-medium">{kit.system_type ?? "—"}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-white/40">Tipo de Inversor</span>
+                                        <span className="text-white font-medium">{kit.equipment_type ?? "—"}</span>
+                                    </div>
+                                    <div className="flex justify-between">
                                         <span className="text-white/40">Marca dos Painéis</span>
                                         <span className="text-white font-medium">{kit.panel_brand?.name ?? "—"}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-white/40">Marca Inversor</span>
+                                        <span className="text-white/40">Marca do Inversor</span>
                                         <span className="text-white font-medium">{kit.equipment_brand?.name ?? "—"}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-white/40">Tipo de Inversor</span>
-                                        <span className="text-white font-medium capitalize">{kit.inverter_type ?? "—"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -245,36 +262,40 @@ export default function BudgetPreview() {
                         <div className="space-y-3">
                             <div className="flex justify-between items-center py-2 border-b border-white/[0.05]">
                                 <span className="text-sm text-white/50">Payback Estimado</span>
-                                <span className="text-base font-bold text-amber-400 font-mono">{roi ? `${roi} anos` : "—"}</span>
+                                <span className="text-base font-bold text-amber-400 font-mono">
+                                    {roi ? `${roi} anos` : "—"}
+                                </span>
                             </div>
                             <div className="flex justify-between items-center py-2 border-b border-white/[0.05]">
                                 <span className="text-sm text-white/50">Economiza / Mês</span>
                                 <span className="text-base font-bold text-emerald-400 font-mono">
-                                    {formatCurrency((budget.monthly_consumption ?? 200) * 0.9 * 0.85 * 0.97)}
+                                    {formatCurrency(monthlySavings)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center py-2 border-b border-white/[0.05]">
                                 <span className="text-sm text-white/50">Economia em 25 anos</span>
                                 <span className="text-base font-bold text-primary font-mono">
-                                    {savings25 ? formatCurrency(savings25) : "—"}
+                                    {formatCurrency(savings25)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center py-2">
                                 <span className="text-sm text-white/50">Investimento Total</span>
-                                <span className="text-base font-bold text-white font-mono">{formatCurrency(kit?.kit_price)}</span>
+                                <span className="text-base font-bold text-white font-mono">
+                                    {formatCurrency(kit?.kit_price)}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Observações */}
-                    {budget.observations && (
+                    {/* Notas de instalação */}
+                    {budget.installation_notes && (
                         <div className="glass-card p-5 space-y-3">
                             <div className="flex items-center gap-2 text-xs font-semibold text-white/30 uppercase tracking-widest">
                                 <Shield className="w-3.5 h-3.5" /> Observações
                             </div>
                             <div
                                 className="kit-rich-text kit-rich-text--compact text-sm text-white/50"
-                                dangerouslySetInnerHTML={{ __html: budget.observations }}
+                                dangerouslySetInnerHTML={{ __html: budget.installation_notes }}
                             />
                         </div>
                     )}
