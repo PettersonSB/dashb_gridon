@@ -15,11 +15,13 @@ import {
     Eye,
     ThumbsUp,
     ThumbsDown,
-    Clock
+    Clock,
+    BarChart2
 } from "lucide-react";
 import { budgetService } from "@/services/budgetService";
 import { SolarBudget } from "@/lib/types";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
+import AnalyticsModal from "@/components/AnalyticsModal";
 
 const BUDGET_BASE_URL = 'http://gridon.com.br/orcamento';
 
@@ -100,10 +102,10 @@ export default function BudgetList() {
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState("");
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [analyticsTarget, setAnalyticsTarget] = useState<SolarBudget | null>(null);
 
     // Calcula o status dinâmico (se está vencido baseado na data e validade)
     const getCalculatedStatus = (budget: SolarBudget): SolarBudget['status'] => {
-        // Se já foi finalizado ou suspenso, não muda de status
         if (budget.status === 'aprovado' || budget.status === 'recusado' || budget.status === 'suspenso') {
             return budget.status;
         }
@@ -176,7 +178,6 @@ export default function BudgetList() {
             setCopiedId(budget.id);
             setTimeout(() => setCopiedId(null), 2000);
 
-            // Muda para em análise somente se for novo
             if (budget.status === 'novo' || !budget.status) {
                 try {
                     await budgetService.updateBudgetStatus(budget.id, 'em analise');
@@ -324,6 +325,15 @@ export default function BudgetList() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-2 text-white/40">
 
+                                                    {/* Analytics da Proposta */}
+                                                    <button
+                                                        onClick={() => setAnalyticsTarget(budget)}
+                                                        className="p-2 text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                                                        title="Analytics da Proposta"
+                                                    >
+                                                        <BarChart2 className="w-4 h-4" />
+                                                    </button>
+
                                                     {/* Copiar Link do Orçamento */}
                                                     <button
                                                         onClick={() => handleCopyLink(budget)}
@@ -420,6 +430,15 @@ export default function BudgetList() {
                     </table>
                 </div>
             </div>
+
+            {/* Analytics Modal */}
+            {analyticsTarget && (
+                <AnalyticsModal
+                    budgetId={analyticsTarget.id}
+                    customerName={analyticsTarget.customer_name}
+                    onClose={() => setAnalyticsTarget(null)}
+                />
+            )}
         </div>
     );
 }
