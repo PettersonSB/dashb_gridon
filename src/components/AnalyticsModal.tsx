@@ -101,7 +101,6 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             )
             .subscribe();
 
-        // Live visitor count (sessions active in last 2 min)
         const liveInterval = setInterval(() => {
             const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
             const live = sessions.filter(s => s.last_seen_at > twoMinAgo).length;
@@ -156,42 +155,54 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+            <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col
+                bg-white dark:bg-[#0d1117]
+                border border-slate-200 dark:border-white/10
+                rounded-2xl shadow-2xl overflow-hidden
+                animate-in slide-in-from-bottom-4 duration-300">
 
                 {/* ── Header ── */}
-                <div className="flex items-start justify-between px-6 py-5 border-b border-white/[0.06] bg-white/[0.02] flex-shrink-0">
+                <div className="flex items-start justify-between px-6 py-5
+                    border-b border-slate-200 dark:border-white/[0.06]
+                    bg-slate-50 dark:bg-white/[0.02]
+                    flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                            <BarChart2 className="w-5 h-5 text-violet-400" />
+                            <BarChart2 className="w-5 h-5 text-violet-500 dark:text-violet-400" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-white font-bold text-lg">Analytics da Proposta</h2>
+                                <h2 className="text-slate-900 dark:text-white font-bold text-lg">Analytics da Proposta</h2>
                                 {liveCount > 0 && (
-                                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
+                                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 animate-pulse">
                                         <Wifi className="w-2.5 h-2.5" /> AO VIVO
                                     </span>
                                 )}
                             </div>
-                            <p className="text-white/40 text-xs font-mono mt-0.5">
+                            <p className="text-slate-500 dark:text-white/40 text-xs font-mono mt-0.5">
                                 {customerName} — ID: {budgetId.slice(0, 8).toUpperCase()}
                             </p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white">
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-lg transition-colors
+                            text-slate-400 hover:text-slate-700 hover:bg-slate-100
+                            dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10"
+                    >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* ── Tabs ── */}
-                <div className="flex border-b border-white/[0.06] flex-shrink-0 overflow-x-auto no-scrollbar">
+                <div className="flex border-b border-slate-200 dark:border-white/[0.06] flex-shrink-0 overflow-x-auto no-scrollbar bg-white dark:bg-transparent">
                     {TABS.map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 ${activeTab === tab
-                                ? "text-violet-400 border-violet-400 bg-violet-400/5"
-                                : "text-white/40 border-transparent hover:text-white/70 hover:bg-white/[0.03]"
+                                ? "text-violet-600 dark:text-violet-400 border-violet-500 bg-violet-50 dark:bg-violet-400/5"
+                                : "text-slate-500 dark:text-white/40 border-transparent hover:text-slate-700 dark:hover:text-white/70 hover:bg-slate-50 dark:hover:bg-white/[0.03]"
                                 }`}
                         >
                             {tab}
@@ -200,16 +211,16 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                 </div>
 
                 {/* ── Body ── */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-transparent">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-48">
-                            <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+                            <Loader2 className="w-6 h-6 animate-spin text-violet-500 dark:text-violet-400" />
                         </div>
                     ) : sessions.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-48 gap-3">
-                            <Activity className="w-10 h-10 text-white/20" />
-                            <p className="text-white/40 text-sm">Nenhuma visita registrada ainda.</p>
-                            <p className="text-white/20 text-xs">Os dados aparecem assim que o link for aberto.</p>
+                            <Activity className="w-10 h-10 text-slate-300 dark:text-white/20" />
+                            <p className="text-slate-500 dark:text-white/40 text-sm">Nenhuma visita registrada ainda.</p>
+                            <p className="text-slate-400 dark:text-white/20 text-xs">Os dados aparecem assim que o link for aberto.</p>
                         </div>
                     ) : (
                         <>
@@ -219,28 +230,28 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                     {/* Row 1 */}
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                         <MetricCard
-                                            icon={<Eye className="w-4 h-4 text-blue-400" />}
+                                            icon={<Eye className="w-4 h-4 text-blue-500" />}
                                             label="Page Views"
                                             value={totalPageViews.toString()}
                                             sub="Total de Visualizações"
                                             color="blue"
                                         />
                                         <MetricCard
-                                            icon={<Clock className="w-4 h-4 text-amber-400" />}
+                                            icon={<Clock className="w-4 h-4 text-amber-500" />}
                                             label="Tempo Médio"
                                             value={fmtDuration(avgDuration)}
                                             sub="Duração média da visita"
                                             color="amber"
                                         />
                                         <MetricCard
-                                            icon={<ExternalLink className="w-4 h-4 text-cyan-400" />}
+                                            icon={<ExternalLink className="w-4 h-4 text-cyan-500" />}
                                             label="Cliques Externos"
                                             value={totalExternalClicks.toString()}
                                             sub="Links externos"
                                             color="cyan"
                                         />
                                         <MetricCard
-                                            icon={<MousePointer2 className="w-4 h-4 text-violet-400" />}
+                                            icon={<MousePointer2 className="w-4 h-4 text-violet-500" />}
                                             label="Cliques em CTAs"
                                             value={totalCtaClicks.toString()}
                                             sub="Total de CTAs acionados"
@@ -250,32 +261,32 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
 
                                     {/* Row 2 — Engajamento */}
                                     <div>
-                                        <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-3">Engajamento do Usuário</p>
+                                        <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-3">Engajamento do Usuário</p>
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                                            <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-xl p-4">
                                                 <div className="flex items-center gap-2 mb-3">
-                                                    <Scroll className="w-4 h-4 text-emerald-400" />
-                                                    <span className="text-xs text-white/50">Profundidade de Scroll</span>
+                                                    <Scroll className="w-4 h-4 text-emerald-500" />
+                                                    <span className="text-xs text-slate-500 dark:text-white/50">Profundidade de Scroll</span>
                                                 </div>
-                                                <p className="text-2xl font-bold text-white">{maxScroll}%</p>
-                                                <p className="text-[11px] text-emerald-400 mt-1">
+                                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{maxScroll}%</p>
+                                                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
                                                     {maxScroll >= 90 ? "Excelente engajamento" : maxScroll >= 50 ? "Bom engajamento" : "Baixo engajamento"}
                                                 </p>
                                             </div>
                                             <PlaceholderEngagementCard
-                                                icon={<Volume2 className="w-4 h-4 text-purple-400" />}
+                                                icon={<Volume2 className="w-4 h-4 text-purple-500" />}
                                                 label="Áudio – Produtos"
                                                 pct={0}
                                                 sub="Baixa audiência"
                                             />
                                             <PlaceholderEngagementCard
-                                                icon={<Volume2 className="w-4 h-4 text-pink-400" />}
+                                                icon={<Volume2 className="w-4 h-4 text-pink-500" />}
                                                 label="Áudio – Serviços"
                                                 pct={0}
                                                 sub="Baixa audiência"
                                             />
                                             <PlaceholderEngagementCard
-                                                icon={<Video className="w-4 h-4 text-orange-400" />}
+                                                icon={<Video className="w-4 h-4 text-orange-500" />}
                                                 label="Progresso de Vídeo"
                                                 pct={0}
                                                 sub="Baixa visualização"
@@ -289,10 +300,10 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                             {activeTab === "Dispositivos" && (
                                 <div className="space-y-6">
                                     <div>
-                                        <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-3">Distribuição por Dispositivos</p>
+                                        <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-3">Distribuição por Dispositivos</p>
                                         <div className="grid grid-cols-3 gap-4">
                                             <DeviceCard
-                                                icon={<Monitor className="w-6 h-6 text-blue-400" />}
+                                                icon={<Monitor className="w-6 h-6 text-blue-500" />}
                                                 label="Desktop"
                                                 count={deviceCount.desktop}
                                                 sub="Acessos via computador"
@@ -300,7 +311,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                                 color="blue"
                                             />
                                             <DeviceCard
-                                                icon={<Smartphone className="w-6 h-6 text-emerald-400" />}
+                                                icon={<Smartphone className="w-6 h-6 text-emerald-500" />}
                                                 label="Mobile"
                                                 count={deviceCount.mobile}
                                                 sub="Acessos via celular"
@@ -308,7 +319,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                                 color="emerald"
                                             />
                                             <DeviceCard
-                                                icon={<Tablet className="w-6 h-6 text-amber-400" />}
+                                                icon={<Tablet className="w-6 h-6 text-amber-500" />}
                                                 label="Tablet"
                                                 count={deviceCount.tablet}
                                                 sub="Acessos via tablet"
@@ -319,13 +330,13 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                     </div>
 
                                     <div>
-                                        <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-3">Navegadores Utilizados</p>
+                                        <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-3">Navegadores Utilizados</p>
                                         <div className="flex flex-wrap gap-3">
                                             {Object.entries(browserCount).sort((a, b) => b[1] - a[1]).map(([browser, count]) => (
-                                                <div key={browser} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                                                    <Globe className="w-4 h-4 text-white/40" />
-                                                    <span className="text-sm text-white font-medium">{browser}</span>
-                                                    <span className="text-xs text-white/40 font-mono">{count}x</span>
+                                                <div key={browser} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08]">
+                                                    <Globe className="w-4 h-4 text-slate-400 dark:text-white/40" />
+                                                    <span className="text-sm text-slate-700 dark:text-white font-medium">{browser}</span>
+                                                    <span className="text-xs text-slate-400 dark:text-white/40 font-mono">{count}x</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -336,26 +347,26 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                             {/* ═══ TAB 3 — TRÁFEGO ═══════════════════════════════════════ */}
                             {activeTab === "Tráfego" && (
                                 <div className="space-y-3">
-                                    <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-4">Fontes de Tráfego</p>
+                                    <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-4">Fontes de Tráfego</p>
                                     {Object.entries(trafficCount)
                                         .sort((a, b) => b[1] - a[1])
                                         .map(([source, count]) => (
                                             <div key={source} className="flex items-center gap-4">
                                                 <div className="flex items-center gap-2 w-28 flex-shrink-0">
-                                                    <Globe className="w-3.5 h-3.5 text-white/30" />
-                                                    <span className="text-sm text-white capitalize">{source}</span>
+                                                    <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-white/30" />
+                                                    <span className="text-sm text-slate-700 dark:text-white capitalize">{source}</span>
                                                 </div>
-                                                <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
+                                                <div className="flex-1 h-2 bg-slate-200 dark:bg-white/[0.05] rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-violet-500 rounded-full transition-all duration-500"
                                                         style={{ width: `${(count / trafficMax) * 100}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-sm font-mono text-white/60 w-8 text-right">{count}</span>
+                                                <span className="text-sm font-mono text-slate-500 dark:text-white/60 w-8 text-right">{count}</span>
                                             </div>
                                         ))}
                                     {Object.keys(trafficCount).length === 0 && (
-                                        <p className="text-white/30 text-sm">Sem dados de tráfego ainda.</p>
+                                        <p className="text-slate-400 dark:text-white/30 text-sm">Sem dados de tráfego ainda.</p>
                                     )}
                                 </div>
                             )}
@@ -363,25 +374,25 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                             {/* ═══ TAB 4 — CTAs ══════════════════════════════════════════ */}
                             {activeTab === "CTAs" && (
                                 <div className="space-y-3">
-                                    <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-4">Cliques em CTAs</p>
+                                    <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-4">Cliques em CTAs</p>
                                     {Object.entries(allCTAs).sort((a, b) => b[1] - a[1]).map(([cta, count]) => (
-                                        <div key={cta} className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                                        <div key={cta} className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
                                                     {cta === 'whatsapp'
-                                                        ? <MessageCircle className="w-4 h-4 text-emerald-400" />
+                                                        ? <MessageCircle className="w-4 h-4 text-emerald-500" />
                                                         : cta === 'phone'
-                                                            ? <Zap className="w-4 h-4 text-amber-400" />
-                                                            : <MousePointer2 className="w-4 h-4 text-violet-400" />
+                                                            ? <Zap className="w-4 h-4 text-amber-500" />
+                                                            : <MousePointer2 className="w-4 h-4 text-violet-500" />
                                                     }
                                                 </div>
-                                                <span className="text-sm text-white capitalize font-medium">{cta}</span>
+                                                <span className="text-sm text-slate-700 dark:text-white capitalize font-medium">{cta}</span>
                                             </div>
-                                            <span className="text-lg font-bold text-white font-mono">{count}</span>
+                                            <span className="text-lg font-bold text-slate-900 dark:text-white font-mono">{count}</span>
                                         </div>
                                     ))}
                                     {Object.keys(allCTAs).length === 0 && (
-                                        <p className="text-white/30 text-sm">Nenhum CTA clicado ainda.</p>
+                                        <p className="text-slate-400 dark:text-white/30 text-sm">Nenhum CTA clicado ainda.</p>
                                     )}
                                 </div>
                             )}
@@ -389,27 +400,30 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                             {/* ═══ TAB 5 — SESSÕES ══════════════════════════════════════════ */}
                             {activeTab === "Sessões" && (
                                 <div className="space-y-3">
-                                    <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-4">Sessões Iniciadas Recentes</p>
+                                    <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-4">Sessões Iniciadas Recentes</p>
                                     <div className="space-y-2">
                                         {sessions.map(s => {
                                             const isLive = new Date(s.last_seen_at) > new Date(Date.now() - 2 * 60 * 1000);
                                             const ctaTotal = Object.values(s.cta_clicks || {}).reduce((a, v) => a + v, 0);
                                             return (
-                                                <div key={s.id} className={`p-4 rounded-xl border transition-all ${isLive ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/[0.06] bg-white/[0.02]'}`}>
+                                                <div key={s.id} className={`p-4 rounded-xl border transition-all ${isLive
+                                                    ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5'
+                                                    : 'border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02]'
+                                                    }`}>
                                                     <div className="flex items-start justify-between gap-3 flex-wrap">
                                                         <div className="flex items-center gap-2">
-                                                            {isLive && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />}
-                                                            <CalendarDays className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
-                                                            <span className="text-xs text-white/60 font-mono">{fmtDate(s.started_at)}</span>
+                                                            {isLive && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />}
+                                                            <CalendarDays className="w-3.5 h-3.5 text-slate-400 dark:text-white/30 flex-shrink-0" />
+                                                            <span className="text-xs text-slate-500 dark:text-white/60 font-mono">{fmtDate(s.started_at)}</span>
                                                         </div>
                                                         <div className="flex items-center gap-1">
-                                                            {s.device_type === 'desktop' && <Monitor className="w-3.5 h-3.5 text-blue-400" />}
-                                                            {s.device_type === 'mobile' && <Smartphone className="w-3.5 h-3.5 text-emerald-400" />}
-                                                            {s.device_type === 'tablet' && <Tablet className="w-3.5 h-3.5 text-amber-400" />}
-                                                            <span className="text-xs text-white/50 capitalize">{s.device_type}</span>
-                                                            <span className="text-white/20 mx-1">·</span>
-                                                            <Globe className="w-3 h-3 text-white/30" />
-                                                            <span className="text-xs text-white/40">{s.browser}</span>
+                                                            {s.device_type === 'desktop' && <Monitor className="w-3.5 h-3.5 text-blue-500" />}
+                                                            {s.device_type === 'mobile' && <Smartphone className="w-3.5 h-3.5 text-emerald-500" />}
+                                                            {s.device_type === 'tablet' && <Tablet className="w-3.5 h-3.5 text-amber-500" />}
+                                                            <span className="text-xs text-slate-500 dark:text-white/50 capitalize">{s.device_type}</span>
+                                                            <span className="text-slate-300 dark:text-white/20 mx-1">·</span>
+                                                            <Globe className="w-3 h-3 text-slate-400 dark:text-white/30" />
+                                                            <span className="text-xs text-slate-400 dark:text-white/40">{s.browser}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-wrap gap-4 mt-3">
@@ -442,20 +456,20 @@ function MetricCard({ icon, label, value, sub, color }: {
     color: string;
 }) {
     const colorMap: Record<string, string> = {
-        blue: "bg-blue-500/10 border-blue-500/20",
-        amber: "bg-amber-500/10 border-amber-500/20",
-        cyan: "bg-cyan-500/10 border-cyan-500/20",
-        violet: "bg-violet-500/10 border-violet-500/20",
-        emerald: "bg-emerald-500/10 border-emerald-500/20",
+        blue: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20",
+        amber: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20",
+        cyan: "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-200 dark:border-cyan-500/20",
+        violet: "bg-violet-50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/20",
+        emerald: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20",
     };
     return (
-        <div className={`rounded-xl p-4 border ${colorMap[color] || "bg-white/[0.04] border-white/[0.08]"}`}>
+        <div className={`rounded-xl p-4 border ${colorMap[color] || "bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.08]"}`}>
             <div className="flex items-center gap-2 mb-3">
                 {icon}
-                <span className="text-xs text-white/50">{label}</span>
+                <span className="text-xs text-slate-500 dark:text-white/50">{label}</span>
             </div>
-            <p className="text-2xl font-bold text-white font-mono">{value}</p>
-            <p className="text-[11px] text-white/30 mt-1">{sub}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white font-mono">{value}</p>
+            <p className="text-[11px] text-slate-400 dark:text-white/30 mt-1">{sub}</p>
         </div>
     );
 }
@@ -467,16 +481,16 @@ function PlaceholderEngagementCard({ icon, label, pct, sub }: {
     sub: string;
 }) {
     return (
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 relative overflow-hidden">
+        <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] rounded-xl p-4 relative overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-[10px] text-white/15 font-semibold uppercase tracking-widest rotate-[-20deg]">Em breve</span>
+                <span className="text-[10px] text-slate-300 dark:text-white/15 font-semibold uppercase tracking-widest rotate-[-20deg]">Em breve</span>
             </div>
             <div className="flex items-center gap-2 mb-3">
                 {icon}
-                <span className="text-xs text-white/40">{label}</span>
+                <span className="text-xs text-slate-400 dark:text-white/40">{label}</span>
             </div>
-            <p className="text-2xl font-bold text-white/30 font-mono">Máximo {pct}%</p>
-            <p className="text-[11px] text-white/20 mt-1">{sub}</p>
+            <p className="text-2xl font-bold text-slate-300 dark:text-white/30 font-mono">Máximo {pct}%</p>
+            <p className="text-[11px] text-slate-300 dark:text-white/20 mt-1">{sub}</p>
         </div>
     );
 }
@@ -496,28 +510,28 @@ function DeviceCard({ icon, label, count, sub, total, color }: {
         amber: "bg-amber-500",
     };
     return (
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 text-center">
+        <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-xl p-5 text-center">
             <div className="flex justify-center mb-3">{icon}</div>
-            <p className="text-sm text-white/60 font-medium mb-1">{label}</p>
-            <p className="text-3xl font-bold text-white font-mono">{count}</p>
-            <p className="text-[11px] text-white/30 mt-1">{sub}</p>
-            <div className="mt-3 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+            <p className="text-sm text-slate-500 dark:text-white/60 font-medium mb-1">{label}</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white font-mono">{count}</p>
+            <p className="text-[11px] text-slate-400 dark:text-white/30 mt-1">{sub}</p>
+            <div className="mt-3 h-1 bg-slate-200 dark:bg-white/[0.06] rounded-full overflow-hidden">
                 <div
                     className={`h-full ${colorMap[color] || "bg-violet-500"} rounded-full transition-all duration-500`}
                     style={{ width: `${pct}%` }}
                 />
             </div>
-            <p className="text-[10px] text-white/20 mt-1 font-mono">{pct}% do total</p>
+            <p className="text-[10px] text-slate-400 dark:text-white/20 mt-1 font-mono">{pct}% do total</p>
         </div>
     );
 }
 
 function Pill({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
     return (
-        <div className="flex items-center gap-1.5 text-white/50">
+        <div className="flex items-center gap-1.5 text-slate-400 dark:text-white/50">
             {icon}
             <span className="text-[11px]">{label}:</span>
-            <span className="text-[11px] text-white font-medium">{value}</span>
+            <span className="text-[11px] text-slate-700 dark:text-white font-medium">{value}</span>
         </div>
     );
 }
