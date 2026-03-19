@@ -10,6 +10,7 @@ export default function ProductList() {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<any | null>(null);
     const { data: products = [], isLoading } = useQuery({
         queryKey: ['solarProducts'],
         queryFn: kitService.getProducts
@@ -36,7 +37,13 @@ export default function ProductList() {
 
     const handleAddProduct = () => {
         setIsProductModalOpen(false);
+        setEditingProduct(null);
         queryClient.invalidateQueries({ queryKey: ['solarProducts'] });
+    };
+
+    const handleEditProduct = (product: any) => {
+        setEditingProduct(product);
+        setIsProductModalOpen(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -148,7 +155,12 @@ export default function ProductList() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button type="button" className="p-2 rounded-lg bg-white/5 border border-white/5 text-white/40 hover:text-primary hover:bg-primary/10 hover:border-primary/20 transition-all">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditProduct(product)}
+                                                    className="p-2 rounded-lg bg-white/5 border border-white/5 text-white/40 hover:text-primary hover:bg-primary/10 hover:border-primary/20 transition-all"
+                                                    title="Editar produto"
+                                                >
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                                 <button 
@@ -170,8 +182,9 @@ export default function ProductList() {
 
             <AddProductModal 
                 isOpen={isProductModalOpen} 
-                onClose={() => setIsProductModalOpen(false)} 
+                onClose={() => { setIsProductModalOpen(false); setEditingProduct(null); }} 
                 onAddProduct={handleAddProduct}
+                initialProduct={editingProduct}
             />
 
             {/* Lightbox / Preview */}

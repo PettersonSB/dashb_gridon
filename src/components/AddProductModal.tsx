@@ -8,6 +8,7 @@ interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddProduct?: (product: any) => void;
+  initialProduct?: any; // if provided, modal is in edit mode
 }
 
 const CATEGORIES = [
@@ -20,7 +21,9 @@ const CATEGORIES = [
   'Outros'
 ];
 
-export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddProductModalProps) {
+export default function AddProductModal({ isOpen, onClose, onAddProduct, initialProduct }: AddProductModalProps) {
+  const isEditing = Boolean(initialProduct);
+
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -42,8 +45,25 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddPr
   useEffect(() => {
     if (isOpen) {
       loadBrands();
+      // Pre-populate form when editing
+      if (initialProduct) {
+        setFormData({
+          name: initialProduct.name || '',
+          price: initialProduct.price?.toString() || '',
+          category: initialProduct.category || 'Módulos',
+          brand: initialProduct.brand?.name || '',
+          model: initialProduct.model || '',
+          power: initialProduct.power?.toString() || '',
+          voltage: initialProduct.voltage || '',
+          warranty: initialProduct.warranty?.toString() || '',
+          image_url: initialProduct.image_url || '',
+          description: initialProduct.description || ''
+        });
+      } else {
+        setFormData({ name: '', price: '', category: 'Módulos', brand: '', model: '', power: '', voltage: '', warranty: '', image_url: '', description: '' });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialProduct]);
 
   const loadBrands = async () => {
     try {
@@ -111,41 +131,37 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Find the actual brand ID from the selected brand name
     const selectedBrand = brands.find(b => b.name === formData.brand);
+    const productPayload = {
+        name: formData.name,
+        price: parseFloat(formData.price) || 0,
+        category: formData.category,
+        brand_id: selectedBrand?.id || null,
+        model: formData.model,
+        power: parseFloat(formData.power) || 0,
+        voltage: formData.voltage,
+        warranty: parseInt(formData.warranty) || null,
+        image_url: formData.image_url,
+        description: formData.description
+    };
 
     try {
         setLoadingSubmit(true);
-        const newProduct = {
-            name: formData.name,
-            price: parseFloat(formData.price) || 0,
-            category: formData.category,
-            brand_id: selectedBrand?.id || null,
-            model: formData.model,
-            power: parseFloat(formData.power) || 0,
-            voltage: formData.voltage,
-            warranty: parseInt(formData.warranty) || null,
-            image_url: formData.image_url,
-            description: formData.description
-        };
 
-        await kitService.createProduct(newProduct);
-        
-        emitToast({ title: "Sucesso", description: "Produto cadastrado com sucesso!" });
-        
-        if (onAddProduct) {
-             onAddProduct(formData);
+        if (isEditing && initialProduct?.id) {
+            await kitService.updateProduct(initialProduct.id, productPayload);
+            emitToast({ title: "Sucesso", description: "Produto atualizado com sucesso!" });
+        } else {
+            await kitService.createProduct(productPayload);
+            emitToast({ title: "Sucesso", description: "Produto cadastrado com sucesso!" });
         }
         
-        setFormData({
-            name: '', price: '', category: 'Módulos', brand: '', model: '',
-            power: '', voltage: '', warranty: '', image_url: '', description: ''
-        });
+        if (onAddProduct) onAddProduct(formData);
         onClose();
         
     } catch (error) {
         console.error("Erro ao salvar produto:", error);
-        emitToast({ title: "Erro", description: "Falha ao cadastrar o produto.", variant: "destructive" });
+        emitToast({ title: "Erro", description: `Falha ao ${isEditing ? 'atualizar' : 'cadastrar'} o produto.`, variant: "destructive" });
     } finally {
         setLoadingSubmit(false);
     }
@@ -160,8 +176,8 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddPr
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-slate-900/80 backdrop-blur-md z-10">
           <div>
-            <h3 className="text-xl font-bold text-white font-display">Novo Produto</h3>
-            <p className="text-sm text-white/40">Adicione um novo produto ao seu catálogo.</p>
+            <h3 className="text-xl font-bold text-white font-display">{isEditing ? 'Editar Produto' : 'Novo Produto'}</h3>
+            <p className="text-sm text-white/40">{isEditing ? 'Atualize os dados do produto.' : 'Adicione um novo produto ao seu catálogo.'}</p>
           </div>
           <button 
             onClick={onClose}
@@ -351,7 +367,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddPr
               className="px-8 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white transition-all text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50"
             >
               {loadingSubmit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {loadingSubmit ? "Salvando..." : "Cadastrar"}
+              {loadingSubmit ? "Salvando..." : isEditing ? "Salvar Alterações" : "Cadastrar"}
             </button>
           </div>
         </form>
