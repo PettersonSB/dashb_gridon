@@ -31,6 +31,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
     // Kit Items
     const [items, setItems] = useState<(SolarKitItem & { product: SolarProduct })[]>([]);
     const [selectedProductId, setSelectedProductId] = useState<string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
     
     // Calculated & Manual fields
     const [isPriceAuto, setIsPriceAuto] = useState(true);
@@ -68,6 +69,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
         setImagePreviewUrl(null);
         setDescription('');
         setSelectedProductId('');
+        setSelectedCategory('');
     };
 
     // Load initial data
@@ -341,15 +343,27 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                         Produtos Inclusos *
                     </h4>
                     
-                    {/* Add Product Line */}
+                    {/* Category Filter + Add Product Line */}
                     <div className="flex gap-4">
+                        <select
+                            className="form-input w-48 bg-slate-900 flex-shrink-0"
+                            value={selectedCategory}
+                            onChange={(e) => { setSelectedCategory(e.target.value); setSelectedProductId(''); }}
+                        >
+                            <option value="">Todas as Categorias</option>
+                            {[...new Set(products.map(p => p.category))].sort().map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
                         <select 
                             className="form-input flex-1 bg-slate-900"
                             value={selectedProductId}
                             onChange={(e) => setSelectedProductId(e.target.value)}
                         >
-                            <option value="">-- Selecionar um Produto do Banco de Dados --</option>
-                            {products.map(p => (
+                            <option value="">-- Selecionar um Produto --</option>
+                            {products
+                                .filter(p => !selectedCategory || p.category === selectedCategory)
+                                .map(p => (
                                 <option key={p.id} value={p.id}>
                                     {p.category} | {p.name} {p.brand?.name ? `(${p.brand.name})` : ''} - {p.price.toLocaleString('pt-BR', {style: 'currency', currency:'BRL'})}
                                 </option>
