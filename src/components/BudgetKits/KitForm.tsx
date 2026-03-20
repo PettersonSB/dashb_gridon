@@ -170,22 +170,33 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                 throw new Error("A imagem selecionada é muito grande (Máximo 2MB).");
             }
 
-            let finalImageUrl = '';
+            let finalImageUrl = (initialKit ? imagePreviewUrl || '' : '');
             if (imageFile) {
                 finalImageUrl = await kitService.uploadKitImage(imageFile);
             }
+
+            // Sanitization: Ensure we don't save a temporary blob URL
+            if (finalImageUrl.startsWith('blob:')) {
+                finalImageUrl = initialKit?.image_url || '';
+            }
+
+            // Parsing help: Remove currency symbols and handle comma vs dot
+            const cleanNumeric = (val: string) => {
+                const cleaned = val.toString().replace(/[^\d,.]/g, '').replace(',', '.');
+                return parseFloat(cleaned);
+            };
 
             const payload = {
                 name,
                 system_type: systemType,
                 is_price_auto: isPriceAuto,
                 estimated_generation: Number(estimatedGeneration) || null,
-                system_power: Number(systemPower) || 0,
-                kit_price: Number(kitPrice.toString().replace(/[^\d.]/g, '')),
-                image_url: finalImageUrl || (initialKit ? imagePreviewUrl || '' : ''),
+                system_power: cleanNumeric(systemPower.toString()) || 0,
+                kit_price: cleanNumeric(kitPrice.toString()) || 0,
+                image_url: finalImageUrl,
                 description: description,
                 
-                // Legacy required fields mapping (to avoid DB constraint errors)
+                // Legacy required fields mapping
                 equipment_type: 'Inversor' as const,
                 panel_power: 0,
                 panels_count: 0
@@ -211,9 +222,20 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                 onSuccess();
             }, 1000);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving kit:", error);
-            emitToast({ title: "Erro ao salvar", description: error instanceof Error ? error.message : "Verifique as informações.", variant: "destructive" });
+            
+            // Extract the most helpful message possible
+            let errorMessage = "Verifique as informações.";
+            if (error instanceof Error) errorMessage = error.message;
+            else if (typeof error === 'object' && error !== null && error.message) errorMessage = error.message;
+            else if (typeof error === 'string') errorMessage = error;
+
+            emitToast({ 
+                title: "Erro ao salvar", 
+                description: errorMessage, 
+                variant: "destructive" 
+            });
         } finally {
             setIsSubmitting(false);
         }

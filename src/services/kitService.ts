@@ -71,7 +71,10 @@ export const kitService = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Error updating kit:", error);
+            throw error;
+        }
         
         await this.saveKitItems(id, items);
         
@@ -80,7 +83,11 @@ export const kitService = {
 
     async saveKitItems(kitId: string, items: { product_id: string, quantity: number }[]) {
         // Delete old items
-        await supabase.from('solar_kit_items').delete().eq('kit_id', kitId);
+        const { error: deleteError } = await supabase.from('solar_kit_items').delete().eq('kit_id', kitId);
+        if (deleteError) {
+            console.error("Error deleting old kit items:", deleteError);
+            throw deleteError;
+        }
         
         if (items.length > 0) {
             const newItems = items.map(item => ({
@@ -88,8 +95,11 @@ export const kitService = {
                 product_id: item.product_id,
                 quantity: item.quantity
             }));
-            const { error } = await supabase.from('solar_kit_items').insert(newItems);
-            if (error) throw error;
+            const { error: insertError } = await supabase.from('solar_kit_items').insert(newItems);
+            if (insertError) {
+                console.error("Error inserting new kit items:", insertError);
+                throw insertError;
+            }
         }
     },
 
