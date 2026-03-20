@@ -310,7 +310,10 @@ export default function BudgetList() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white/80">{new Date(budget.created_at).toLocaleDateString('pt-BR')}</div>
-                                                <div className="text-[11px] text-white/40 mt-1">Validade: {budget.proposal_validity_days} dias</div>
+                                                <div className="text-[11px] text-white/40 mt-1 mb-1">Validade: {budget.proposal_validity_days} dias</div>
+                                                <div className="text-[11px] text-primary/80 mt-1 font-medium bg-primary/10 inline-block px-1.5 py-0.5 rounded border border-primary/20">
+                                                    Por: {budget.created_by_name || 'Sistema'}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white font-medium">{budget.kit?.system_power} kWp</div>

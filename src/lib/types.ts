@@ -247,6 +247,8 @@ export interface SolarBudget {
 
     // Auditoria e Joins
     created_by: string | null;
+    created_by_name?: string | null;
+    created_by_avatar?: string | null;
     created_at: string;
     kit?: SolarKit; // For nested joins
 }
