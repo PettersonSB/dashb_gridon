@@ -267,17 +267,27 @@ export default function NewBudget() {
             } else {
                 const createdBudget = await budgetService.createBudget(payload);
 
-                // Upload audio if recorded
+                // Upload audio if recorded (non-blocking)
                 if (audioBlob && createdBudget?.id) {
-                    await budgetService.uploadBudgetAudio(createdBudget.id, audioBlob);
+                    try {
+                        await budgetService.uploadBudgetAudio(createdBudget.id, audioBlob);
+                    } catch (audioErr) {
+                        console.warn('Falha ao enviar áudio:', audioErr);
+                        setError('Orçamento salvo, mas o áudio não foi enviado. Verifique se o bucket "budget_audios" existe no Supabase Storage.');
+                    }
                 }
 
                 setSuccessMessage('Orçamento gerado e salvo com sucesso!');
             }
 
-            // Upload audio for edited budgets
+            // Upload audio for edited budgets (non-blocking)
             if (isEditing && id && audioBlob) {
-                await budgetService.uploadBudgetAudio(id, audioBlob);
+                try {
+                    await budgetService.uploadBudgetAudio(id, audioBlob);
+                } catch (audioErr) {
+                    console.warn('Falha ao enviar áudio na edição:', audioErr);
+                    setError('Orçamento salvo, mas o áudio não foi enviado. Verifique se o bucket "budget_audios" existe no Supabase Storage.');
+                }
             }
 
             // Redireciona para visão geral após 1.5s
