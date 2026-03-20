@@ -18,6 +18,11 @@ const CONSTRUCTION_TYPES = [
 ] as const;
 
 const SUPPLY_TYPES = ['monofasico', 'bifasico', 'trifasico'] as const;
+const SUPPLY_TYPE_LABELS: Record<string, string> = {
+    'monofasico': 'Monofásico',
+    'bifasico': 'Bifásico',
+    'trifasico': 'Trifásico'
+};
 
 export default function NewBudget() {
     const navigate = useNavigate();
@@ -541,7 +546,9 @@ export default function NewBudget() {
                                 required
                             >
                                 {SUPPLY_TYPES.map(type => (
-                                    <option key={type} value={type} className="bg-slate-900 capitalize">{type}</option>
+                                    <option key={type} value={type} className="bg-slate-900">
+                                        {SUPPLY_TYPE_LABELS[type]}
+                                    </option>
                                 ))}
                             </select>
                         </div>

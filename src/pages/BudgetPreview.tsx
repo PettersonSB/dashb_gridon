@@ -6,6 +6,12 @@ import { SolarBudget } from "@/lib/types";
 
 const BUDGET_BASE_URL = "http://gridon.com.br/orcamento";
 
+const SUPPLY_TYPE_LABELS: Record<string, string> = {
+    'monofasico': 'Monofásico',
+    'bifasico': 'Bifásico',
+    'trifasico': 'Trifásico'
+};
+
 function formatCurrency(v?: number | null) {
     if (v === undefined || v === null) return "—";
     return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -188,7 +194,9 @@ export default function BudgetPreview() {
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-white/40">Tipo de Fornecimento</span>
-                                <span className="text-white font-medium capitalize">{budget.supply_type ?? "—"}</span>
+                                <span className="text-white font-medium">
+                                    {budget.supply_type ? (SUPPLY_TYPE_LABELS[budget.supply_type] || budget.supply_type) : "—"}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-white/40">Local</span>
