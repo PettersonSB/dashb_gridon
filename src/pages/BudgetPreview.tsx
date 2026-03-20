@@ -209,7 +209,7 @@ export default function BudgetPreview() {
                             <div className="flex justify-between">
                                 <span className="text-white/40">Garantia Instalação</span>
                                 <span className="text-white font-medium">
-                                    {budget.installation_warranty ? `${budget.installation_warranty} anos` : "—"}
+                                    {budget.installation_warranty ? `${budget.installation_warranty} ${Number(budget.installation_warranty) === 1 ? 'ano' : 'anos'}` : "—"}
                                 </span>
                             </div>
                         </div>
