@@ -226,6 +226,23 @@ export interface SolarBudget {
     installation_notes: string | null;
     status: 'novo' | 'em analise' | 'visualizado' | 'aprovado' | 'recusado' | 'suspenso' | 'vencido';
 
+    // Campos Financeiros e de Customização (Novo)
+    labor_cost?: number;
+    engineering_cost?: number;
+    profit_type?: 'percentage' | 'fixed';
+    profit_value?: number;
+    commission_type?: 'percentage' | 'fixed';
+    commission_value?: number;
+    tax_type?: 'percentage' | 'fixed';
+    tax_value?: number;
+    cash_discount?: number;
+    cash_mode?: 'automatic' | 'manual';
+    cash_manual_value?: number;
+    pix_discount?: number;
+    pix_mode?: 'automatic' | 'manual';
+    pix_manual_value?: number;
+    financing_options?: any[]; // JSONB array
+
     // Auditoria e Joins
     created_by: string | null;
     created_at: string;

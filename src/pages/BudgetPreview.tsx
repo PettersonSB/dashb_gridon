@@ -55,11 +55,30 @@ export default function BudgetPreview() {
         );
     }
 
+    // Reconstrução do valor total (Sistema + Mão de Obra + Margens)
     const kit = budget.kit;
+    const kitPrice = kit?.kit_price || 0;
+    const labor = budget.labor_cost || 0;
+    const engineering = budget.engineering_cost || 0;
+    
+    const profitAmt = budget.profit_type === 'percentage' 
+        ? (kitPrice * (budget.profit_value || 0) / 100) 
+        : (budget.profit_value || 0);
+        
+    const commissionAmt = budget.commission_type === 'percentage' 
+        ? (kitPrice * (budget.commission_value || 0) / 100) 
+        : (budget.commission_value || 0);
+        
+    const taxAmt = budget.tax_type === 'percentage' 
+        ? (kitPrice * (budget.tax_value || 0) / 100) 
+        : (budget.tax_value || 0);
+
+    const finalSystemPrice = kitPrice + labor + engineering + profitAmt + commissionAmt + taxAmt;
+
     const consumption = budget.average_monthly_consumption ?? 200;
-    const monthlySavings = consumption * 0.9 * 0.85 * 0.97;
-    const roi = kit?.kit_price
-        ? Math.round((kit.kit_price / (monthlySavings * 12)) * 10) / 10
+    const monthlySavings = consumption * (budget.energy_tariff || 0.85) * 0.95; // Simplified but consistent with new logic
+    const roi = finalSystemPrice > 0
+        ? Math.round((finalSystemPrice / (monthlySavings * 12)) * 10) / 10
         : null;
     const savings25 = Math.round(monthlySavings * 12 * 25);
 
@@ -281,7 +300,7 @@ export default function BudgetPreview() {
                             <div className="flex justify-between items-center py-2">
                                 <span className="text-sm text-white/50">Investimento Total</span>
                                 <span className="text-base font-bold text-white font-mono">
-                                    {formatCurrency(kit?.kit_price)}
+                                    {formatCurrency(finalSystemPrice)}
                                 </span>
                             </div>
                         </div>
