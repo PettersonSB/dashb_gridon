@@ -85,13 +85,15 @@ export default function NewBudget() {
         enabled: boolean;
         calculationMode: 'automatic' | 'manual';
         manualTotalValue: string;
+        acceptedCards?: string[];
+        interestFree?: boolean;
     }
 
     const [financingOptions, setFinancingOptions] = useState<FinancingOption[]>([
-        { id: 1, name: 'Parcelamento 1', installments: 12, interest: 0, enabled: true, calculationMode: 'automatic', manualTotalValue: '0' },
-        { id: 2, name: 'Parcelamento 2', installments: 24, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0' },
-        { id: 3, name: 'Parcelamento 3', installments: 36, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0' },
-        { id: 4, name: 'Parcelamento 4', installments: 48, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0' }
+        { id: 1, name: 'Parcelamento 1', installments: 12, interest: 0, enabled: true, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false },
+        { id: 2, name: 'Parcelamento 2', installments: 24, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false },
+        { id: 3, name: 'Parcelamento 3', installments: 36, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false },
+        { id: 4, name: 'Parcelamento 4', installments: 48, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false }
     ]);
 
     useEffect(() => {
@@ -272,7 +274,9 @@ export default function NewBudget() {
             interest: 0,
             enabled: false,
             calculationMode: 'automatic',
-            manualTotalValue: '0'
+            manualTotalValue: '0',
+            acceptedCards: [],
+            interestFree: false
         }]);
     };
 
@@ -1126,20 +1130,65 @@ export default function NewBudget() {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={opt.enabled}
-                                                onChange={(e) => {
-                                                    const newOptions = [...financingOptions];
-                                                    newOptions[idx].enabled = e.target.checked;
-                                                    setFinancingOptions(newOptions);
-                                                }}
-                                                className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20"
-                                            />
-                                            <label className="text-xs text-white/70">Habilitar</label>
+                                        <div className="pt-3 border-t border-white/5 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Bandeiras Aceitas</label>
+                                                <div className="flex items-center gap-2">
+                                                    {['mastercard', 'visa', 'elo'].map((brand) => (
+                                                        <button
+                                                            key={brand}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newOptions = [...financingOptions];
+                                                                const currentCards = newOptions[idx].acceptedCards || [];
+                                                                if (currentCards.includes(brand)) {
+                                                                    newOptions[idx].acceptedCards = currentCards.filter((c: string) => c !== brand);
+                                                                } else {
+                                                                    newOptions[idx].acceptedCards = [...currentCards, brand];
+                                                                }
+                                                                setFinancingOptions(newOptions);
+                                                            }}
+                                                            className={`px-2 py-0.5 text-[9px] uppercase font-black rounded-sm transition-all ${
+                                                                (opt.acceptedCards || []).includes(brand) ? 'bg-primary text-black shadow-sm' : 'bg-white/5 text-white/40 hover:bg-white/10'
+                                                            }`}
+                                                        >
+                                                            {brand}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center justify-between">
+                                                 <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={opt.interestFree || false}
+                                                        onChange={(e) => {
+                                                            const newOptions = [...financingOptions];
+                                                            newOptions[idx].interestFree = e.target.checked;
+                                                            setFinancingOptions(newOptions);
+                                                        }}
+                                                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
+                                                    />
+                                                    <label className="text-[11px] text-white/70 font-medium">Oferecer Sem Juros</label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={opt.enabled}
+                                                        onChange={(e) => {
+                                                            const newOptions = [...financingOptions];
+                                                            newOptions[idx].enabled = e.target.checked;
+                                                            setFinancingOptions(newOptions);
+                                                        }}
+                                                        className="w-4 h-4 rounded border-emerald-500/30 bg-white/5 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer"
+                                                    />
+                                                    <label className="text-[11px] text-emerald-500 font-bold">Habilitar Opção</label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+                               
                                 );
                             })}
 
