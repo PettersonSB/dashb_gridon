@@ -145,7 +145,9 @@ export default function ProductList() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="text-sm text-white/70 font-display">{product.power} W</span>
+                                            <span className="text-sm text-white/70 font-display">
+                                                {product.power > 0 ? `${product.power} W` : '-'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className="text-sm text-white/70">{product.voltage || '-'}</span>

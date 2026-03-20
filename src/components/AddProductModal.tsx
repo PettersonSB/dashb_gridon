@@ -31,6 +31,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct, initial
     brand: '',
     model: '',
     power: '',
+    powerUnit: 'W' as 'W' | 'kW' | 'None',
     voltage: '',
     warranty: '',
     image_url: '',
@@ -47,20 +48,37 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct, initial
       loadBrands();
       // Pre-populate form when editing
       if (initialProduct) {
+        let displayPower = initialProduct.power?.toString() || '';
+        let unit: 'W' | 'kW' | 'None' = 'W';
+        
+        const numericPower = initialProduct.power || 0;
+        if (numericPower === 0) {
+          unit = 'None';
+          displayPower = '';
+        } else if (numericPower >= 1000 && numericPower % 10 === 0) {
+          // Guess kW if it's 1000, 1500, 5000 etc.
+          unit = 'kW';
+          displayPower = (numericPower / 1000).toString();
+        }
+
         setFormData({
           name: initialProduct.name || '',
           price: initialProduct.price?.toString() || '',
           category: initialProduct.category || 'Módulos',
           brand: initialProduct.brand?.name || '',
           model: initialProduct.model || '',
-          power: initialProduct.power?.toString() || '',
+          power: displayPower,
+          powerUnit: unit,
           voltage: initialProduct.voltage || '',
           warranty: initialProduct.warranty?.toString() || '',
           image_url: initialProduct.image_url || '',
           description: initialProduct.description || ''
         });
       } else {
-        setFormData({ name: '', price: '', category: 'Módulos', brand: '', model: '', power: '', voltage: '', warranty: '', image_url: '', description: '' });
+        setFormData({ 
+          name: '', price: '', category: 'Módulos', brand: '', model: '', 
+          power: '', powerUnit: 'W', voltage: '', warranty: '', image_url: '', description: '' 
+        });
       }
     }
   }, [isOpen, initialProduct]);
@@ -138,7 +156,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct, initial
         category: formData.category,
         brand_id: selectedBrand?.id || null,
         model: formData.model,
-        power: parseFloat(formData.power) || 0,
+        power: formData.powerUnit === 'None' ? 0 : (formData.powerUnit === 'kW' ? (parseFloat(formData.power.replace(',', '.')) * 1000) : parseFloat(formData.power.replace(',', '.'))) || 0,
         voltage: formData.voltage,
         warranty: parseInt(formData.warranty) || null,
         image_url: formData.image_url,
@@ -279,13 +297,25 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct, initial
             {/* Potência */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/70">Potência</label>
-              <input 
-                type="text"
-                value={formData.power}
-                onChange={(e) => setFormData({...formData, power: e.target.value})}
-                className="form-input"
-                placeholder="Ex: 550 Wp, 5 kW"
-              />
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  disabled={formData.powerUnit === 'None'}
+                  value={formData.power}
+                  onChange={(e) => setFormData({...formData, power: e.target.value})}
+                  className={`form-input flex-1 ${formData.powerUnit === 'None' ? 'opacity-50 cursor-not-allowed bg-white/5' : ''}`}
+                  placeholder={formData.powerUnit === 'kW' ? "Ex: 5" : "Ex: 550"}
+                />
+                <select
+                  value={formData.powerUnit}
+                  onChange={(e) => setFormData({...formData, powerUnit: e.target.value as any})}
+                  className="form-input w-32 bg-slate-900 border-white/10"
+                >
+                  <option value="W">W</option>
+                  <option value="kW">kW</option>
+                  <option value="None">Sem Potência</option>
+                </select>
+              </div>
             </div>
 
             {/* Tensão */}
