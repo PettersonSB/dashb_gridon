@@ -238,9 +238,11 @@ export interface SolarBudget {
     cash_discount?: number;
     cash_mode?: 'automatic' | 'manual';
     cash_manual_value?: number;
+    cash_enabled?: boolean;
     pix_discount?: number;
     pix_mode?: 'automatic' | 'manual';
     pix_manual_value?: number;
+    pix_enabled?: boolean;
     financing_options?: any[]; // JSONB array
 
     // Auditoria e Joins

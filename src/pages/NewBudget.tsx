@@ -70,10 +70,12 @@ export default function NewBudget() {
     const [cashDiscount, setCashDiscount] = useState<string>('0');
     const [cashMode, setCashMode] = useState<'automatic' | 'manual'>('automatic');
     const [cashManualValue, setCashManualValue] = useState<string>('0');
+    const [cashEnabled, setCashEnabled] = useState<boolean>(true);
 
     const [pixDiscount, setPixDiscount] = useState<string>('0');
     const [pixMode, setPixMode] = useState<'automatic' | 'manual'>('automatic');
     const [pixManualValue, setPixManualValue] = useState<string>('0');
+    const [pixEnabled, setPixEnabled] = useState<boolean>(true);
     
     interface FinancingOption {
         id: number;
@@ -149,10 +151,12 @@ export default function NewBudget() {
             setCashDiscount(budgetData.cash_discount?.toString() || '0');
             setCashMode(budgetData.cash_mode || 'automatic');
             setCashManualValue(budgetData.cash_manual_value?.toString() || '0');
+            setCashEnabled(budgetData.cash_enabled ?? true);
             
             setPixDiscount(budgetData.pix_discount?.toString() || '0');
             setPixMode(budgetData.pix_mode || 'automatic');
             setPixManualValue(budgetData.pix_manual_value?.toString() || '0');
+            setPixEnabled(budgetData.pix_enabled ?? true);
 
             if (budgetData.financing_options && Array.isArray(budgetData.financing_options)) {
                 // Mesclar opções salvas com estrutura padrão para garantir todos campos (ex: manualTotalValue)
@@ -229,9 +233,11 @@ export default function NewBudget() {
                 cash_discount: Number(cashDiscount),
                 cash_mode: cashMode,
                 cash_manual_value: Number(cashManualValue),
+                cash_enabled: cashEnabled,
                 pix_discount: Number(pixDiscount),
                 pix_mode: pixMode,
                 pix_manual_value: Number(pixManualValue),
+                pix_enabled: pixEnabled,
                 financing_options: financingOptions
             };
 
@@ -924,6 +930,15 @@ export default function NewBudget() {
                                         </div>
                                     </div>
                                 )}
+                                <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                    <input
+                                        type="checkbox"
+                                        checked={cashEnabled}
+                                        onChange={(e) => setCashEnabled(e.target.checked)}
+                                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
+                                    />
+                                    <label className="text-xs text-white/70">Habilitar</label>
+                                </div>
                             </div>
 
                             {/* Pix */}
@@ -986,6 +1001,15 @@ export default function NewBudget() {
                                         </div>
                                     </div>
                                 )}
+                                <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                    <input
+                                        type="checkbox"
+                                        checked={pixEnabled}
+                                        onChange={(e) => setPixEnabled(e.target.checked)}
+                                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
+                                    />
+                                    <label className="text-xs text-white/70">Habilitar</label>
+                                </div>
                             </div>
 
                             {/* Opções de Parcelamento */}
