@@ -39,7 +39,7 @@ export const kitService = {
                 *,
                 equipment_brand:equipment_brand_id(id, name),
                 panel_brand:panel_brand_id(id, name),
-                items:solar_kit_items(id, quantity, product:product_id(*, brand:brand_id(name)))
+                items:solar_kit_items(id, quantity, product_id, product:product_id(*, brand:brand_id(name)))
             `)
             .order('created_at', { ascending: false });
 

@@ -203,7 +203,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
             };
 
             const itemsPayload = items.map(i => ({
-                product_id: i.product_id,
+                product_id: i.product_id || i.product?.id,
                 quantity: i.quantity
             }));
 
