@@ -476,12 +476,27 @@ export default function NewBudget() {
                                 required
                             >
                                 <option value="" disabled className="bg-slate-900">Selecione um Kit Cadastrado</option>
-                                {availableKits.map(kit => (
-                                    <option key={kit.id} value={kit.id} className="bg-slate-900">
-                                        {kit.system_power}kWp - {kit.equipment_type} {kit.equipment_brand?.name || ''}
-                                        &nbsp;(R$ {Number(kit.kit_price).toLocaleString('pt-BR')})
-                                    </option>
-                                ))}
+                                {availableKits.map(kit => {
+                                    const items = kit.items || [];
+                                    const inv = items.find(i => i.product?.category.toLowerCase().includes('inversor') || i.product?.category.toLowerCase().includes('micro'));
+                                    const panels = items.filter(i => i.product?.category.toLowerCase().includes('módulo') || i.product?.category.toLowerCase().includes('placa'));
+                                    const totalPanels = panels.reduce((s, i) => s + i.quantity, 0);
+                                    const mainPanel = panels[0]?.product;
+
+                                    const invText = inv 
+                                        ? `${inv.product?.name} ${inv.product?.brand?.name || ''}`.trim()
+                                        : `${kit.equipment_type || ''} ${kit.equipment_brand?.name || ''}`.trim();
+                                    
+                                    const panelsText = totalPanels > 0
+                                        ? `${totalPanels} placas ${mainPanel?.power}W ${mainPanel?.brand?.name || ''}`.trim()
+                                        : `${kit.panels_count || ''} placas ${kit.panel_power || ''}W ${kit.panel_brand?.name || ''}`.trim();
+
+                                    return (
+                                        <option key={kit.id} value={kit.id} className="bg-slate-900">
+                                            {kit.system_power}kWp - {invText || 'Equipamento'} - {panelsText || 'Módulos'} - {Number(kit.kit_price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             {availableKits.length === 0 && (
                                 <p className="text-xs text-red-400 mt-1">Nenhum kit encontrado. Cadastre um Kit Solar primeiro.</p>
