@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus } from 'lucide-react';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2 } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
 import { kitService } from '@/services/kitService';
 import { SolarBudget, SolarKit } from '@/lib/types';
+import AudioRecorderModal from '@/components/AudioRecorderModal';
 
 const INSTALLATION_LOCATIONS = [
     'telhado fibrocimento', 'telhado colonial', 'telhado de concreto',
@@ -56,6 +57,13 @@ export default function NewBudget() {
     const [selectedKitId, setSelectedKitId] = useState('');
     const [validityDays, setValidityDays] = useState('7');
     const [notes, setNotes] = useState('');
+
+    // Audio state
+    const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+    const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+    const [existingAudioUrl, setExistingAudioUrl] = useState<string | null>(null);
+    const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+    const [previewAudioEl, setPreviewAudioEl] = useState<HTMLAudioElement | null>(null);
     const [includeNotes, setIncludeNotes] = useState(true);
 
     // Form State - Financial
@@ -165,6 +173,11 @@ export default function NewBudget() {
             setPixManualValue(budgetData.pix_manual_value?.toString() || '0');
             setPixEnabled(budgetData.pix_enabled ?? true);
 
+            // Audio
+            if (budgetData.audio_url) {
+                setExistingAudioUrl(budgetData.audio_url);
+            }
+
             if (budgetData.financing_options && Array.isArray(budgetData.financing_options)) {
                 // Mesclar opções salvas com estrutura padrão para garantir todos campos (ex: manualTotalValue)
                 const merged = [1, 2, 3, 4].map(id => {
@@ -252,8 +265,19 @@ export default function NewBudget() {
                 await budgetService.updateBudget(id, payload);
                 setSuccessMessage('Orçamento atualizado com sucesso!');
             } else {
-                await budgetService.createBudget(payload);
+                const createdBudget = await budgetService.createBudget(payload);
+
+                // Upload audio if recorded
+                if (audioBlob && createdBudget?.id) {
+                    await budgetService.uploadBudgetAudio(createdBudget.id, audioBlob);
+                }
+
                 setSuccessMessage('Orçamento gerado e salvo com sucesso!');
+            }
+
+            // Upload audio for edited budgets
+            if (isEditing && id && audioBlob) {
+                await budgetService.uploadBudgetAudio(id, audioBlob);
             }
 
             // Redireciona para visão geral após 1.5s
@@ -650,6 +674,79 @@ export default function NewBudget() {
                                     placeholder="Escreva aqui detalhes adicionais do serviço (ex: estrutura necessária, aterramento, prazos específicos...)"
                                 />
                             </div>
+                        )}
+                    </div>
+
+                    {/* Bloco: Áudio Explicativo */}
+                    <div className="mt-6 pt-6 border-t border-white/[0.06]">
+                        <h4 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+                            <Mic className="w-4 h-4 text-primary" />
+                            Áudio Explicativo do Orçamento
+                        </h4>
+                        
+                        {(existingAudioUrl || audioBlob) ? (
+                            <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl p-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const url = audioBlob ? URL.createObjectURL(audioBlob) : existingAudioUrl;
+                                        if (!url) return;
+                                        if (isPlayingPreview && previewAudioEl) {
+                                            previewAudioEl.pause();
+                                            setIsPlayingPreview(false);
+                                        } else {
+                                            const audio = new Audio(url);
+                                            audio.onended = () => setIsPlayingPreview(false);
+                                            audio.play();
+                                            setPreviewAudioEl(audio);
+                                            setIsPlayingPreview(true);
+                                        }
+                                    }}
+                                    className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center text-primary transition-all"
+                                >
+                                    {isPlayingPreview ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                                </button>
+                                <div className="flex-1">
+                                    <p className="text-sm text-white/80 font-medium">Áudio gravado</p>
+                                    <p className="text-xs text-white/40">Clique para ouvir ou regravar</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAudioRecorder(true)}
+                                    className="text-xs text-primary hover:text-primary/80 font-medium px-3 py-1.5 bg-primary/10 rounded-lg transition-colors"
+                                >
+                                    Regravar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (previewAudioEl) { previewAudioEl.pause(); setIsPlayingPreview(false); }
+                                        setAudioBlob(null);
+                                        if (isEditing && id && existingAudioUrl) {
+                                            await budgetService.deleteBudgetAudio(id);
+                                        }
+                                        setExistingAudioUrl(null);
+                                    }}
+                                    className="w-9 h-9 rounded-full bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all"
+                                    title="Excluir áudio"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setShowAudioRecorder(true)}
+                                className="w-full bg-white/[0.03] border border-dashed border-white/10 hover:border-primary/30 hover:bg-primary/5 rounded-xl p-4 flex items-center gap-3 transition-all group"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                                    <Mic className="w-5 h-5 text-primary" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm text-white/70 font-medium">Gravar Áudio Explicativo</p>
+                                    <p className="text-xs text-white/30">Grave uma mensagem personalizada de até 1 minuto</p>
+                                </div>
+                            </button>
                         )}
                     </div>
 
@@ -1220,6 +1317,21 @@ export default function NewBudget() {
                     </div>
                 </div>
             </form>
+
+            {/* Audio Recorder Modal */}
+            <AudioRecorderModal
+                isOpen={showAudioRecorder}
+                onClose={() => setShowAudioRecorder(false)}
+                onSave={(blob) => {
+                    setAudioBlob(blob);
+                    setShowAudioRecorder(false);
+                }}
+                existingAudioUrl={existingAudioUrl}
+                onDelete={() => {
+                    setAudioBlob(null);
+                    setExistingAudioUrl(null);
+                }}
+            />
         </div>
     );
 }

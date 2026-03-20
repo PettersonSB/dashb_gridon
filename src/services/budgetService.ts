@@ -102,5 +102,52 @@ export const budgetService = {
             .eq('id', id);
 
         if (error) throw error;
+    },
+
+    async uploadBudgetAudio(budgetId: string, audioBlob: Blob): Promise<string> {
+        const fileName = `${budgetId}/audio_${Date.now()}.webm`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('budget_audios')
+            .upload(fileName, audioBlob, {
+                contentType: 'audio/webm',
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+            .from('budget_audios')
+            .getPublicUrl(fileName);
+
+        const audioUrl = publicUrlData.publicUrl;
+
+        // Atualizar o registro do orçamento com a URL do áudio
+        await supabase
+            .from('solar_budgets')
+            .update({ audio_url: audioUrl })
+            .eq('id', budgetId);
+
+        return audioUrl;
+    },
+
+    async deleteBudgetAudio(budgetId: string) {
+        // Listar e excluir todos os arquivos do pasta do orçamento
+        const { data: files } = await supabase.storage
+            .from('budget_audios')
+            .list(budgetId);
+
+        if (files && files.length > 0) {
+            const filePaths = files.map(f => `${budgetId}/${f.name}`);
+            await supabase.storage
+                .from('budget_audios')
+                .remove(filePaths);
+        }
+
+        // Limpar a referência no banco
+        await supabase
+            .from('solar_budgets')
+            .update({ audio_url: null })
+            .eq('id', budgetId);
     }
 };

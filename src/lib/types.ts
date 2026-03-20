@@ -249,6 +249,7 @@ export interface SolarBudget {
     created_by: string | null;
     created_by_name?: string | null;
     created_by_avatar?: string | null;
+    audio_url?: string | null;
     created_at: string;
     kit?: SolarKit; // For nested joins
 }
