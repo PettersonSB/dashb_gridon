@@ -51,12 +51,33 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
                     </div>
                     <div className="p-5 flex-1 flex flex-col">
                         <div className="flex-1">
-                            <h3 className="font-display font-bold text-lg text-white mb-1 line-clamp-1">
-                                {kit.equipment_type} {kit.equipment_brand?.name}
-                            </h3>
-                            <p className="text-sm text-white/50 mb-4">
-                                {kit.panels_count}x Placas {kit.panel_power}W ({kit.panel_brand?.name})
-                            </p>
+                            {(() => {
+                                const items = kit.items || [];
+                                const inv = items.find(i => i.product?.category.toLowerCase().includes('inversor') || i.product?.category.toLowerCase().includes('micro'));
+                                const panels = items.filter(i => i.product?.category.toLowerCase().includes('módulo') || i.product?.category.toLowerCase().includes('placa'));
+                                const totalPanels = panels.reduce((s, i) => s + i.quantity, 0);
+                                const mainPanel = panels[0]?.product;
+
+                                const equipmentDisplay = inv 
+                                    ? `${inv.product?.name} ${inv.product?.brand?.name ? `(${inv.product.brand.name})` : ''}`
+                                    : `${kit.equipment_type || 'Inversor'} ${kit.equipment_brand?.name || ''}`;
+                                
+                                const panelsDisplay = totalPanels > 0
+                                    ? `${totalPanels}x Placas ${mainPanel?.power}W ${mainPanel?.brand?.name ? `(${mainPanel.brand.name})` : ''}`
+                                    : `${kit.panels_count || 0}x Placas ${kit.panel_power || 0}W ${kit.panel_brand?.name ? `(${kit.panel_brand.name})` : ''}`;
+
+                                return (
+                                    <>
+                                        <h3 className="font-display font-bold text-lg text-white mb-1 line-clamp-1" title={equipmentDisplay}>
+                                            {equipmentDisplay}
+                                        </h3>
+                                        <p className="text-sm text-white/50 mb-4 truncate" title={panelsDisplay}>
+                                            {panelsDisplay}
+                                        </p>
+                                    </>
+                                );
+                            })()}
+                            
                             <div className="flex flex-col gap-1.5 mb-6 text-sm">
                                 <div className="flex justify-between items-center text-white/70">
                                     <span>Geração Mensal:</span>
