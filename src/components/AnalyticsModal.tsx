@@ -91,8 +91,10 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             .eq("event_type", "audio_progress");
         
         if (data && data.length > 0) {
-            const maxPct = Math.max(...data.map(e => (e.event_data as any)?.percentage || 0));
-            setMaxAudioPct(maxPct);
+            const maxPct = Math.max(...data.map(e => (e.event_data as any)?.milestone || 0));
+            if (isFinite(maxPct)) {
+                setMaxAudioPct(maxPct);
+            }
         }
     };
 
