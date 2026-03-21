@@ -69,6 +69,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
     const [isLoading, setIsLoading] = useState(true);
     const [liveCount, setLiveCount] = useState(0);
     const [maxAudioPct, setMaxAudioPct] = useState(0);
+    const [maxVideoPct, setMaxVideoPct] = useState(0);
     const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
     const eventsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -83,25 +84,36 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
         setIsLoading(false);
     };
 
-    const fetchAudioEvents = async () => {
-        const { data } = await supabase
+    const fetchMediaEvents = async () => {
+        // Fetch audio progress
+        const { data: audioData } = await supabase
             .from("budget_events")
             .select("event_data")
             .eq("budget_id", budgetId)
             .eq("event_type", "audio_progress");
         
-        if (data && data.length > 0) {
-            const maxPct = Math.max(...data.map(e => (e.event_data as any)?.milestone || 0));
-            if (isFinite(maxPct)) {
-                setMaxAudioPct(maxPct);
-            }
+        if (audioData && audioData.length > 0) {
+            const maxPct = Math.max(...audioData.map(e => (e.event_data as any)?.milestone || 0));
+            if (isFinite(maxPct)) setMaxAudioPct(maxPct);
+        }
+
+        // Fetch video progress
+        const { data: videoData } = await supabase
+            .from("budget_events")
+            .select("event_data")
+            .eq("budget_id", budgetId)
+            .eq("event_type", "video_progress");
+        
+        if (videoData && videoData.length > 0) {
+            const maxPct = Math.max(...videoData.map(e => (e.event_data as any)?.milestone || 0));
+            if (isFinite(maxPct)) setMaxVideoPct(maxPct);
         }
     };
 
     // ─── Realtime subscription ───────────────────────────────────────
     useEffect(() => {
         fetchSessions();
-        fetchAudioEvents();
+        fetchMediaEvents();
 
         channelRef.current = supabase
             .channel(`analytics-${budgetId}`)
@@ -130,7 +142,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                     filter: `budget_id=eq.${budgetId}`,
                 },
                 () => {
-                    fetchAudioEvents();
+                    fetchMediaEvents();
                 }
             )
             .subscribe();
@@ -320,11 +332,11 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                                 pct={0}
                                                 sub="Baixa audiência"
                                             />
-                                            <PlaceholderEngagementCard
+                                            <EngagementCard
                                                 icon={<Video className="w-4 h-4 text-orange-500" />}
                                                 label="Progresso de Vídeo"
-                                                pct={0}
-                                                sub="Baixa visualização"
+                                                pct={maxVideoPct}
+                                                sub={maxVideoPct > 0 ? "Assistido pelo cliente" : "Ainda não assistido"}
                                             />
                                         </div>
                                     </div>
