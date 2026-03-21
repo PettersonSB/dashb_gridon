@@ -68,7 +68,9 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
     const [sessions, setSessions] = useState<BudgetSession[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [liveCount, setLiveCount] = useState(0);
+    const [maxAudioPct, setMaxAudioPct] = useState(0);
     const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+    const eventsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
     // ─── Load initial data ───────────────────────────────────────────
     const fetchSessions = async () => {
@@ -81,9 +83,23 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
         setIsLoading(false);
     };
 
+    const fetchAudioEvents = async () => {
+        const { data } = await supabase
+            .from("budget_events")
+            .select("event_data")
+            .eq("budget_id", budgetId)
+            .eq("event_type", "audio_progress");
+        
+        if (data && data.length > 0) {
+            const maxPct = Math.max(...data.map(e => (e.event_data as any)?.percentage || 0));
+            setMaxAudioPct(maxPct);
+        }
+    };
+
     // ─── Realtime subscription ───────────────────────────────────────
     useEffect(() => {
         fetchSessions();
+        fetchAudioEvents();
 
         channelRef.current = supabase
             .channel(`analytics-${budgetId}`)
@@ -101,6 +117,22 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             )
             .subscribe();
 
+        eventsChannelRef.current = supabase
+            .channel(`analytics-events-${budgetId}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "budget_events",
+                    filter: `budget_id=eq.${budgetId}`,
+                },
+                () => {
+                    fetchAudioEvents();
+                }
+            )
+            .subscribe();
+
         const liveInterval = setInterval(() => {
             const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
             const live = sessions.filter(s => s.last_seen_at > twoMinAgo).length;
@@ -109,6 +141,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
 
         return () => {
             channelRef.current?.unsubscribe();
+            eventsChannelRef.current?.unsubscribe();
             clearInterval(liveInterval);
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -273,11 +306,11 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                                     {maxScroll >= 90 ? "Excelente engajamento" : maxScroll >= 50 ? "Bom engajamento" : "Baixo engajamento"}
                                                 </p>
                                             </div>
-                                            <PlaceholderEngagementCard
+                                            <EngagementCard
                                                 icon={<Volume2 className="w-4 h-4 text-purple-500" />}
-                                                label="Áudio – Produtos"
-                                                pct={0}
-                                                sub="Baixa audiência"
+                                                label="Áudio – Orçamento"
+                                                pct={maxAudioPct}
+                                                sub={maxAudioPct > 0 ? "Ouvido pelo cliente" : "Ainda não ouvido"}
                                             />
                                             <PlaceholderEngagementCard
                                                 icon={<Volume2 className="w-4 h-4 text-pink-500" />}
@@ -491,6 +524,24 @@ function PlaceholderEngagementCard({ icon, label, pct, sub }: {
             </div>
             <p className="text-2xl font-bold text-slate-300 dark:text-white/30 font-mono">Máximo {pct}%</p>
             <p className="text-[11px] text-slate-300 dark:text-white/20 mt-1">{sub}</p>
+        </div>
+    );
+}
+
+function EngagementCard({ icon, label, pct, sub }: {
+    icon: React.ReactNode;
+    label: string;
+    pct: number;
+    sub: string;
+}) {
+    return (
+        <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+                {icon}
+                <span className="text-xs text-slate-500 dark:text-white/50">{label}</span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white font-mono">{pct}%</p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">{sub}</p>
         </div>
     );
 }
