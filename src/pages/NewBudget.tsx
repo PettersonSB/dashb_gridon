@@ -47,7 +47,7 @@ export default function NewBudget() {
 
     // Form State - Installation
     const [averageMonthlyConsumption, setAverageMonthlyConsumption] = useState('');
-    const [energyTariff, setEnergyTariff] = useState('0.85'); // default value
+    const [energyTariff, setEnergyTariff] = useState('1.10'); // default value
     const [installationLocation, setInstallationLocation] = useState<SolarBudget['installation_location']>('telhado colonial');
     const [constructionType, setConstructionType] = useState<SolarBudget['construction_type']>('residencial');
     const [supplyType, setSupplyType] = useState<SolarBudget['supply_type']>('monofasico');
@@ -158,7 +158,7 @@ export default function NewBudget() {
             setCustomerEmail(budgetData.customer_email || '');
 
             setAverageMonthlyConsumption(budgetData.average_monthly_consumption?.toString() || '');
-            setEnergyTariff(budgetData.energy_tariff?.toString() || '0.85');
+            setEnergyTariff(budgetData.energy_tariff?.toString() || '1.10');
             setInstallationLocation(budgetData.installation_location);
             setConstructionType(budgetData.construction_type);
             setSupplyType(budgetData.supply_type);
@@ -266,7 +266,7 @@ export default function NewBudget() {
                 customer_email: customerEmail || null,
 
                 average_monthly_consumption: averageMonthlyConsumption ? Number(averageMonthlyConsumption) : null,
-                energy_tariff: energyTariff ? Number(energyTariff.replace(',', '.')) : 0.85,
+                energy_tariff: energyTariff ? Number(energyTariff.replace(',', '.')) : 1.10,
                 installation_location: installationLocation,
                 construction_type: constructionType,
                 supply_type: supplyType,
@@ -572,7 +572,7 @@ export default function NewBudget() {
                                 type="number"
                                 value={energyTariff}
                                 onChange={(e) => setEnergyTariff(e.target.value)}
-                                placeholder="Ex: 0.85"
+                                placeholder="Ex: 1.10"
                                 className="form-input bg-emerald-500/5 focus:bg-emerald-500/10 border-emerald-500/20 text-white"
                                 min="0"
                                 step="0.01"
