@@ -176,7 +176,7 @@ export default function BudgetOverview() {
             <div className="glass-card p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-display font-semibold text-white">Solicitações Recentes</h3>
-                    <Link to="/budgets" className="text-sm text-primary hover:text-white transition-colors">Ver todas</Link>
+                    <Link to="/budget/list" className="text-sm text-primary hover:text-white transition-colors">Ver todas</Link>
                 </div>
 
                 <div className="overflow-x-auto">
