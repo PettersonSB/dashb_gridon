@@ -2,11 +2,15 @@ import React, { useState } from "react";
 import { NavLink, useLocation, Link } from "react-router-dom";
 import { sidebarItems } from "@/data/sidebarItems";
 import { useAuth } from "@/contexts/AuthContext";
-import { Zap, LogOut, ChevronDown, Calculator, Grid, Settings } from "lucide-react";
+import { LogOut, ChevronDown, Settings, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-const Sidebar = () => {
+const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: () => void }) => {
     const { user, signOut } = useAuth();
     const location = useLocation();
+    
+    // Manage hover state
+    const [isHovered, setIsHovered] = useState(false);
+    const isExpanded = isPinned || isHovered;
 
     // Group items
     const landingPageGroups: Record<string, typeof sidebarItems> = {};
@@ -67,14 +71,33 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-background dark:bg-[hsl(228,25%,7%)] border-r border-border dark:border-white/[0.04] flex flex-col z-40">
+        <aside 
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className={`fixed left-0 top-0 bottom-0 bg-background dark:bg-[hsl(228,25%,7%)] border-r border-border dark:border-white/[0.04] flex flex-col z-40 transition-all duration-300 ease-in-out ${isExpanded ? "w-64" : "w-[72px]"}`}
+        >
             {/* Logo */}
-            <div className="h-20 flex items-center justify-center border-b border-white/[0.04] px-4">
-                <img
-                    src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-CuReGPKe.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLUN1UmVHUEtlLnBuZyIsImlhdCI6MTc3MjkzNDQwNCwiZXhwIjo0OTI2NTM0NDA0fQ.O2WN8HLKj9zWa95-AVfUtG0qKGGP8lIT6YjdUpSC0GI"
-                    alt="Gridon"
-                    className="h-10 w-auto object-contain dark:brightness-0 dark:invert opacity-90 transition-all"
-                />
+            <div className="h-20 flex items-center justify-between border-b border-white/[0.04] px-4 overflow-hidden">
+                <div className={`flex items-center transition-all duration-300 ${isExpanded ? "w-auto" : "w-10 justify-center"}`}>
+                    {isExpanded ? (
+                        <img
+                            src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-CuReGPKe.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLUN1UmVHUEtlLnBuZyIsImlhdCI6MTc3MjkzNDQwNCwiZXhwIjo0OTI2NTM0NDA0fQ.O2WN8HLKj9zWa95-AVfUtG0qKGGP8lIT6YjdUpSC0GI"
+                            alt="Gridon"
+                            className="h-10 w-auto object-contain dark:brightness-0 dark:invert opacity-90 transition-all"
+                        />
+                    ) : (
+                        <img
+                            src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-raio.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLXJhaW8ucG5nIiwiaWF0IjoxNzc0NTc4Njg3LCJleHAiOjMxNzEwMzA0MjY4N30.BVUbUhx5yvShqLKL1tBR2xXlIhGZk8VOX4aCREeDYEA"
+                            alt="Gridon"
+                            className="h-8 w-8 object-contain transition-all"
+                        />
+                    )}
+                </div>
+                {isExpanded && (
+                    <button onClick={onTogglePin} className="text-white/40 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+                        {isPinned ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+                    </button>
+                )}
             </div>
 
             {/* Nav */}
@@ -84,36 +107,40 @@ const Sidebar = () => {
                         key={item.href}
                         to={item.href}
                         end={item.href === "/"}
+                        title={!isExpanded ? item.label : undefined}
                         className={({ isActive }) =>
-                            `sidebar-item ${isActive ? "active" : ""}`
+                            `sidebar-item flex items-center gap-3 ${isActive ? "active" : ""} ${!isExpanded ? "!justify-center !px-0" : ""}`
                         }
                     >
                         <item.icon className="w-5 h-5 flex-shrink-0" />
-                        {item.label}
+                        {isExpanded && <span className="truncate">{item.label}</span>}
                     </NavLink>
                 ))}
 
                 {/* Landing Page Master Dropdown */}
                 <div className="pt-2 pb-2">
                     <button
-                        onClick={toggleLandingPage}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${isLandingPageRelated(location.pathname) && !isLandingPageOpen
+                        onClick={isExpanded ? toggleLandingPage : undefined}
+                        title={!isExpanded ? "Landing page" : undefined}
+                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${isLandingPageRelated(location.pathname) && (!isExpanded || !isLandingPageOpen)
                             ? "bg-primary/10 text-primary" // Active but collapsed state
                             : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                             }`}
                     >
-                        <div className="flex items-center gap-3">
+                        <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
                             {/* Assuming the first item is the landing page root to borrow its icon */}
                             {sidebarItems.find(i => i.label === "Landing page")?.icon && React.createElement(sidebarItems.find(i => i.label === "Landing page")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
-                            <span className="font-medium">Landing page</span>
+                            {isExpanded && <span className="font-medium truncate">Landing page</span>}
                         </div>
-                        <ChevronDown
-                            className={`w-4 h-4 transition-transform duration-200 ${isLandingPageOpen ? 'rotate-180' : ''}`}
-                        />
+                        {isExpanded && (
+                            <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isLandingPageOpen ? 'rotate-180' : ''}`}
+                            />
+                        )}
                     </button>
 
                     <div
-                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${isLandingPageOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isLandingPageOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
                             }`}
                     >
                         {/* Direct Landing Page Link inside the dropdown */}
@@ -169,23 +196,26 @@ const Sidebar = () => {
                 {/* Orçamento Master Dropdown */}
                 <div className="pt-2 pb-2">
                     <button
-                        onClick={toggleBudget}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${location.pathname.startsWith('/budget') && !isBudgetOpen
+                        onClick={isExpanded ? toggleBudget : undefined}
+                        title={!isExpanded ? "Orçamento" : undefined}
+                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/budget') && (!isExpanded || !isBudgetOpen)
                             ? "bg-primary/10 text-primary" // Active but collapsed state
                             : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                             }`}
                     >
-                        <div className="flex items-center gap-3">
+                        <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
                             {sidebarItems.find(i => i.label === "Orçamento")?.icon && React.createElement(sidebarItems.find(i => i.label === "Orçamento")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
-                            <span className="font-medium">Orçamento</span>
+                            {isExpanded && <span className="font-medium truncate">Orçamento</span>}
                         </div>
-                        <ChevronDown
-                            className={`w-4 h-4 transition-transform duration-200 ${isBudgetOpen ? 'rotate-180' : ''}`}
-                        />
+                        {isExpanded && (
+                            <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isBudgetOpen ? 'rotate-180' : ''}`}
+                            />
+                        )}
                     </button>
 
                     <div
-                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${isBudgetOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isBudgetOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
                             }`}
                     >
                         {/* Orçamento nested items */}
@@ -219,9 +249,9 @@ const Sidebar = () => {
             </nav>
 
             {/* Footer - User + Sign Out */}
-            <div className="px-4 py-4 border-t border-white/[0.04]">
-                <div className="flex items-center gap-3 px-2">
-                    <Link to="/settings" className="flex-shrink-0 relative group">
+            <div className={`px-4 py-4 border-t border-white/[0.04] transition-all duration-300 ${!isExpanded ? "px-2" : ""}`}>
+                <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center" : "px-2"}`}>
+                    <Link to="/settings" title={!isExpanded ? "Configurações" : undefined} className="flex-shrink-0 relative group">
                         {user?.user_metadata?.avatar_url ? (
                             <img
                                 src={user.user_metadata.avatar_url}
@@ -233,22 +263,40 @@ const Sidebar = () => {
                                 {user?.user_metadata?.full_name?.charAt(0).toUpperCase() || user?.email?.[0].toUpperCase() || "G"}
                             </div>
                         )}
-                        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-background rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Settings className="w-2.5 h-2.5 text-white/70" />
-                        </div>
+                        {isExpanded && (
+                            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-background rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Settings className="w-2.5 h-2.5 text-white/70" />
+                            </div>
+                        )}
                     </Link>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/70 truncate">{user?.user_metadata?.full_name || "Admin"}</p>
-                        <p className="text-xs text-white/30 truncate">{user?.email || "—"}</p>
-                    </div>
+                    
+                    {isExpanded && (
+                        <>
+                            <div className="flex-1 min-w-0 transition-opacity duration-300 overflow-hidden">
+                                <p className="text-sm font-medium text-white/70 truncate">{user?.user_metadata?.full_name || "Admin"}</p>
+                                <p className="text-xs text-white/30 truncate">{user?.email || "—"}</p>
+                            </div>
+                            <button
+                                onClick={signOut}
+                                className="p-2 flex-shrink-0 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                title="Sair"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </button>
+                        </>
+                    )}
+                </div>
+                
+                {/* Sign out button for collapsed mode */}
+                {!isExpanded && (
                     <button
                         onClick={signOut}
-                        className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                        className="mt-4 w-full flex justify-center p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
                         title="Sair"
                     >
                         <LogOut className="w-4 h-4" />
                     </button>
-                </div>
+                )}
             </div>
         </aside>
     );
