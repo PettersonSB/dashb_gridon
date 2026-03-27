@@ -121,6 +121,22 @@ export default function BudgetList() {
         return budget.status;
     };
 
+    const calculateFinalCashPrice = (budget: SolarBudget) => {
+        const kitPrice = budget.kit?.kit_price || 0;
+        const labor = budget.labor_cost || 0;
+        const engineering = budget.engineering_cost || 0;
+        const profitAmt = budget.profit_type === 'percentage' ? (kitPrice * (budget.profit_value || 0) / 100) : (budget.profit_value || 0);
+        const commissionAmt = budget.commission_type === 'percentage' ? (kitPrice * (budget.commission_value || 0) / 100) : (budget.commission_value || 0);
+        const taxAmt = budget.tax_type === 'percentage' ? (kitPrice * (budget.tax_value || 0) / 100) : (budget.tax_value || 0);
+        
+        const finalSystemPrice = kitPrice + labor + engineering + profitAmt + commissionAmt + taxAmt;
+        
+        if (budget.pix_mode === 'manual') {
+            return budget.pix_manual_value || 0;
+        }
+        return finalSystemPrice * (1 - (budget.pix_discount || 5) / 100);
+    };
+
     const loadBudgets = async () => {
         try {
             setIsLoading(true);
@@ -321,7 +337,7 @@ export default function BudgetList() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white font-medium">{budget.kit?.system_power} kWp</div>
-                                                <div className="text-primary text-xs mt-0.5">{formatCurrency(budget.kit?.kit_price)}</div>
+                                                <div className="text-primary text-xs mt-0.5">{formatCurrency(calculateFinalCashPrice(budget))}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <BudgetCountdown budget={budget} calculatedStatus={calculatedStatus} />
