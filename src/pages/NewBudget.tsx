@@ -71,8 +71,8 @@ export default function NewBudget() {
     `;
 
     const [notes, setNotes] = useState(DEFAULT_NOTES);
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
     // Audio state
     const [showAudioRecorder, setShowAudioRecorder] = useState(false);
@@ -167,7 +167,13 @@ export default function NewBudget() {
             const savedNotes = budgetData.installation_notes || '';
             setNotes(savedNotes);
             setIncludeNotes(savedNotes.trim().length > 0 && savedNotes !== '<p><br></p>');
-            setImagePreviewUrl(budgetData.cover_image_url || null);
+            
+            // Legacy single image fallback + multiple images
+            const urlsToLoad = budgetData.cover_image_urls || [];
+            if (urlsToLoad.length === 0 && budgetData.cover_image_url) {
+                urlsToLoad.push(budgetData.cover_image_url);
+            }
+            setImagePreviewUrls(urlsToLoad);
 
             // Novos campos financeiros
             setLaborCost(budgetData.labor_cost?.toString() || '0');
@@ -239,9 +245,12 @@ export default function NewBudget() {
         setIsSubmitting(true);
 
         try {
-            let finalImageUrl = (isEditing ? imagePreviewUrl || null : null);
-            if (imageFile) {
-                finalImageUrl = await budgetService.uploadBudgetImage(imageFile);
+            // Handle multiple images
+            let finalImageUrls = [...(isEditing ? imagePreviewUrls.filter(url => !url.startsWith('blob:')) : [])];
+            
+            if (imageFiles.length > 0) {
+                const uploadedUrls = await budgetService.uploadBudgetImages(imageFiles);
+                finalImageUrls = [...finalImageUrls, ...uploadedUrls];
             }
 
             const payload = {
@@ -262,7 +271,7 @@ export default function NewBudget() {
                 kit_id: selectedKitId,
                 proposal_validity_days: Number(validityDays),
                 installation_notes: includeNotes ? (notes || null) : null,
-                cover_image_url: finalImageUrl,
+                cover_image_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
 
                 // Novos campos financeiros para persistência
                 labor_cost: Number(laborCost),
@@ -686,9 +695,9 @@ export default function NewBudget() {
                     {/* Apresentação (Imagem e Observações) */}
                     <div className="mt-6 pt-6 border-t border-white/[0.06] space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-white/70">Capa / Imagem do Kit (Opcional)</label>
-                            <div className="flex gap-4 items-start">
-                                <div className="flex-1 space-y-2">
+                            <label className="text-sm font-medium text-white/70">Capa / Imagens do Kit (Opcional - Máx 5)</label>
+                            <div className="flex flex-col gap-4 items-start">
+                                <div className="w-full space-y-2">
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
                                             <ImageIcon className="w-4 h-4" />
@@ -696,30 +705,55 @@ export default function NewBudget() {
                                         <input
                                             type="file"
                                             accept="image/png, image/jpeg, image/webp"
+                                            multiple
                                             onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    setImageFile(file);
-                                                    setImagePreviewUrl(URL.createObjectURL(file));
+                                                const files = Array.from(e.target.files || []);
+                                                if (!files.length) return;
+                                                
+                                                const totalImages = imageFiles.length + imagePreviewUrls.filter(u => !u.startsWith('blob:')).length + files.length;
+                                                if (totalImages > 5) {
+                                                    alert('Você só pode enviar até 5 imagens por kit.'); // Ideally use emitToast later
+                                                    return;
                                                 }
+
+                                                const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+                                                setImageFiles(prev => [...prev, ...files]);
+                                                setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
                                             }}
-                                            className="form-input pl-10 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer"
+                                            className="form-input pl-10 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer w-full max-w-lg"
                                         />
                                     </div>
                                     <p className="text-[11px] text-white/40">
-                                        * Formatos aceitos: PNG, JPEG ou WebP. Tamanho máximo recomendado 500kb.
+                                        * Formatos: PNG, JPEG ou WebP. Até 5 fotos. Tamanho recomendado 500kb cada.
                                     </p>
                                 </div>
-                                {imagePreviewUrl && (
-                                    <div className="w-24 h-24 rounded-lg border border-white/10 bg-black/20 overflow-hidden flex-shrink-0 relative group">
-                                        <img src={imagePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setImageFile(null); setImagePreviewUrl(null); }}
-                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-red-400"
-                                        >
-                                            Remover
-                                        </button>
+                                
+                                {imagePreviewUrls.length > 0 && (
+                                    <div className="flex gap-3 overflow-x-auto pb-2 w-full snap-x">
+                                        {imagePreviewUrls.map((url, index) => (
+                                            <div key={index} className="w-24 h-24 rounded-lg border border-white/10 bg-black/20 overflow-hidden flex-shrink-0 relative group snap-start">
+                                                <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
+                                                        if (url.startsWith('blob:')) {
+                                                            // find the corresponding file and remove it
+                                                            // Since blob urls match appended files, we match index from the blob-only end
+                                                            const blobUrls = imagePreviewUrls.filter(u => u.startsWith('blob:'));
+                                                            const blobIndex = blobUrls.indexOf(url);
+                                                            if (blobIndex !== -1) {
+                                                                setImageFiles(prev => prev.filter((_, i) => i !== blobIndex));
+                                                            }
+                                                            URL.revokeObjectURL(url);
+                                                        }
+                                                    }}
+                                                    className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-red-400"
+                                                >
+                                                    Remover
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>

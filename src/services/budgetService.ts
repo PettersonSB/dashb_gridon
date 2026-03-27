@@ -129,6 +129,15 @@ export const budgetService = {
         return data.publicUrl;
     },
 
+    async uploadBudgetImages(files: File[]): Promise<string[]> {
+        if (!files || files.length === 0) return [];
+        
+        const uploadPromises = files.map(file => this.uploadBudgetImage(file));
+        const urls = await Promise.all(uploadPromises);
+        
+        return urls;
+    },
+
     async uploadBudgetAudio(budgetId: string, audioBlob: Blob): Promise<string> {
         const fileName = `${budgetId}/audio_${Date.now()}.webm`;
 

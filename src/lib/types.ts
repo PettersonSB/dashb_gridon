@@ -250,7 +250,8 @@ export interface SolarBudget {
     created_by_name?: string | null;
     created_by_avatar?: string | null;
     audio_url?: string | null;
-    cover_image_url?: string | null; // NEW
+    cover_image_url?: string | null; // Keep for backward compatibility
+    cover_image_urls?: string[] | null; // Array of images for carousel
     created_at: string;
     kit?: SolarKit; // For nested joins
 }
