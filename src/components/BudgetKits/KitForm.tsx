@@ -337,7 +337,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                                 .filter(p => !selectedCategory || p.category === selectedCategory)
                                 .map(p => (
                                 <option key={p.id} value={p.id}>
-                                    {p.category} | {p.name} {p.brand?.name ? `(${p.brand.name})` : ''} {p.power ? `- ${p.power}W ` : ''}- {p.price.toLocaleString('pt-BR', {style: 'currency', currency:'BRL'})}
+                                    {p.category} | {p.name} {p.brand?.name ? `(${p.brand.name})` : ''} {(p.power && /módulo|modulo|inversor|micro/i.test(p.category)) ? `- ${p.power}W ` : ''}- {p.price.toLocaleString('pt-BR', {style: 'currency', currency:'BRL'})}
                                 </option>
                             ))}
                         </select>
@@ -378,7 +378,11 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                                                     )}
                                                     <div className="min-w-0">
                                                         <p className="text-sm text-white font-medium truncate">{item.product.name}</p>
-                                                        <p className="text-[10px] text-white/40">{item.product.category}</p>
+                                                        <p className="text-[10px] text-white/40">
+                                                            {item.product.category}
+                                                            {item.product.brand?.name ? ` • ${item.product.brand.name}` : ''}
+                                                            {(item.product.power && /módulo|modulo|inversor|micro/i.test(item.product.category)) ? ` • ${item.product.power}W` : ''}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </td>
