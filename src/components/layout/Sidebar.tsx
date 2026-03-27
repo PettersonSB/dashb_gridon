@@ -201,7 +201,15 @@ const Sidebar = () => {
                                             `sidebar-item !py-1.5 !px-4 !text-[13px] !rounded-lg ml-2 ${isActive ? "active" : ""}`
                                         }
                                     >
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
+                                        {subItem.label === "Todos os Orçamentos" ? (
+                                            <img 
+                                                src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/icons_gridon/historico-de-pedidos.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpY29uc19ncmlkb24vaGlzdG9yaWNvLWRlLXBlZGlkb3MucG5nIiwiaWF0IjoxNzc0NTc3MzkwLCJleHAiOjMzMjc5MDQxMzkwfQ.8xjn8zIz3vuH2lVnNwpWs55ZlK4qDLPTKElZe3cc3Cc" 
+                                                alt="" 
+                                                className="w-4 h-4 object-contain mr-2 opacity-70 group-hover:opacity-100 transition-opacity"
+                                            />
+                                        ) : (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
+                                        )}
                                         {subItem.label}
                                     </NavLink>
                                 ))}
