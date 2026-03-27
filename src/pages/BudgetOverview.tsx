@@ -79,6 +79,37 @@ export default function BudgetOverview() {
         );
     };
 
+    const calculateFinalCashPrice = (budget: SolarBudget) => {
+        const kitPrice = budget.kit?.kit_price || 0;
+        const labor = budget.labor_cost || 0;
+        const engineering = budget.engineering_cost || 0;
+        const profitAmt = budget.profit_type === 'percentage' ? (kitPrice * (budget.profit_value || 0) / 100) : (budget.profit_value || 0);
+        const commissionAmt = budget.commission_type === 'percentage' ? (kitPrice * (budget.commission_value || 0) / 100) : (budget.commission_value || 0);
+        const taxAmt = budget.tax_type === 'percentage' ? (kitPrice * (budget.tax_value || 0) / 100) : (budget.tax_value || 0);
+        
+        const finalSystemPrice = kitPrice + labor + engineering + profitAmt + commissionAmt + taxAmt;
+        
+        if (budget.pix_mode === 'manual') {
+            return budget.pix_manual_value || 0;
+        }
+        return finalSystemPrice * (1 - (budget.pix_discount || 5) / 100);
+    };
+
+    const getModuleCount = (kit: any) => {
+        if (!kit) return 0;
+        if (kit.panels_count) return kit.panels_count;
+        if (kit.items && Array.isArray(kit.items)) {
+            return kit.items.reduce((acc: number, item: any) => {
+                const cat = item.product?.category?.toLowerCase() || '';
+                if (cat.includes('módulo') || cat.includes('modulo')) {
+                    return acc + item.quantity;
+                }
+                return acc;
+            }, 0);
+        }
+        return 0;
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-20">
@@ -145,7 +176,7 @@ export default function BudgetOverview() {
             <div className="glass-card p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-display font-semibold text-white">Solicitações Recentes</h3>
-                    <Link to="/budget" className="text-sm text-primary hover:text-white transition-colors">Ver todas</Link>
+                    <Link to="/budgets" className="text-sm text-primary hover:text-white transition-colors">Ver todas</Link>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -167,13 +198,13 @@ export default function BudgetOverview() {
                                         <div className="text-xs text-white/40 mt-0.5">{budget.customer_city} - {budget.customer_state}</div>
                                     </td>
                                     <td className="px-4 py-4 text-white/60">
-                                        {budget.kit ? `${budget.kit.system_power} kWp (${budget.kit.panels_count} Módulos)` : 'Personalizado'}
+                                        {budget.kit ? `${budget.kit.system_power} kWp (${getModuleCount(budget.kit)} Módulos)` : 'Personalizado'}
                                     </td>
                                     <td className="px-4 py-4 text-white/40">
                                         {new Date(budget.created_at).toLocaleDateString('pt-BR')}
                                     </td>
                                     <td className="px-4 py-4 text-white/80">
-                                        {formatCurrency(budget.kit?.kit_price)}
+                                        {formatCurrency(calculateFinalCashPrice(budget))}
                                     </td>
                                     <td className="px-4 py-4">
                                         <StatusBadge status={budget.status} />

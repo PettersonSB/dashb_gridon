@@ -10,7 +10,11 @@ export const budgetService = {
                 kit:kit_id(
                     *,
                     equipment_brand:equipment_brand_id(*),
-                    panel_brand:panel_brand_id(*)
+                    panel_brand:panel_brand_id(*),
+                    items:solar_kit_items(
+                        quantity,
+                        product:product_id(category)
+                    )
                 )
             `)
             .order('created_at', { ascending: false });
@@ -27,7 +31,11 @@ export const budgetService = {
                 kit:kit_id(
                     *,
                     equipment_brand:equipment_brand_id(*),
-                    panel_brand:panel_brand_id(*)
+                    panel_brand:panel_brand_id(*),
+                    items:solar_kit_items(
+                        quantity,
+                        product:product_id(category)
+                    )
                 )
             `)
             .eq('id', id)
