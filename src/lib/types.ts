@@ -250,6 +250,7 @@ export interface SolarBudget {
     created_by_name?: string | null;
     created_by_avatar?: string | null;
     audio_url?: string | null;
+    show_audio?: boolean; // NEW: Toggle to show/hide audio on the public page
     cover_image_url?: string | null; // Keep for backward compatibility
     cover_image_urls?: string[] | null; // Array of images for carousel
     show_kit_images?: boolean; // NEW: Toggle to show/hide kit images on the public page

@@ -82,6 +82,7 @@ export default function NewBudget() {
     const [previewAudioEl, setPreviewAudioEl] = useState<HTMLAudioElement | null>(null);
     const [includeNotes, setIncludeNotes] = useState(true);
     const [showKitImages, setShowKitImages] = useState(true);
+    const [showAudio, setShowAudio] = useState(true);
 
     // Form State - Financial
     const [laborCost, setLaborCost] = useState<string>('0');
@@ -176,6 +177,7 @@ export default function NewBudget() {
             }
             setImagePreviewUrls(urlsToLoad);
             setShowKitImages(budgetData.show_kit_images ?? true);
+            setShowAudio(budgetData.show_audio ?? true);
 
             // Novos campos financeiros
             setLaborCost(budgetData.labor_cost?.toString() || '0');
@@ -275,6 +277,7 @@ export default function NewBudget() {
                 installation_notes: includeNotes ? (notes || null) : null,
                 cover_image_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
                 show_kit_images: showKitImages,
+                show_audio: showAudio,
 
                 // Novos campos financeiros para persistência
                 labor_cost: Number(laborCost),
@@ -806,10 +809,19 @@ export default function NewBudget() {
 
                     {/* Bloco: Áudio Explicativo */}
                     <div className="mt-6 pt-6 border-t border-white/[0.06]">
-                        <h4 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
-                            <Mic className="w-4 h-4 text-primary" />
-                            Áudio Explicativo do Orçamento
-                        </h4>
+                        <div className="flex items-center gap-3 mb-4">
+                            <input
+                                type="checkbox"
+                                id="showAudio"
+                                checked={showAudio}
+                                onChange={(e) => setShowAudio(e.target.checked)}
+                                className="w-4 h-4 rounded bg-white/[0.05] border-white/20 text-primary focus:ring-primary focus:ring-offset-background"
+                            />
+                            <label htmlFor="showAudio" className="flex items-center gap-2 text-sm font-semibold text-white/70 cursor-pointer select-none">
+                                <Mic className="w-4 h-4 text-primary" />
+                                Exibir Áudio Explicativo no Orçamento
+                            </label>
+                        </div>
                         
                         {(existingAudioUrl || audioBlob) ? (
                             <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl p-4">
