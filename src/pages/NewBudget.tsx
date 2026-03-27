@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2 } from 'lucide-react';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
@@ -57,6 +57,8 @@ export default function NewBudget() {
     const [selectedKitId, setSelectedKitId] = useState('');
     const [validityDays, setValidityDays] = useState('7');
     const [notes, setNotes] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
     // Audio state
     const [showAudioRecorder, setShowAudioRecorder] = useState(false);
@@ -151,6 +153,7 @@ export default function NewBudget() {
             const savedNotes = budgetData.installation_notes || '';
             setNotes(savedNotes);
             setIncludeNotes(savedNotes.trim().length > 0 && savedNotes !== '<p><br></p>');
+            setImagePreviewUrl(budgetData.cover_image_url || null);
 
             // Novos campos financeiros
             setLaborCost(budgetData.labor_cost?.toString() || '0');
@@ -222,6 +225,11 @@ export default function NewBudget() {
         setIsSubmitting(true);
 
         try {
+            let finalImageUrl = (isEditing ? imagePreviewUrl || null : null);
+            if (imageFile) {
+                finalImageUrl = await budgetService.uploadBudgetImage(imageFile);
+            }
+
             const payload = {
                 customer_name: customerName,
                 customer_phone: customerPhone,
@@ -240,6 +248,7 @@ export default function NewBudget() {
                 kit_id: selectedKitId,
                 proposal_validity_days: Number(validityDays),
                 installation_notes: includeNotes ? (notes || null) : null,
+                cover_image_url: finalImageUrl,
 
                 // Novos campos financeiros para persistência
                 labor_cost: Number(laborCost),
@@ -660,31 +669,74 @@ export default function NewBudget() {
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <input
-                                type="checkbox"
-                                id="includeNotes"
-                                checked={includeNotes}
-                                onChange={(e) => setIncludeNotes(e.target.checked)}
-                                className="w-4 h-4 rounded bg-white/[0.05] border-white/20 text-primary focus:ring-primary focus:ring-offset-background"
-                            />
-                            <label htmlFor="includeNotes" className="text-sm font-medium text-white/70 cursor-pointer select-none">
-                                Incluir Observações / Escopo da Instalação no orçamento do cliente
-                            </label>
+                    {/* Apresentação (Imagem e Observações) */}
+                    <div className="mt-6 pt-6 border-t border-white/[0.06] space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-white/70">Capa / Imagem do Kit (Opcional)</label>
+                            <div className="flex gap-4 items-start">
+                                <div className="flex-1 space-y-2">
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
+                                            <ImageIcon className="w-4 h-4" />
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/png, image/jpeg, image/webp"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setImageFile(file);
+                                                    setImagePreviewUrl(URL.createObjectURL(file));
+                                                }
+                                            }}
+                                            className="form-input pl-10 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-white/40">
+                                        * Formatos aceitos: PNG, JPEG ou WebP. Tamanho máximo recomendado 500kb.
+                                    </p>
+                                </div>
+                                {imagePreviewUrl && (
+                                    <div className="w-24 h-24 rounded-lg border border-white/10 bg-black/20 overflow-hidden flex-shrink-0 relative group">
+                                        <img src={imagePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => { setImageFile(null); setImagePreviewUrl(null); }}
+                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-red-400"
+                                        >
+                                            Remover
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        {includeNotes && (
-                            <div className="bg-slate-800/80 border border-white/[0.1] rounded-xl overflow-hidden [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/[0.1] [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:text-white [&_.ql-editor]:text-sm [&_.ql-editor]:font-medium [&_.ql-editor_p]:mb-4 animate-fade-in-up">
-                                <ReactQuill
-                                    theme="snow"
-                                    value={notes}
-                                    onChange={setNotes}
-                                    modules={quillModules}
-                                    placeholder="Escreva aqui detalhes adicionais do serviço (ex: estrutura necessária, aterramento, prazos específicos...)"
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="includeNotes"
+                                    checked={includeNotes}
+                                    onChange={(e) => setIncludeNotes(e.target.checked)}
+                                    className="w-4 h-4 rounded bg-white/[0.05] border-white/20 text-primary focus:ring-primary focus:ring-offset-background"
                                 />
+                                <label htmlFor="includeNotes" className="text-sm font-medium text-white/70 cursor-pointer select-none">
+                                    Observações / Detalhes do Kit
+                                </label>
                             </div>
-                        )}
+
+                            {includeNotes && (
+                                <div className="bg-slate-800/80 border border-white/[0.1] rounded-xl overflow-hidden [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/[0.1] [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:text-white [&_.ql-editor]:text-sm [&_.ql-editor]:font-medium [&_.ql-editor_p]:mb-4 animate-fade-in-up">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={notes}
+                                        onChange={setNotes}
+                                        modules={quillModules}
+                                        placeholder="Escreva os detalhes técnicos, garantias, o que está incluso no kit..."
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Bloco: Áudio Explicativo */}

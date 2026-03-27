@@ -4,8 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { kitService } from '@/services/kitService';
 import { SolarKit, SolarKitItem, SolarProduct } from '@/lib/types';
 import { Save, Image as ImageIcon, CheckCircle2, Search, Plus, Trash2, Calculator, Loader2 } from 'lucide-react';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
+    // Removed ReactQuill imports
 
 const SYSTEM_TYPES = ['On Grid', 'Off Grid', 'Híbrido', 'Backup Box'] as const;
 
@@ -39,22 +38,12 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
     const [systemPower, setSystemPower] = useState('');
     const [estimatedGeneration, setEstimatedGeneration] = useState('');
 
-    // Presentation
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-    const [description, setDescription] = useState('');
+    // Presentation (Removed image and description state)
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
-    const modules = {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            ['clean']
-        ],
-    };
+
 
     const resetForm = () => {
         setName('');
@@ -64,10 +53,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
         setKitPrice('');
         setSystemPower('');
         setEstimatedGeneration('');
-        setImageFile(null);
-        if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-        setImagePreviewUrl(null);
-        setDescription('');
+
         setSelectedProductId('');
         setSelectedCategory('');
     };
@@ -81,8 +67,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
             setKitPrice(initialKit.kit_price ? initialKit.kit_price.toString() : '');
             setSystemPower(initialKit.system_power ? initialKit.system_power.toString() : '');
             setEstimatedGeneration(initialKit.estimated_generation ? initialKit.estimated_generation.toString() : '');
-            setImagePreviewUrl(initialKit.image_url || null);
-            setDescription(initialKit.description || '');
+
             
             // Transform relations into our state format
             if (initialKit.items && initialKit.items.length > 0) {
@@ -167,20 +152,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
             if (!name) throw new Error("O nome do kit é obrigatório.");
             if (items.length === 0) throw new Error("O kit deve conter pelo menos 1 produto.");
 
-            // Validate image size
-            if (imageFile && imageFile.size > 2 * 1024 * 1024) {
-                throw new Error("A imagem selecionada é muito grande (Máximo 2MB).");
-            }
-
-            let finalImageUrl = (initialKit ? imagePreviewUrl || '' : '');
-            if (imageFile) {
-                finalImageUrl = await kitService.uploadKitImage(imageFile);
-            }
-
-            // Sanitization: Ensure we don't save a temporary blob URL
-            if (finalImageUrl.startsWith('blob:')) {
-                finalImageUrl = initialKit?.image_url || '';
-            }
+            const finalImageUrl = ''; // Removed from Kit Form
 
             // Parsing help: Remove currency symbols and handle comma vs dot
             const cleanNumeric = (val: string) => {
@@ -196,7 +168,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                 system_power: cleanNumeric(systemPower.toString()) || 0,
                 kit_price: cleanNumeric(kitPrice.toString()) || 0,
                 image_url: finalImageUrl,
-                description: description,
+                description: '', // Removed from Kit Form
                 
                 // Legacy required fields mapping
                 equipment_type: 'Inversor' as const,
@@ -449,61 +421,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
 
                 <div className="border-t border-white/[0.04] my-2" />
 
-                {/* Apresentação (Imagem e Observações) */}
-                <div className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-white/70">Capa / Imagem do Kit (Opcional)</label>
-                        <div className="flex gap-4 items-start">
-                            <div className="flex-1 space-y-2">
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
-                                        <ImageIcon className="w-4 h-4" />
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept="image/png, image/jpeg, image/webp"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                setImageFile(file);
-                                                setImagePreviewUrl(URL.createObjectURL(file));
-                                            }
-                                        }}
-                                        className="form-input pl-10 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer"
-                                    />
-                                </div>
-                                <p className="text-[11px] text-white/40">
-                                    * Formatos aceitos: PNG, JPEG ou WebP. Tamanho máximo recomendado 500kb.
-                                </p>
-                            </div>
-                            {imagePreviewUrl && (
-                                <div className="w-24 h-24 rounded-lg border border-white/10 bg-black/20 overflow-hidden flex-shrink-0 relative group">
-                                    <img src={imagePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => { setImageFile(null); setImagePreviewUrl(null); }}
-                                        className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold text-red-400"
-                                    >
-                                        Remover
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-white/70">Observações / Detalhes do Kit</label>
-                        <div className="bg-slate-800/80 border border-white/[0.1] rounded-xl overflow-hidden [&_.ql-toolbar]:border-0 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/[0.1] [&_.ql-container]:border-0 [&_.ql-container]:min-h-[200px] [&_.ql-editor]:text-white [&_.ql-editor]:text-sm [&_.ql-editor]:font-medium [&_.ql-editor_p]:mb-4">
-                            <ReactQuill
-                                theme="snow"
-                                value={description}
-                                onChange={setDescription}
-                                modules={modules}
-                                placeholder="Escreva os detalhes técnicos, garantias, o que está incluso no kit..."
-                            />
-                        </div>
-                    </div>
-                </div>
 
                 <div className="pt-4 flex justify-end gap-3 sticky bottom-4">
                     {initialKit && (

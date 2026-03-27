@@ -39,16 +39,7 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {kits.map(kit => (
                 <div key={kit.id} className="glass-card hover:bg-white/5 transition-colors overflow-hidden flex flex-col">
-                    <div className="h-40 bg-black/40 relative border-b border-white/[0.04] p-4 flex items-center justify-center">
-                        {kit.image_url ? (
-                            <img src={kit.image_url} alt="Kit" className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                        ) : (
-                            <ImageIcon className="w-10 h-10 text-white/10" />
-                        )}
-                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white border border-white/10">
-                            {kit.system_power} kWp
-                        </div>
-                    </div>
+
                     <div className="p-5 flex-1 flex flex-col">
                         <div className="flex-1">
                             {(() => {
@@ -68,9 +59,14 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
 
                                 return (
                                     <>
-                                        <h3 className="font-display font-bold text-lg text-white mb-1 line-clamp-1" title={equipmentDisplay}>
-                                            {equipmentDisplay}
-                                        </h3>
+                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                            <h3 className="font-display font-bold text-lg text-white line-clamp-1 flex-1" title={equipmentDisplay}>
+                                                {equipmentDisplay}
+                                            </h3>
+                                            <div className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap border border-primary/20">
+                                                {kit.system_power} kWp
+                                            </div>
+                                        </div>
                                         <p className="text-sm text-white/50 mb-4 truncate" title={panelsDisplay}>
                                             {panelsDisplay}
                                         </p>

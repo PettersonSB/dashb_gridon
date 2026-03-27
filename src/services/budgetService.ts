@@ -104,6 +104,31 @@ export const budgetService = {
         if (error) throw error;
     },
 
+    async uploadBudgetImage(file: File): Promise<string> {
+        // Create a unique file name to avoid collisions
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('kit-images')
+            .upload(filePath, file, {
+                cacheControl: '31536000',
+                upsert: false
+            });
+
+        if (uploadError) {
+            console.error('Upload Error:', uploadError);
+            throw new Error(`Erro ao fazer upload da imagem de capa: ${uploadError.message}`);
+        }
+
+        const { data } = supabase.storage
+            .from('kit-images')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    },
+
     async uploadBudgetAudio(budgetId: string, audioBlob: Blob): Promise<string> {
         const fileName = `${budgetId}/audio_${Date.now()}.webm`;
 
