@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, Edit2, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, Edit2, Trash2, Image as ImageIcon, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import AddProductModal from '@/components/AddProductModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { kitService } from '@/services/kitService';
@@ -34,6 +34,20 @@ export default function ProductList() {
             p.brand?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.category.toLowerCase().includes(searchTerm.toLowerCase())
         ), [products, searchTerm]);
+
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    const currentProducts = filteredProducts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const handleAddProduct = () => {
         setIsProductModalOpen(false);
@@ -101,14 +115,14 @@ export default function ProductList() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : filteredProducts.length === 0 ? (
+                            ) : currentProducts.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="px-6 py-12 text-center text-white/40">
                                         Nenhum produto encontrado.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredProducts.map((product) => (
+                                currentProducts.map((product) => (
                                     <tr key={product.id} className="hover:bg-white/[0.01] transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -181,6 +195,45 @@ export default function ProductList() {
                     </table>
                 </div>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6 animate-fade-in pb-4">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        aria-label="Página anterior"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1.5 overflow-x-auto px-2 max-w-[200px] sm:max-w-none no-scrollbar">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-9 h-9 flex-shrink-0 rounded-lg border flex items-center justify-center text-sm font-medium transition-all ${
+                                    currentPage === page
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        aria-label="Próxima página"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             <AddProductModal 
                 isOpen={isProductModalOpen} 
