@@ -337,7 +337,7 @@ export default function KitForm({ initialKit, onSuccess, onCancel }: KitFormProp
                                 .filter(p => !selectedCategory || p.category === selectedCategory)
                                 .map(p => (
                                 <option key={p.id} value={p.id}>
-                                    {p.category} | {p.name} {p.brand?.name ? `(${p.brand.name})` : ''} - {p.price.toLocaleString('pt-BR', {style: 'currency', currency:'BRL'})}
+                                    {p.category} | {p.name} {p.brand?.name ? `(${p.brand.name})` : ''} {p.power ? `- ${p.power}W ` : ''}- {p.price.toLocaleString('pt-BR', {style: 'currency', currency:'BRL'})}
                                 </option>
                             ))}
                         </select>
