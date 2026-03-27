@@ -56,7 +56,21 @@ export default function NewBudget() {
     // Form State - Proposal
     const [selectedKitId, setSelectedKitId] = useState('');
     const [validityDays, setValidityDays] = useState('7');
-    const [notes, setNotes] = useState('');
+    const DEFAULT_NOTES = `
+        <p><strong>Serviços Inclusos</strong></p>
+        <ol>
+            <li>Vistoria técnica e Homologação do sistema.</li>
+            <li>Responsabilidade técnica ( RT ) do projeto e instalação.</li>
+            <li>Obtenção das licenças junto à concessionária de energia local.</li>
+            <li>Instalação e montagem do sistema Fotovotaico.</li>
+            <li>Gestão, supervisão e fiscalização da instalação.</li>
+            <li>Frete incluso de todos equipamentos referentes ao sistema.</li>
+        </ol>
+        <br>
+        <p>OBS: Não estão inclusos eventuais serviços de alvenaria, reforço estrutural, e/ou alterações na rede de distribuição as quais eventualmente podem ser solicitadas pela concessionária.</p>
+    `;
+
+    const [notes, setNotes] = useState(DEFAULT_NOTES);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
