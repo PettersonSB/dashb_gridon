@@ -252,6 +252,7 @@ export interface SolarBudget {
     audio_url?: string | null;
     cover_image_url?: string | null; // Keep for backward compatibility
     cover_image_urls?: string[] | null; // Array of images for carousel
+    show_kit_images?: boolean; // NEW: Toggle to show/hide kit images on the public page
     created_at: string;
     kit?: SolarKit; // For nested joins
 }

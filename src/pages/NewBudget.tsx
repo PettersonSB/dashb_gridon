@@ -81,6 +81,7 @@ export default function NewBudget() {
     const [isPlayingPreview, setIsPlayingPreview] = useState(false);
     const [previewAudioEl, setPreviewAudioEl] = useState<HTMLAudioElement | null>(null);
     const [includeNotes, setIncludeNotes] = useState(true);
+    const [showKitImages, setShowKitImages] = useState(true);
 
     // Form State - Financial
     const [laborCost, setLaborCost] = useState<string>('0');
@@ -174,6 +175,7 @@ export default function NewBudget() {
                 urlsToLoad.push(budgetData.cover_image_url);
             }
             setImagePreviewUrls(urlsToLoad);
+            setShowKitImages(budgetData.show_kit_images ?? true);
 
             // Novos campos financeiros
             setLaborCost(budgetData.labor_cost?.toString() || '0');
@@ -272,6 +274,7 @@ export default function NewBudget() {
                 proposal_validity_days: Number(validityDays),
                 installation_notes: includeNotes ? (notes || null) : null,
                 cover_image_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
+                show_kit_images: showKitImages,
 
                 // Novos campos financeiros para persistência
                 labor_cost: Number(laborCost),
@@ -694,39 +697,52 @@ export default function NewBudget() {
 
                     {/* Apresentação (Imagem e Observações) */}
                     <div className="mt-6 pt-6 border-t border-white/[0.06] space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-white/70">Capa / Imagens do Kit (Opcional - Máx 5)</label>
-                            <div className="flex flex-col gap-4 items-start">
-                                <div className="w-full space-y-2">
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
-                                            <ImageIcon className="w-4 h-4" />
-                                        </div>
-                                        <input
-                                            type="file"
-                                            accept="image/png, image/jpeg, image/webp"
-                                            multiple
-                                            onChange={(e) => {
-                                                const files = Array.from(e.target.files || []);
-                                                if (!files.length) return;
-                                                
-                                                const totalImages = imageFiles.length + imagePreviewUrls.filter(u => !u.startsWith('blob:')).length + files.length;
-                                                if (totalImages > 5) {
-                                                    alert('Você só pode enviar até 5 imagens por kit.'); // Ideally use emitToast later
-                                                    return;
-                                                }
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="showKitImages"
+                                    checked={showKitImages}
+                                    onChange={(e) => setShowKitImages(e.target.checked)}
+                                    className="w-4 h-4 rounded bg-white/[0.05] border-white/20 text-primary focus:ring-primary focus:ring-offset-background"
+                                />
+                                <label htmlFor="showKitImages" className="text-sm font-medium text-white/70 cursor-pointer select-none">
+                                    Exibir Capa / Imagens do Kit no Orçamento
+                                </label>
+                            </div>
 
-                                                const newPreviewUrls = files.map(file => URL.createObjectURL(file));
-                                                setImageFiles(prev => [...prev, ...files]);
-                                                setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
-                                            }}
-                                            className="form-input pl-10 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer w-full max-w-lg"
-                                        />
+                            {showKitImages && (
+                                <div className="flex flex-col gap-4 items-start pl-7">
+                                    <div className="w-full space-y-2">
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
+                                                <ImageIcon className="w-4 h-4" />
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept="image/png, image/jpeg, image/webp"
+                                                multiple
+                                                onChange={(e) => {
+                                                    const files = Array.from(e.target.files || []);
+                                                    if (!files.length) return;
+                                                    
+                                                    const totalImages = imageFiles.length + imagePreviewUrls.filter(u => !u.startsWith('blob:')).length + files.length;
+                                                    if (totalImages > 5) {
+                                                        alert('Você só pode enviar até 5 imagens por kit.'); // Ideally use emitToast later
+                                                        return;
+                                                    }
+
+                                                    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+                                                    setImageFiles(prev => [...prev, ...files]);
+                                                    setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
+                                                }}
+                                                className="form-input pl-10 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer w-full max-w-lg"
+                                            />
+                                        </div>
+                                        <p className="text-[11px] text-white/40">
+                                            * Formatos: PNG, JPEG ou WebP. Até 5 fotos. Tamanho recomendado 500kb cada.
+                                        </p>
                                     </div>
-                                    <p className="text-[11px] text-white/40">
-                                        * Formatos: PNG, JPEG ou WebP. Até 5 fotos. Tamanho recomendado 500kb cada.
-                                    </p>
-                                </div>
                                 
                                 {imagePreviewUrls.length > 0 && (
                                     <div className="flex gap-3 overflow-x-auto pb-2 w-full snap-x">
@@ -756,7 +772,8 @@ export default function NewBudget() {
                                         ))}
                                     </div>
                                 )}
-                            </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-4">
