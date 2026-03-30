@@ -202,6 +202,17 @@ export interface SolarKit {
     budgets?: { id: string; customer_name: string; status: string }[];
 }
 
+export interface Notification {
+    id: string;
+    type: 'view' | 'click' | 'lead' | 'expired' | 'system';
+    title: string;
+    message: string;
+    is_read: boolean;
+    budget_id?: string | null;
+    metadata?: any;
+    created_at: string;
+}
+
 export interface SolarBudget {
     id: string;
 
