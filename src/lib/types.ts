@@ -219,6 +219,8 @@ export interface CustomBudgetCard {
     description: string;
     image_url?: string;
     note?: string;
+    included?: boolean;  // true = incluso na proposta, false = valor à parte
+    price?: number;      // valor quando não incluso (isolado do orçamento)
 }
 
 export interface SolarBudget {

@@ -789,13 +789,40 @@ export default function NewBudget() {
                                                 <span className="text-[10px] text-white/30">Preview da imagem</span>
                                             </div>
                                         )}
+                                        {/* Toggle Incluso / Valor à parte */}
+                                        <div className="flex items-center gap-3 pt-2 border-t border-white/[0.04] mt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomCards(prev => prev.map(c => c.id === card.id ? { ...c, included: !(c.included ?? true) } : c))}
+                                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${(card.included ?? true) ? 'bg-emerald-500' : 'bg-white/20'}`}
+                                            >
+                                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${(card.included ?? true) ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                            </button>
+                                            <span className={`text-xs font-medium ${(card.included ?? true) ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                {(card.included ?? true) ? 'Incluso na proposta' : 'Valor à parte'}
+                                            </span>
+                                            {!(card.included ?? true) && (
+                                                <div className="flex items-center gap-1.5 ml-auto">
+                                                    <span className="text-[11px] text-white/40">R$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={card.price || ''}
+                                                        onChange={(e) => setCustomCards(prev => prev.map(c => c.id === card.id ? { ...c, price: Number(e.target.value) || 0 } : c))}
+                                                        placeholder="0,00"
+                                                        className="form-input !py-1.5 !text-sm !w-28"
+                                                        min="0"
+                                                        step="0.01"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
 
                                 {customCards.length < 5 && (
                                     <button
                                         type="button"
-                                        onClick={() => setCustomCards(prev => [...prev, { id: Date.now(), title: '', description: '' }])}
+                                        onClick={() => setCustomCards(prev => [...prev, { id: Date.now(), title: '', description: '', included: true }])}
                                         className="w-full py-3 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/30 text-white/40 hover:text-primary text-sm font-medium flex items-center justify-center gap-2 transition-all hover:bg-primary/5"
                                     >
                                         <Plus className="w-4 h-4" />
