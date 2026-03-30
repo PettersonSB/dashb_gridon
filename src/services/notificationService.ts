@@ -33,14 +33,11 @@ export const notificationService = {
     },
 
     async createNotification(payload: Omit<Notification, 'id' | 'created_at' | 'is_read'>) {
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('notifications')
-            .insert([payload])
-            .select()
-            .single();
+            .insert([payload]);
 
         if (error) throw error;
-        return data as Notification;
     },
     
     async deleteAllNotifications() {
