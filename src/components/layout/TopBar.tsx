@@ -88,7 +88,7 @@ const TopBar = () => {
     };
 
     return (
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-50">
+        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-30">
             <div>
                 <h1 className="font-display text-lg font-semibold text-foreground">{title}</h1>
             </div>

@@ -74,7 +74,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
         <aside 
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`fixed left-0 top-0 bottom-0 bg-background dark:bg-[hsl(228,25%,7%)] border-r border-border dark:border-white/[0.04] flex flex-col z-40 transition-all duration-300 ease-in-out ${isExpanded ? "w-64" : "w-[72px]"}`}
+            className={`fixed left-0 top-0 bottom-0 bg-background dark:bg-[hsl(228,25%,7%)] border-r border-border dark:border-white/[0.04] flex flex-col z-[60] transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? "w-64" : "w-[72px]"}`}
         >
             {/* Logo */}
             <div className="h-20 flex items-center justify-between border-b border-white/[0.04] px-4 overflow-hidden">
@@ -250,7 +250,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
 
             {/* Footer - User + Sign Out */}
             <div className={`px-4 py-4 border-t border-white/[0.04] transition-all duration-300 ${!isExpanded ? "px-2" : ""}`}>
-                <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center" : "px-2"}`}>
+                <div className={`flex items-center gap-3 overflow-hidden ${!isExpanded ? "justify-center" : "px-2"}`}>
                     <Link to="/settings" title={!isExpanded ? "Configurações" : undefined} className="flex-shrink-0 relative group">
                         {user?.user_metadata?.avatar_url ? (
                             <img
