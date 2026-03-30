@@ -86,9 +86,9 @@ export default function BudgetOverview() {
         const profitAmt = budget.profit_type === 'percentage' ? (kitPrice * (budget.profit_value || 0) / 100) : (budget.profit_value || 0);
         const commissionAmt = budget.commission_type === 'percentage' ? (kitPrice * (budget.commission_value || 0) / 100) : (budget.commission_value || 0);
         const taxAmt = budget.tax_type === 'percentage' ? (kitPrice * (budget.tax_value || 0) / 100) : (budget.tax_value || 0);
-        
+
         const finalSystemPrice = kitPrice + labor + engineering + profitAmt + commissionAmt + taxAmt;
-        
+
         if (budget.pix_mode === 'manual') {
             return budget.pix_manual_value || 0;
         }

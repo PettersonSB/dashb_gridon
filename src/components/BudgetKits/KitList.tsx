@@ -86,6 +86,27 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
                                     </span>
                                 </div>
                             </div>
+                            
+                            {/* Associated Budgets Display */}
+                            {kit.budgets && kit.budgets.length > 0 && (
+                                <div className="mt-auto mb-4 border-t border-white/[0.04] pt-3">
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-white/40 uppercase tracking-widest mb-2 font-display">
+                                        Usado em {kit.budgets.length} {kit.budgets.length === 1 ? 'Orçamento' : 'Orçamentos'}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {kit.budgets.slice(0, 3).map(b => (
+                                            <span key={b.id} className="inline-flex items-center px-2 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-white/70 truncate max-w-[140px]" title={b.customer_name}>
+                                                {b.customer_name.split(' ')[0]}
+                                            </span>
+                                        ))}
+                                        {kit.budgets.length > 3 && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-white/50">
+                                                +{kit.budgets.length - 3}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/[0.04]">

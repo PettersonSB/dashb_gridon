@@ -199,6 +199,7 @@ export interface SolarKit {
     equipment_brand?: SolarBrand; // legacy
     panel_brand?: SolarBrand;     // legacy
     items?: SolarKitItem[];       // NEW REALATION
+    budgets?: { id: string; customer_name: string; status: string }[];
 }
 
 export interface SolarBudget {
