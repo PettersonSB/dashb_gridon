@@ -5,7 +5,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
 import { kitService } from '@/services/kitService';
-import { SolarBudget, SolarKit } from '@/lib/types';
+import { SolarBudget, SolarKit, CustomBudgetCard } from '@/lib/types';
 import AudioRecorderModal from '@/components/AudioRecorderModal';
 
 const INSTALLATION_LOCATIONS = [
@@ -83,6 +83,8 @@ export default function NewBudget() {
     const [includeNotes, setIncludeNotes] = useState(true);
     const [showKitImages, setShowKitImages] = useState(true);
     const [showAudio, setShowAudio] = useState(true);
+    const [showCustomCards, setShowCustomCards] = useState(false);
+    const [customCards, setCustomCards] = useState<CustomBudgetCard[]>([]);
 
     // Form State - Financial
     const [laborCost, setLaborCost] = useState<string>('0');
@@ -178,6 +180,8 @@ export default function NewBudget() {
             setImagePreviewUrls(urlsToLoad);
             setShowKitImages(budgetData.show_kit_images ?? true);
             setShowAudio(budgetData.show_audio ?? true);
+            setShowCustomCards(budgetData.show_custom_cards ?? false);
+            setCustomCards(budgetData.custom_cards || []);
 
             // Novos campos financeiros
             setLaborCost(budgetData.labor_cost?.toString() || '0');
@@ -278,6 +282,8 @@ export default function NewBudget() {
                 cover_image_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
                 show_kit_images: showKitImages,
                 show_audio: showAudio,
+                custom_cards: showCustomCards && customCards.length > 0 ? customCards : null,
+                show_custom_cards: showCustomCards,
 
                 // Novos campos financeiros para persistência
                 labor_cost: Number(laborCost),
@@ -696,6 +702,108 @@ export default function NewBudget() {
                                 required
                             />
                         </div>
+                    </div>
+
+                    {/* Cards Personalizados */}
+                    <div className="mt-6 pt-6 border-t border-white/[0.06] space-y-4">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="showCustomCards"
+                                checked={showCustomCards}
+                                onChange={(e) => setShowCustomCards(e.target.checked)}
+                                className="w-4 h-4 rounded bg-white/[0.05] border-white/20 text-primary focus:ring-primary focus:ring-offset-background"
+                            />
+                            <label htmlFor="showCustomCards" className="text-sm font-medium text-white/70 cursor-pointer select-none">
+                                Incluir Cards Personalizados no Orçamento
+                            </label>
+                            {showCustomCards && (
+                                <span className="text-[11px] text-white/30 ml-auto">{customCards.length}/5 cards</span>
+                            )}
+                        </div>
+
+                        {showCustomCards && (
+                            <div className="space-y-4 pl-7 animate-fade-in">
+                                {customCards.map((card, idx) => (
+                                    <div key={card.id} className="glass-card p-4 border border-white/[0.06] rounded-xl space-y-3 relative group">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-primary/70 uppercase tracking-wider">Card {idx + 1}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomCards(prev => prev.filter(c => c.id !== card.id))}
+                                                className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                                title="Remover card"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">Título do Card *</label>
+                                                <input
+                                                    type="text"
+                                                    value={card.title}
+                                                    onChange={(e) => setCustomCards(prev => prev.map(c => c.id === card.id ? { ...c, title: e.target.value } : c))}
+                                                    placeholder="Ex: Estrutura de Fixação"
+                                                    className="form-input !py-2 !text-sm"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">Descrição *</label>
+                                                <input
+                                                    type="text"
+                                                    value={card.description}
+                                                    onChange={(e) => setCustomCards(prev => prev.map(c => c.id === card.id ? { ...c, description: e.target.value } : c))}
+                                                    placeholder="Ex: Kit Romagnole para telhado colonial"
+                                                    className="form-input !py-2 !text-sm"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">URL da Imagem (opcional)</label>
+                                                <input
+                                                    type="url"
+                                                    value={card.image_url || ''}
+                                                    onChange={(e) => setCustomCards(prev => prev.map(c => c.id === card.id ? { ...c, image_url: e.target.value || undefined } : c))}
+                                                    placeholder="https://..."
+                                                    className="form-input !py-2 !text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">Observação (opcional)</label>
+                                                <input
+                                                    type="text"
+                                                    value={card.note || ''}
+                                                    onChange={(e) => setCustomCards(prev => prev.map(c => c.id === card.id ? { ...c, note: e.target.value || undefined } : c))}
+                                                    placeholder="Ex: Incluso no kit"
+                                                    className="form-input !py-2 !text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        {card.image_url && (
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <img src={card.image_url} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                                                <span className="text-[10px] text-white/30">Preview da imagem</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {customCards.length < 5 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomCards(prev => [...prev, { id: Date.now(), title: '', description: '' }])}
+                                        className="w-full py-3 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/30 text-white/40 hover:text-primary text-sm font-medium flex items-center justify-center gap-2 transition-all hover:bg-primary/5"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Adicionar Card ({customCards.length}/5)
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Apresentação (Imagem e Observações) */}

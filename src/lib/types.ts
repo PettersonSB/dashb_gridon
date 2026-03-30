@@ -213,6 +213,14 @@ export interface Notification {
     created_at: string;
 }
 
+export interface CustomBudgetCard {
+    id: number;
+    title: string;
+    description: string;
+    image_url?: string;
+    note?: string;
+}
+
 export interface SolarBudget {
     id: string;
 
@@ -266,6 +274,8 @@ export interface SolarBudget {
     cover_image_url?: string | null; // Keep for backward compatibility
     cover_image_urls?: string[] | null; // Array of images for carousel
     show_kit_images?: boolean; // NEW: Toggle to show/hide kit images on the public page
+    custom_cards?: CustomBudgetCard[] | null; // JSONB array, até 5 cards personalizados
+    show_custom_cards?: boolean; // Toggle to show/hide custom cards on the public page
     created_at: string;
     kit?: SolarKit; // For nested joins
 }
