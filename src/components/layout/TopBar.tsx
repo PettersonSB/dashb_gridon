@@ -95,7 +95,7 @@ const TopBar = () => {
 
             <div className="flex items-center gap-2">
                 <a
-                    href="http://gridon.com.br"
+                    href="https://gridon.com.br"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-ghost hidden sm:flex items-center gap-2 text-xs text-muted-foreground mr-2"

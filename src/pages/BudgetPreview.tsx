@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ArrowLeft, ExternalLink, Copy, CheckCheck, Smartphone, Monitor, Loader2 } from "lucide-react";
 
-const BUDGET_BASE_URL = "http://gridon.com.br/orcamento";
+const BUDGET_BASE_URL = "https://gridon.com.br/orcamento";
 
 export default function BudgetPreview() {
     const { id } = useParams();

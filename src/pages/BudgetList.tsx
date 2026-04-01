@@ -23,7 +23,7 @@ import { SolarBudget } from "@/lib/types";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import AnalyticsModal from "@/components/AnalyticsModal";
 
-const BUDGET_BASE_URL = 'http://gridon.com.br/orcamento';
+const BUDGET_BASE_URL = 'https://gridon.com.br/orcamento';
 
 /* ─── Countdown helper for budget list ─── */
 const BudgetCountdown = ({ budget, calculatedStatus }: { budget: SolarBudget; calculatedStatus: SolarBudget['status'] }) => {
