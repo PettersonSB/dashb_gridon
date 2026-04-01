@@ -41,7 +41,7 @@ export default function BudgetPreview() {
                     {/* View Mode Toggle */}
                     <div className="flex items-center bg-white/[0.04] border border-white/[0.08] rounded-xl p-1 gap-0.5">
                         <button
-                            onClick={() => { setViewMode('mobile'); setIframeLoaded(false); }}
+                            onClick={() => setViewMode('mobile')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                 viewMode === 'mobile'
                                     ? 'bg-primary/20 text-primary border border-primary/30'
@@ -52,7 +52,7 @@ export default function BudgetPreview() {
                             Mobile
                         </button>
                         <button
-                            onClick={() => { setViewMode('desktop'); setIframeLoaded(false); }}
+                            onClick={() => setViewMode('desktop')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                 viewMode === 'desktop'
                                     ? 'bg-primary/20 text-primary border border-primary/30'
