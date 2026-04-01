@@ -130,7 +130,6 @@ export default function BudgetPreview() {
                             } ${viewMode === 'mobile' ? 'h-[calc(100%-1.75rem)]' : 'h-full'}`}
                             onLoad={() => setIframeLoaded(true)}
                             title="Prévia do Orçamento"
-                            sandbox="allow-scripts allow-same-origin"
                         />
                     </div>
 
