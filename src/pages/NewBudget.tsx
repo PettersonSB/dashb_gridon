@@ -128,7 +128,7 @@ export default function NewBudget() {
         { id: 3, name: 'Parcelamento 3', installments: 36, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false },
         { id: 4, name: 'Parcelamento 4', installments: 48, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false }
     ]);
-    const [openFinancingAccordion, setOpenFinancingAccordion] = useState<number | null>(0);
+    const [openFinancingAccordion, setOpenFinancingAccordion] = useState<number | string | null>(0);
 
     useEffect(() => {
         const init = async () => {
@@ -1325,74 +1325,104 @@ export default function NewBudget() {
                             </div>
 
                             {/* Pix */}
-                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-black text-white uppercase tracking-wider">PIX</span>
-                                        <span className="text-lg font-black text-primary">
-                                            {pixTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            <div className="rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden transition-all duration-300">
+                                {/* Accordion Header */}
+                                <button
+                                    type="button"
+                                    onClick={() => setOpenFinancingAccordion(openFinancingAccordion === 'pix' ? null : 'pix')}
+                                    className="w-full flex items-center justify-between p-4 bg-primary/10 hover:bg-primary/20 transition-colors border-b border-primary/20"
+                                >
+                                    <div className="flex justify-center w-8">
+                                        {pixEnabled ? (
+                                            <CheckCircle2 className="text-emerald-500 w-5 h-5" />
+                                        ) : (
+                                            <XCircle className="text-red-500 w-5 h-5" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 text-center">
+                                        <span className="font-bold text-white uppercase tracking-wider">
+                                            PIX
                                         </span>
                                     </div>
-
-                                    <div className="flex items-center justify-between gap-3 p-3 bg-white/[0.05] rounded-xl border border-white/10 shadow-inner">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                            <span className="text-[10px] uppercase font-black text-white/50 tracking-widest">Tipo de Cálculo</span>
-                                        </div>
-                                        <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
-                                            <button 
-                                                type="button"
-                                                onClick={() => setPixMode('automatic')}
-                                                className={`px-4 py-1.5 text-xs uppercase font-black rounded-md transition-all ${pixMode === 'automatic' ? 'bg-primary text-black shadow-lg' : 'text-white/30 hover:text-white'}`}
-                                            >
-                                                Automático
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setPixMode('manual')}
-                                                className={`px-4 py-1.5 text-xs uppercase font-black rounded-md transition-all ${pixMode === 'manual' ? 'bg-amber-500 text-black shadow-lg' : 'text-white/30 hover:text-white'}`}
-                                            >
-                                                Manual
-                                            </button>
-                                        </div>
+                                    <div className="flex justify-center w-8">
+                                        <ChevronDown 
+                                            className={`w-5 h-5 text-white/50 transition-transform duration-300 ${openFinancingAccordion === 'pix' ? 'rotate-180 text-white' : ''}`}
+                                        />
                                     </div>
+                                </button>
 
-                                {pixMode === 'automatic' ? (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Desconto (%)</label>
-                                        <div className="relative">
-                                            <input
-                                                type="number"
-                                                value={pixDiscount}
-                                                onChange={(e) => setPixDiscount(e.target.value)}
-                                                className="form-input !py-1.5 !text-xs bg-white/[0.03] !pr-8"
-                                            />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-bold">%</span>
+                                {/* Accordion Body */}
+                                {openFinancingAccordion === 'pix' && (
+                                    <div className="p-4 space-y-3 animate-in fade-in slide-in-from-top-1">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-black text-white uppercase tracking-wider">Valor Final</span>
+                                            <span className="text-lg font-black text-primary">
+                                                {pixTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            </span>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Valor Manual (R$)</label>
-                                        <div className="relative">
+
+                                        <div className="flex items-center justify-between gap-3 p-3 bg-white/[0.05] rounded-xl border border-white/10 shadow-inner">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                                <span className="text-[10px] uppercase font-black text-white/50 tracking-widest">Tipo de Cálculo</span>
+                                            </div>
+                                            <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setPixMode('automatic')}
+                                                    className={`px-4 py-1.5 text-xs uppercase font-black rounded-md transition-all ${pixMode === 'automatic' ? 'bg-primary text-black shadow-lg' : 'text-white/30 hover:text-white'}`}
+                                                >
+                                                    Automático
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setPixMode('manual')}
+                                                    className={`px-4 py-1.5 text-xs uppercase font-black rounded-md transition-all ${pixMode === 'manual' ? 'bg-amber-500 text-black shadow-lg' : 'text-white/30 hover:text-white'}`}
+                                                >
+                                                    Manual
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {pixMode === 'automatic' ? (
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Desconto (%)</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={pixDiscount}
+                                                        onChange={(e) => setPixDiscount(e.target.value)}
+                                                        className="form-input !py-1.5 !text-xs bg-white/[0.03] !pr-8"
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-bold">%</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Valor Manual (R$)</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={pixManualValue}
+                                                        onChange={(e) => setPixManualValue(e.target.value)}
+                                                        className="form-input !py-1.5 !text-xs bg-white/[0.03] !pr-8"
+                                                        placeholder="0,00"
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-bold">R$</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
                                             <input
-                                                type="number"
-                                                value={pixManualValue}
-                                                onChange={(e) => setPixManualValue(e.target.value)}
-                                                className="form-input !py-1.5 !text-xs bg-white/[0.03] !pr-8"
-                                                placeholder="0,00"
+                                                type="checkbox"
+                                                checked={pixEnabled}
+                                                onChange={(e) => setPixEnabled(e.target.checked)}
+                                                className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
                                             />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/20 font-bold">R$</span>
+                                            <label className="text-xs text-white/70">Habilitar PIX</label>
                                         </div>
                                     </div>
                                 )}
-                                <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                    <input
-                                        type="checkbox"
-                                        checked={pixEnabled}
-                                        onChange={(e) => setPixEnabled(e.target.checked)}
-                                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
-                                    />
-                                    <label className="text-xs text-white/70">Habilitar</label>
-                                </div>
                             </div>
 
                             {/* Opções de Parcelamento */}
