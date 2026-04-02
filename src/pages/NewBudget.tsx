@@ -1254,10 +1254,10 @@ export default function NewBudget() {
 
                         <div className="space-y-4">
                              {/* À Vista */}
-                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
+                            <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm font-black text-white uppercase tracking-wider">À vista</span>
-                                        <span className="text-lg font-black text-primary">
+                                        <span className="text-lg font-black text-red-500 line-through">
                                             {cashTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </span>
                                     </div>
