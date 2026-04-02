@@ -130,6 +130,101 @@ export default function NewBudget() {
     ]);
     const [openFinancingAccordion, setOpenFinancingAccordion] = useState<number | string | null>(null);
 
+    // Orçamentos Múltiplos
+    const [isMulti, setIsMulti] = useState(false);
+    const [multiOptions, setMultiOptions] = useState<any[]>([
+        { id: Math.random().toString(36).substring(7), name: 'Opção 1', kit_id: '' }
+    ]);
+    const [activeOptionIndex, setActiveOptionIndex] = useState(0);
+
+    const getCurrentWorkspaceAsOption = (id: string, name: string) => ({
+        id,
+        name,
+        kit_id: selectedKitId,
+        labor_cost: Number(laborCost),
+        engineering_cost: Number(engineeringCost),
+        profit_type: profitType,
+        profit_value: Number(profitValue),
+        commission_type: commissionType,
+        commission_value: Number(commissionValue),
+        tax_type: taxType,
+        tax_value: Number(taxValue),
+        cash_discount: Number(cashDiscount),
+        cash_mode: cashMode,
+        cash_manual_value: Number(cashManualValue),
+        cash_enabled: cashEnabled,
+        pix_discount: Number(pixDiscount),
+        pix_mode: pixMode,
+        pix_manual_value: Number(pixManualValue),
+        pix_enabled: pixEnabled,
+        financing_options: financingOptions
+    });
+
+    const loadOptionIntoWorkspace = (opt: any) => {
+        setSelectedKitId(opt.kit_id || '');
+        setLaborCost(opt.labor_cost?.toString() || '0');
+        setEngineeringCost(opt.engineering_cost?.toString() || '0');
+        setProfitType(opt.profit_type || 'percentage');
+        setProfitValue(opt.profit_value?.toString() || '0');
+        setCommissionType(opt.commission_type || 'percentage');
+        setCommissionValue(opt.commission_value?.toString() || '0');
+        setTaxType(opt.tax_type || 'percentage');
+        setTaxValue(opt.tax_value?.toString() || '0');
+        setCashDiscount(opt.cash_discount?.toString() || '0');
+        setCashMode(opt.cash_mode || 'automatic');
+        setCashManualValue(opt.cash_manual_value?.toString() || '0');
+        setCashEnabled(opt.cash_enabled ?? true);
+        setPixDiscount(opt.pix_discount?.toString() || '0');
+        setPixMode(opt.pix_mode || 'automatic');
+        setPixManualValue(opt.pix_manual_value?.toString() || '0');
+        setPixEnabled(opt.pix_enabled ?? true);
+        if (opt.financing_options) {
+            setFinancingOptions(opt.financing_options);
+        }
+    };
+
+    const handleSwitchOption = (newIndex: number) => {
+        if (newIndex === activeOptionIndex) return;
+        const updated = [...multiOptions];
+        updated[activeOptionIndex] = getCurrentWorkspaceAsOption(updated[activeOptionIndex].id, updated[activeOptionIndex].name);
+        setMultiOptions(updated);
+        loadOptionIntoWorkspace(updated[newIndex]);
+        setActiveOptionIndex(newIndex);
+    };
+
+    const handleAddOption = () => {
+        if (multiOptions.length >= 3) return;
+        const updated = [...multiOptions];
+        updated[activeOptionIndex] = getCurrentWorkspaceAsOption(updated[activeOptionIndex].id, updated[activeOptionIndex].name);
+        const newId = Math.random().toString(36).substring(7);
+        const newName = `Opção ${updated.length + 1}`;
+        updated.push(getCurrentWorkspaceAsOption(newId, newName));
+        setMultiOptions(updated);
+        setActiveOptionIndex(updated.length - 1);
+    };
+
+    const handleRemoveOption = (indexToRemove: number) => {
+        if (multiOptions.length <= 1) return;
+        let updated = [...multiOptions];
+        updated[activeOptionIndex] = getCurrentWorkspaceAsOption(updated[activeOptionIndex].id, updated[activeOptionIndex].name);
+        updated = updated.filter((_, i) => i !== indexToRemove);
+        let newActive = activeOptionIndex;
+        if (activeOptionIndex === indexToRemove) {
+            newActive = Math.max(0, activeOptionIndex - 1);
+        } else if (activeOptionIndex > indexToRemove) {
+            newActive -= 1;
+        }
+        setMultiOptions(updated);
+        setActiveOptionIndex(newActive);
+        loadOptionIntoWorkspace(updated[newActive]);
+    };
+
+    const handleChangeOptionName = (index: number, newName: string) => {
+        const updated = [...multiOptions];
+        updated[index] = { ...updated[index], name: newName };
+        setMultiOptions(updated);
+    };
+
     useEffect(() => {
         const init = async () => {
             await loadKits();
@@ -167,7 +262,6 @@ export default function NewBudget() {
             setSupplyType(budgetData.supply_type);
             setInstallationWarranty(budgetData.installation_warranty.toString());
 
-            setSelectedKitId(budgetData.kit_id);
             setValidityDays(budgetData.proposal_validity_days.toString());
             const savedNotes = budgetData.installation_notes || '';
             setNotes(savedNotes);
@@ -184,54 +278,28 @@ export default function NewBudget() {
             setShowCustomCards(budgetData.show_custom_cards ?? false);
             setCustomCards(budgetData.custom_cards || []);
 
-            // Novos campos financeiros
-            setLaborCost(budgetData.labor_cost?.toString() || '0');
-            setEngineeringCost(budgetData.engineering_cost?.toString() || '0');
-            setProfitType(budgetData.profit_type || 'percentage');
-            setProfitValue(budgetData.profit_value?.toString() || '0');
-            setCommissionType(budgetData.commission_type || 'percentage');
-            setCommissionValue(budgetData.commission_value?.toString() || '0');
-            setTaxType(budgetData.tax_type || 'percentage');
-            setTaxValue(budgetData.tax_value?.toString() || '0');
-            
-            // Novos campos de pagamento
-            setCashDiscount(budgetData.cash_discount?.toString() || '0');
-            setCashMode(budgetData.cash_mode || 'automatic');
-            setCashManualValue(budgetData.cash_manual_value?.toString() || '0');
-            setCashEnabled(budgetData.cash_enabled ?? true);
-            
-            setPixDiscount(budgetData.pix_discount?.toString() || '0');
-            setPixMode(budgetData.pix_mode || 'automatic');
-            setPixManualValue(budgetData.pix_manual_value?.toString() || '0');
-            setPixEnabled(budgetData.pix_enabled ?? true);
+            // MULTI LOADER VS SINGLE LOADER
+            if (budgetData.is_multi && budgetData.multi_options && budgetData.multi_options.length > 0) {
+                setIsMulti(true);
+                setMultiOptions(budgetData.multi_options);
+                loadOptionIntoWorkspace(budgetData.multi_options[0]);
+                setActiveOptionIndex(0);
+            } else {
+                setIsMulti(false);
+                let parsedFinancing = budgetData.financing_options;
+                if (budgetData.financing_options && Array.isArray(budgetData.financing_options)) {
+                    parsedFinancing = [1, 2, 3, 4].map(id => {
+                        const saved = budgetData.financing_options?.find((o: any) => o.id === id);
+                        if (saved) return { ...saved, manualTotalValue: saved.manualTotalValue || '0', calculationMode: saved.calculationMode || 'automatic' };
+                        return { id, name: `Parcelamento ${id}`, installments: id * 12, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0' };
+                    });
+                }
+                loadOptionIntoWorkspace({ ...budgetData, financing_options: parsedFinancing });
+            }
 
             // Audio
             if (budgetData.audio_url) {
                 setExistingAudioUrl(budgetData.audio_url);
-            }
-
-            if (budgetData.financing_options && Array.isArray(budgetData.financing_options)) {
-                // Mesclar opções salvas com estrutura padrão para garantir todos campos (ex: manualTotalValue)
-                const merged = [1, 2, 3, 4].map(id => {
-                    const saved = budgetData.financing_options?.find((o: any) => o.id === id);
-                    if (saved) {
-                        return {
-                            ...saved,
-                            manualTotalValue: saved.manualTotalValue || '0',
-                            calculationMode: saved.calculationMode || 'automatic'
-                        } as FinancingOption;
-                    }
-                    return {
-                        id,
-                        name: `Parcelamento ${id}`,
-                        installments: id * 12,
-                        interest: 0,
-                        enabled: false,
-                        calculationMode: 'automatic',
-                        manualTotalValue: '0'
-                    } as FinancingOption;
-                });
-                setFinancingOptions(merged);
             }
         } catch (err) {
             console.error("Erro ao carregar orçamento", err);
@@ -262,7 +330,16 @@ export default function NewBudget() {
                 finalImageUrls = [...finalImageUrls, ...uploadedUrls];
             }
 
-            const payload = {
+            // Finalizar workspace atual se for multi
+            let finalOptions = [...multiOptions];
+            if (isMulti) {
+                finalOptions[activeOptionIndex] = getCurrentWorkspaceAsOption(
+                    finalOptions[activeOptionIndex].id,
+                    finalOptions[activeOptionIndex].name
+                );
+            }
+
+            const payload: any = {
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 customer_city: customerCity,
@@ -277,7 +354,6 @@ export default function NewBudget() {
                 supply_type: supplyType,
                 installation_warranty: Number(installationWarranty),
 
-                kit_id: selectedKitId,
                 proposal_validity_days: Number(validityDays),
                 installation_notes: includeNotes ? (notes || null) : null,
                 cover_image_urls: finalImageUrls.length > 0 ? finalImageUrls : null,
@@ -286,7 +362,12 @@ export default function NewBudget() {
                 custom_cards: showCustomCards && customCards.length > 0 ? customCards : null,
                 show_custom_cards: showCustomCards,
 
-                // Novos campos financeiros para persistência
+                // Config de Multi Options
+                is_multi: isMulti,
+                multi_options: isMulti ? finalOptions : null,
+
+                // Se single usa workspace normal. Se multi grava workspace atual na raiz por retrocompat
+                kit_id: selectedKitId,
                 labor_cost: Number(laborCost),
                 engineering_cost: Number(engineeringCost),
                 profit_type: profitType,
@@ -648,12 +729,92 @@ export default function NewBudget() {
                     </div>
                 </div>
 
+                {/* Bloco Multiplo: Switcher e Tabs */}
+                <div className="glass-card p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-primary" />
+                            Modo de Orçamento
+                        </h3>
+                        <p className="text-sm text-white/50 mt-1">Gere uma proposta simples ou ofereça múltiplas versões (kits) no mesmo link.</p>
+                    </div>
+                    <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/5 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsMulti(false)}
+                            className={`px-4 py-2.5 rounded-md text-sm font-medium transition-all ${!isMulti ? 'bg-primary text-white shadow-sm' : 'text-white/40 hover:text-white'}`}
+                        >
+                            Orçamento Padrão
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsMulti(true)}
+                            className={`px-4 py-2.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${isMulti ? 'bg-indigo-500 text-white shadow-sm' : 'text-white/40 hover:text-white'}`}
+                        >
+                            Orçamento Múltiplo <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-full">Até 3</span>
+                        </button>
+                    </div>
+                </div>
+
+                {isMulti && (
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-b border-white/10">
+                        {multiOptions.map((opt, idx) => (
+                            <div key={opt.id} className="relative group shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSwitchOption(idx)}
+                                    className={`px-6 py-3 rounded-t-lg text-sm font-medium transition-all flex items-center gap-2 border-t border-l border-r ${
+                                        activeOptionIndex === idx 
+                                        ? 'bg-gradient-to-t from-indigo-500/20 to-transparent border-indigo-500/30 text-indigo-400 border-b-2 border-b-indigo-400' 
+                                        : 'bg-slate-900/40 border-transparent text-white/40 hover:text-white hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {activeOptionIndex === idx ? (
+                                        <input 
+                                            type="text" 
+                                            value={opt.name}
+                                            onChange={(e) => handleChangeOptionName(idx, e.target.value)}
+                                            className="bg-transparent border-none outline-none text-indigo-400 w-32 font-bold px-0 p-0 m-0 focus:ring-0 placeholder:text-indigo-700/50"
+                                            onClick={(e) => e.stopPropagation()}
+                                            placeholder="Ex: Premium"
+                                            maxLength={20}
+                                        />
+                                    ) : (
+                                        <span className="w-32 text-left truncate">{opt.name}</span>
+                                    )}
+                                </button>
+                                {multiOptions.length > 1 && activeOptionIndex === idx && (
+                                    <button 
+                                        type="button" 
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveOption(idx); }}
+                                        className="absolute top-2 right-2 w-5 h-5 rounded-md bg-red-400/10 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-400 hover:text-white"
+                                        title="Remover Opção"
+                                    >
+                                        <XCircle className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        {multiOptions.length < 3 && (
+                            <button
+                                type="button"
+                                onClick={handleAddOption}
+                                className="px-4 py-3 text-sm font-medium text-white/40 hover:text-indigo-400 transition-colors flex items-center gap-2 shrink-0 mb-0.5"
+                            >
+                                <Plus className="w-4 h-4" /> Nova Opção
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Bloco 3: Proposta Comercial */}
-                <div className="glass-card p-6 md:p-8">
-                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-emerald-400" />
-                        Proposta Comercial
-                    </h3>
+                <div className={`glass-card p-6 md:p-8 ${isMulti ? 'border-t-0 rounded-tl-none border-indigo-500/20 bg-indigo-500/5 shadow-[0_0_30px_rgba(99,102,241,0.05)]' : ''}`}>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Zap className={`w-5 h-5 ${isMulti ? 'text-indigo-400' : 'text-emerald-400'}`} />
+                            Proposta Comercial {isMulti && <span className="text-sm font-normal text-indigo-300 ml-2">Editando: <b>{multiOptions[activeOptionIndex]?.name}</b></span>}
+                        </h3>
+                    </div>
 
                     <div className="grid md:grid-cols-2 gap-6 mb-8">
                         <div className="space-y-2">

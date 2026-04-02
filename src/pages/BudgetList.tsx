@@ -301,6 +301,7 @@ export default function BudgetList() {
                                 <th className="px-6 py-4 font-medium">Cliente</th>
                                 <th className="px-6 py-4 font-medium">Data de Criação</th>
                                 <th className="px-6 py-4 font-medium">Potência / Valor Est.</th>
+                                <th className="px-6 py-4 font-medium text-center">Versão</th>
                                 <th className="px-6 py-4 font-medium text-center">Expira em</th>
                                 <th className="px-6 py-4 font-medium text-center">Status</th>
                                 <th className="px-6 py-4 font-medium text-right">Ações</th>
@@ -309,7 +310,7 @@ export default function BudgetList() {
                         <tbody>
                             {filteredBudgets.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-white/40">
+                                    <td colSpan={7} className="px-6 py-8 text-center text-white/40">
                                         Nenhum orçamento encontrado.
                                     </td>
                                 </tr>
@@ -337,7 +338,24 @@ export default function BudgetList() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white font-medium">{budget.kit?.system_power} kWp</div>
-                                                <div className="text-primary text-xs mt-0.5">{formatCurrency(calculateFinalCashPrice(budget))}</div>
+                                                <div className="text-primary text-xs mt-0.5">
+                                                    {budget.is_multi ? (
+                                                        <span><span className="text-white/40 text-[10px] mr-1 uppercase">A partir de</span>{formatCurrency(calculateFinalCashPrice(budget))}</span>
+                                                    ) : (
+                                                        formatCurrency(calculateFinalCashPrice(budget))
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {budget.is_multi ? (
+                                                    <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-md text-xs font-semibold inline-block shadow-[0_0_10px_rgba(99,102,241,0.1)]">
+                                                        Múltiplo
+                                                    </span>
+                                                ) : (
+                                                    <span className="bg-white/5 text-white/50 border border-white/10 px-2.5 py-1 rounded-md text-xs font-medium inline-block">
+                                                        Padrão
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <BudgetCountdown budget={budget} calculatedStatus={calculatedStatus} />

@@ -223,6 +223,34 @@ export interface CustomBudgetCard {
     price?: number;      // valor quando não incluso (isolado do orçamento)
 }
 
+export interface MultiOption {
+    id: string; // Gerado apenas para chaves no front-end
+    name: string; // Ex: Basic (Hoymiles), Premium (Enphase)
+    kit_id: string;
+    kit?: SolarKit;
+
+    // Custos
+    labor_cost?: number;
+    engineering_cost?: number;
+    profit_type?: 'percentage' | 'fixed';
+    profit_value?: number;
+    commission_type?: 'percentage' | 'fixed';
+    commission_value?: number;
+    tax_type?: 'percentage' | 'fixed';
+    tax_value?: number;
+
+    // Métodos de Pagamento
+    cash_discount?: number;
+    cash_mode?: 'automatic' | 'manual';
+    cash_manual_value?: number;
+    cash_enabled?: boolean;
+    pix_discount?: number;
+    pix_mode?: 'automatic' | 'manual';
+    pix_manual_value?: number;
+    pix_enabled?: boolean;
+    financing_options?: any[]; // JSON array
+}
+
 export interface SolarBudget {
     id: string;
 
@@ -266,6 +294,10 @@ export interface SolarBudget {
     pix_manual_value?: number;
     pix_enabled?: boolean;
     financing_options?: any[]; // JSONB array
+
+    // Orçamento Múltiplo (NOVO)
+    is_multi?: boolean;
+    multi_options?: MultiOption[] | null;
 
     // Auditoria e Joins
     created_by: string | null;
