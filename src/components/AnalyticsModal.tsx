@@ -66,6 +66,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
     const [activeTab, setActiveTab] = useState<string>("Visão Geral");
     const [sessions, setSessions] = useState<BudgetSession[]>([]);
     const [multiEvents, setMultiEvents] = useState<any[]>([]);
+    const [isMulti, setIsMulti] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [liveCount, setLiveCount] = useState(0);
     const [maxAudioPct, setMaxAudioPct] = useState(0);
@@ -81,6 +82,10 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             .eq("budget_id", budgetId)
             .order("started_at", { ascending: false });
         if (data) setSessions(data as BudgetSession[]);
+
+        const { data: bData } = await supabase.from("solar_budgets").select("is_multi").eq("id", budgetId).single();
+        if (bData) setIsMulti(bData.is_multi);
+
         setIsLoading(false);
     };
 
@@ -245,7 +250,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
         return stats;
     }, [multiEvents, sessions]);
 
-    const TABS = multiEvents.length > 0 ? [...BASE_TABS, "Multi Opc."] : BASE_TABS;
+    const TABS = (isMulti || multiEvents.length > 0) ? [...BASE_TABS, "Multi Opc."] : BASE_TABS;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
