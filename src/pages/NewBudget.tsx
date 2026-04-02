@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
@@ -128,6 +128,7 @@ export default function NewBudget() {
         { id: 3, name: 'Parcelamento 3', installments: 36, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false },
         { id: 4, name: 'Parcelamento 4', installments: 48, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false }
     ]);
+    const [openFinancingAccordion, setOpenFinancingAccordion] = useState<number | null>(0);
 
     useEffect(() => {
         const init = async () => {
@@ -1395,180 +1396,213 @@ export default function NewBudget() {
                             </div>
 
                             {/* Opções de Parcelamento */}
-                            {financingOptions.map((opt, idx) => {
-                                const calc = calculatedFinancing[idx];
-                                return (
-                                    <div key={opt.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-medium text-white/50">Nome da Opção</label>
-                                            <input
-                                                type="text"
-                                                value={opt.name}
-                                                onChange={(e) => {
-                                                    const newOptions = [...financingOptions];
-                                                    newOptions[idx].name = e.target.value;
-                                                    setFinancingOptions(newOptions);
-                                                }}
-                                                className="form-input !py-2 !text-sm bg-white/[0.03]"
-                                            />
-                                        </div>
+                            <div className="space-y-3">
+                                {financingOptions.map((opt, idx) => {
+                                    const calc = calculatedFinancing[idx];
+                                    const isOpen = openFinancingAccordion === idx;
 
-                                        <div className="flex justify-between items-start">
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <p className="text-sm font-black text-white uppercase tracking-wider">{opt.name}</p>
-                                                    <p className="text-base font-black text-white group-hover:text-primary transition-colors">
-                                                        {calc.totalFinanced.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                                    </p>
+                                    return (
+                                        <div key={opt.id} className="rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden transition-all duration-300">
+                                            {/* Accordion Header */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setOpenFinancingAccordion(isOpen ? null : idx)}
+                                                className="w-full flex items-center justify-between p-4 bg-primary/10 hover:bg-primary/20 transition-colors border-b border-primary/20"
+                                            >
+                                                <div className="flex justify-center w-8">
+                                                    {opt.enabled ? (
+                                                        <CheckCircle2 className="text-emerald-500 w-5 h-5" />
+                                                    ) : (
+                                                        <XCircle className="text-red-500 w-5 h-5" />
+                                                    )}
                                                 </div>
-
-                                                <div className="flex items-center justify-between gap-3 p-2.5 bg-white/[0.05] rounded-xl border border-white/10 shadow-inner">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                                        <span className="text-[9px] uppercase font-black text-white/40 tracking-widest">Cálculo</span>
-                                                    </div>
-                                                    <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newOptions = [...financingOptions];
-                                                                newOptions[idx].calculationMode = 'automatic';
-                                                                setFinancingOptions(newOptions);
-                                                            }}
-                                                            className={`px-3 py-1 text-[10px] uppercase font-black rounded-md transition-all ${opt.calculationMode === 'automatic' ? 'bg-primary text-black shadow-sm' : 'text-white/40 hover:text-white'}`}
-                                                        >
-                                                            Auto
-                                                        </button>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newOptions = [...financingOptions];
-                                                                newOptions[idx].calculationMode = 'manual';
-                                                                setFinancingOptions(newOptions);
-                                                            }}
-                                                            className={`px-3 py-1 text-[10px] uppercase font-black rounded-md transition-all ${opt.calculationMode === 'manual' ? 'bg-amber-500 text-black shadow-sm' : 'text-white/40 hover:text-white'}`}
-                                                        >
-                                                            Manual
-                                                        </button>
-                                                    </div>
+                                                <div className="flex-1 text-center">
+                                                    <span className="font-bold text-white uppercase tracking-wider">
+                                                        Opção {idx + 1}
+                                                    </span>
                                                 </div>
+                                                <div className="flex justify-center w-8">
+                                                    <ChevronDown 
+                                                        className={`w-5 h-5 text-white/50 transition-transform duration-300 ${isOpen ? 'rotate-180 text-white' : ''}`}
+                                                    />
+                                                </div>
+                                            </button>
 
-                                                <p className="text-[10px] text-white/40 flex items-center gap-2">
-                                                    <span className="w-1 h-1 rounded-full bg-white/20" />
-                                                    {opt.installments}x de {calc.monthlyPayment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Nº Parcelas</label>
-                                                <input
-                                                    type="number"
-                                                    value={opt.installments}
-                                                    onChange={(e) => {
-                                                        const newOptions = [...financingOptions];
-                                                        newOptions[idx].installments = Number(e.target.value) || 1;
-                                                        setFinancingOptions(newOptions);
-                                                    }}
-                                                    className="form-input !py-1.5 !text-xs bg-white/[0.03]"
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                {opt.calculationMode === 'automatic' ? (
-                                                    <>
-                                                        <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Juros/mês (%)</label>
+                                            {/* Accordion Body */}
+                                            {isOpen && (
+                                                <div className="p-4 space-y-4 animate-in fade-in slide-in-from-top-1">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[11px] font-medium text-white/50">Nome da Opção</label>
                                                         <input
-                                                            type="number"
-                                                            value={opt.interest}
+                                                            type="text"
+                                                            value={opt.name}
                                                             onChange={(e) => {
                                                                 const newOptions = [...financingOptions];
-                                                                newOptions[idx].interest = Number(e.target.value) || 0;
+                                                                newOptions[idx].name = e.target.value;
                                                                 setFinancingOptions(newOptions);
                                                             }}
-                                                            className="form-input !py-1.5 !text-xs bg-white/[0.03]"
+                                                            className="form-input !py-2 !text-sm bg-white/[0.03]"
                                                         />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Valor Total (R$)</label>
-                                                        <input
-                                                            type="number"
-                                                            value={opt.manualTotalValue}
-                                                            onChange={(e) => {
-                                                                const newOptions = [...financingOptions];
-                                                                newOptions[idx].manualTotalValue = e.target.value;
-                                                                setFinancingOptions(newOptions);
-                                                            }}
-                                                            className="form-input !py-1.5 !text-xs bg-white/[0.03]"
-                                                            placeholder="0,00"
-                                                        />
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
+                                                    </div>
 
-                                        <div className="pt-3 border-t border-white/5 space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Bandeiras Aceitas</label>
-                                                <div className="flex items-center gap-2">
-                                                    {['mastercard', 'visa', 'elo'].map((brand) => (
-                                                        <button
-                                                            key={brand}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newOptions = [...financingOptions];
-                                                                const currentCards = newOptions[idx].acceptedCards || [];
-                                                                if (currentCards.includes(brand)) {
-                                                                    newOptions[idx].acceptedCards = currentCards.filter((c: string) => c !== brand);
-                                                                } else {
-                                                                    newOptions[idx].acceptedCards = [...currentCards, brand];
-                                                                }
-                                                                setFinancingOptions(newOptions);
-                                                            }}
-                                                            className={`px-2 py-0.5 text-[9px] uppercase font-black rounded-sm transition-all ${
-                                                                (opt.acceptedCards || []).includes(brand) ? 'bg-primary text-black shadow-sm' : 'bg-white/5 text-white/40 hover:bg-white/10'
-                                                            }`}
-                                                        >
-                                                            {brand}
-                                                        </button>
-                                                    ))}
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="space-y-3 w-full">
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="text-sm font-black text-white uppercase tracking-wider">{opt.name}</p>
+                                                                <p className="text-base font-black text-white transition-colors">
+                                                                    {calc.totalFinanced.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between gap-3 p-2.5 bg-white/[0.05] rounded-xl border border-white/10 shadow-inner">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                                                    <span className="text-[9px] uppercase font-black text-white/40 tracking-widest">Cálculo</span>
+                                                                </div>
+                                                                <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newOptions = [...financingOptions];
+                                                                            newOptions[idx].calculationMode = 'automatic';
+                                                                            setFinancingOptions(newOptions);
+                                                                        }}
+                                                                        className={`px-3 py-1 text-[10px] uppercase font-black rounded-md transition-all ${opt.calculationMode === 'automatic' ? 'bg-primary text-black shadow-sm' : 'text-white/40 hover:text-white'}`}
+                                                                    >
+                                                                        Auto
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newOptions = [...financingOptions];
+                                                                            newOptions[idx].calculationMode = 'manual';
+                                                                            setFinancingOptions(newOptions);
+                                                                        }}
+                                                                        className={`px-3 py-1 text-[10px] uppercase font-black rounded-md transition-all ${opt.calculationMode === 'manual' ? 'bg-amber-500 text-black shadow-sm' : 'text-white/40 hover:text-white'}`}
+                                                                    >
+                                                                        Manual
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <p className="text-[10px] text-white/40 flex items-center gap-2">
+                                                                <span className="w-1 h-1 rounded-full bg-white/20" />
+                                                                {opt.installments}x de {calc.monthlyPayment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Nº Parcelas</label>
+                                                            <input
+                                                                type="number"
+                                                                value={opt.installments}
+                                                                onChange={(e) => {
+                                                                    const newOptions = [...financingOptions];
+                                                                    newOptions[idx].installments = Number(e.target.value) || 1;
+                                                                    setFinancingOptions(newOptions);
+                                                                }}
+                                                                className="form-input !py-1.5 !text-xs bg-white/[0.03]"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            {opt.calculationMode === 'automatic' ? (
+                                                                <>
+                                                                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Juros/mês (%)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={opt.interest}
+                                                                        onChange={(e) => {
+                                                                            const newOptions = [...financingOptions];
+                                                                            newOptions[idx].interest = Number(e.target.value) || 0;
+                                                                            setFinancingOptions(newOptions);
+                                                                        }}
+                                                                        className="form-input !py-1.5 !text-xs bg-white/[0.03]"
+                                                                    />
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Valor Total (R$)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={opt.manualTotalValue}
+                                                                        onChange={(e) => {
+                                                                            const newOptions = [...financingOptions];
+                                                                            newOptions[idx].manualTotalValue = e.target.value;
+                                                                            setFinancingOptions(newOptions);
+                                                                        }}
+                                                                        className="form-input !py-1.5 !text-xs bg-white/[0.03]"
+                                                                        placeholder="0,00"
+                                                                    />
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-3 border-t border-white/5 space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Bandeiras Aceitas</label>
+                                                            <div className="flex items-center gap-2">
+                                                                {['mastercard', 'visa', 'elo'].map((brand) => (
+                                                                    <button
+                                                                        key={brand}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newOptions = [...financingOptions];
+                                                                            const currentCards = newOptions[idx].acceptedCards || [];
+                                                                            if (currentCards.includes(brand)) {
+                                                                                newOptions[idx].acceptedCards = currentCards.filter((c: string) => c !== brand);
+                                                                            } else {
+                                                                                newOptions[idx].acceptedCards = [...currentCards, brand];
+                                                                            }
+                                                                            setFinancingOptions(newOptions);
+                                                                        }}
+                                                                        className={`px-2 py-0.5 text-[9px] uppercase font-black rounded-sm transition-all ${
+                                                                            (opt.acceptedCards || []).includes(brand) ? 'bg-primary text-black shadow-sm' : 'bg-white/5 text-white/40 hover:bg-white/10'
+                                                                        }`}
+                                                                    >
+                                                                        {brand}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center justify-between">
+                                                             <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={opt.interestFree || false}
+                                                                    onChange={(e) => {
+                                                                        const newOptions = [...financingOptions];
+                                                                        newOptions[idx].interestFree = e.target.checked;
+                                                                        setFinancingOptions(newOptions);
+                                                                    }}
+                                                                    className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
+                                                                />
+                                                                <label className="text-[11px] text-white/70 font-medium">Oferecer Sem Juros</label>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={opt.enabled}
+                                                                    onChange={(e) => {
+                                                                        const newOptions = [...financingOptions];
+                                                                        newOptions[idx].enabled = e.target.checked;
+                                                                        setFinancingOptions(newOptions);
+                                                                    }}
+                                                                    className="w-4 h-4 rounded border-emerald-500/30 bg-white/5 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer"
+                                                                />
+                                                                <label className="text-[11px] text-emerald-500 font-bold">Habilitar Opção</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            
-                                            <div className="flex items-center justify-between">
-                                                 <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={opt.interestFree || false}
-                                                        onChange={(e) => {
-                                                            const newOptions = [...financingOptions];
-                                                            newOptions[idx].interestFree = e.target.checked;
-                                                            setFinancingOptions(newOptions);
-                                                        }}
-                                                        className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/20 cursor-pointer"
-                                                    />
-                                                    <label className="text-[11px] text-white/70 font-medium">Oferecer Sem Juros</label>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={opt.enabled}
-                                                        onChange={(e) => {
-                                                            const newOptions = [...financingOptions];
-                                                            newOptions[idx].enabled = e.target.checked;
-                                                            setFinancingOptions(newOptions);
-                                                        }}
-                                                        className="w-4 h-4 rounded border-emerald-500/30 bg-white/5 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer"
-                                                    />
-                                                    <label className="text-[11px] text-emerald-500 font-bold">Habilitar Opção</label>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    </div>
-                               
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
 
                             {financingOptions.length < 4 && (
                                 <button
