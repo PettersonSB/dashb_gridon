@@ -446,7 +446,19 @@ export default function NewBudget() {
     }
 
     return (
-        <div className="animate-fade-in space-y-6 pb-20">
+        <div className="animate-fade-in space-y-6 pb-20 relative">
+            {/* Toast Notification */}
+            {(isSubmitting || successMessage || error) && (
+                <div className={`fixed top-[70px] left-1/2 -translate-x-1/2 z-[100] px-8 py-3 rounded-b-xl shadow-2xl border-x border-b animate-in slide-in-from-top-4 fade-in duration-300 font-bold text-white text-sm text-center min-w-[250px] shadow-black/50 ${
+                    error ? 'bg-red-500 border-red-600' : 
+                    successMessage ? 'bg-emerald-500 border-emerald-600' : 
+                    'bg-blue-600 border-blue-700 flex items-center justify-center gap-2'
+                }`}>
+                    {isSubmitting && !successMessage && !error && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {error ? 'Erro ao salvar' : successMessage ? 'Salvo com sucesso' : 'Salvando...'}
+                </div>
+            )}
+
             <div className="flex items-center gap-4 mb-8">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                     <Calculator className="w-5 h-5 text-primary" />
@@ -461,18 +473,7 @@ export default function NewBudget() {
                 {/* Coluna Esquerda: Dados do Formulário */}
                 <div className="lg:col-span-8 space-y-6">
 
-                {/* Alertas */}
-                {error && (
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium">
-                        {error}
-                    </div>
-                )}
-                {successMessage && (
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        {successMessage}
-                    </div>
-                )}
+                {/* Alertas removidos, agora exibidos no Toast Notification */}
 
                 {/* Bloco 1: Dados do Cliente */}
                 <div className="glass-card p-6 md:p-8">
