@@ -128,7 +128,7 @@ export default function NewBudget() {
         { id: 3, name: 'Parcelamento 3', installments: 36, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false },
         { id: 4, name: 'Parcelamento 4', installments: 48, interest: 0, enabled: false, calculationMode: 'automatic', manualTotalValue: '0', acceptedCards: [], interestFree: false }
     ]);
-    const [openFinancingAccordion, setOpenFinancingAccordion] = useState<number | string | null>(0);
+    const [openFinancingAccordion, setOpenFinancingAccordion] = useState<number | string | null>(null);
 
     useEffect(() => {
         const init = async () => {
