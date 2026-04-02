@@ -4,7 +4,7 @@ import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 
 const DashboardLayout = () => {
-    const [isSidebarPinned, setIsSidebarPinned] = useState(true);
+    const [isSidebarPinned, setIsSidebarPinned] = useState(false);
 
     return (
         <div className="min-h-screen bg-background">
