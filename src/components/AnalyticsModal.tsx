@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import {
     X,
@@ -59,13 +59,13 @@ const fmtDate = (iso: string) => {
     return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 };
 
-const TABS = ["Visão Geral", "Dispositivos", "Tráfego", "CTAs", "Sessões"] as const;
-type Tab = typeof TABS[number];
+const BASE_TABS = ["Visão Geral", "Dispositivos", "Tráfego", "CTAs", "Sessões"];
 
 // ─── AnalyticsModal Component ────────────────────────────────────────────
 export default function AnalyticsModal({ budgetId, customerName, onClose }: AnalyticsModalProps) {
-    const [activeTab, setActiveTab] = useState<Tab>("Visão Geral");
+    const [activeTab, setActiveTab] = useState<string>("Visão Geral");
     const [sessions, setSessions] = useState<BudgetSession[]>([]);
+    const [multiEvents, setMultiEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [liveCount, setLiveCount] = useState(0);
     const [maxAudioPct, setMaxAudioPct] = useState(0);
@@ -107,6 +107,17 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
         if (videoData && videoData.length > 0) {
             const maxPct = Math.max(...videoData.map(e => (e.event_data as any)?.milestone || 0));
             if (isFinite(maxPct)) setMaxVideoPct(maxPct);
+        }
+
+        // Fetch multi events
+        const { data: mData } = await supabase
+            .from("budget_events")
+            .select("event_data, created_at, session_id")
+            .eq("budget_id", budgetId)
+            .eq("event_type", "multi_option_select")
+            .order("created_at", { ascending: true });
+        if (mData) {
+            setMultiEvents(mData);
         }
     };
 
@@ -199,6 +210,42 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             allCTAs[k] = (allCTAs[k] || 0) + v;
         });
     });
+
+    // ─── Multi Option Stats ───────────────────────────────────────
+    const multiStats = useMemo(() => {
+        const stats: Record<string, { clicks: number, duration: number }> = {};
+        const sessionsEvents: Record<string, any[]> = {};
+        
+        multiEvents.forEach(e => {
+            if (!sessionsEvents[e.session_id]) sessionsEvents[e.session_id] = [];
+            sessionsEvents[e.session_id].push(e);
+        });
+
+        Object.entries(sessionsEvents).forEach(([sid, evts]) => {
+            const sessionData = sessions.find(s => s.id === sid);
+            evts.forEach((evt, i) => {
+                const optName = evt.event_data?.name || `Opção ${evt.event_data?.index + 1}`;
+                if (!stats[optName]) stats[optName] = { clicks: 0, duration: 0 };
+                stats[optName].clicks++;
+
+                let endTime = 0;
+                if (i + 1 < evts.length) {
+                    endTime = new Date(evts[i+1].created_at).getTime();
+                } else if (sessionData?.last_seen_at) {
+                    endTime = new Date(sessionData.last_seen_at).getTime();
+                } else {
+                    endTime = new Date(evt.created_at).getTime() + 10000;
+                }
+
+                const startTime = new Date(evt.created_at).getTime();
+                const diffSecs = Math.max(0, Math.floor((endTime - startTime) / 1000));
+                stats[optName].duration += Math.min(diffSecs, 15 * 60);
+            });
+        });
+        return stats;
+    }, [multiEvents, sessions]);
+
+    const TABS = multiEvents.length > 0 ? [...BASE_TABS, "Multi Opc."] : BASE_TABS;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -484,6 +531,65 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                             );
                                         })}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* ═══ TAB 6 — MULTI OPC ══════════════════════════════════════════ */}
+                            {activeTab === "Multi Opc." && (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Activity className="w-4 h-4 text-emerald-500" />
+                                        <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest leading-none">Análise Comparativa de Versões (Mobile/Desktop)</p>
+                                    </div>
+                                    
+                                    {Object.keys(multiStats).length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-32 text-center">
+                                            <p className="text-slate-400 dark:text-white/30 text-sm">Nenhum evento múltiplo registrado ainda.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {Object.entries(multiStats).sort((a,b) => b[1].duration - a[1].duration).map(([optName, data], idx) => (
+                                                <div key={optName} className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-xl p-5 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300">
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-400/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none group-hover:bg-emerald-500/10 transition-all duration-500" />
+                                                    
+                                                    {idx === 0 && (
+                                                        <div className="absolute top-3 right-3 flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-emerald-500/20">
+                                                            <Activity className="w-3 h-3" /> Campeão
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex items-center gap-3 mb-5">
+                                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-500/20 dark:to-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center">
+                                                            <span className="text-emerald-600 dark:text-emerald-400 font-black text-lg">
+                                                                {optName.charAt(0).toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-slate-900 dark:text-white font-bold leading-tight">{optName}</h4>
+                                                            <p className="text-[10px] text-slate-500 dark:text-white/40 uppercase tracking-wider font-semibold">Métricas de Foco</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-4 mt-2 pt-4 border-t border-slate-200 dark:border-white/[0.06]">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <MousePointer2 className="w-3.5 h-3.5 text-slate-400 dark:text-white/30" />
+                                                                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-white/40">Visitas</p>
+                                                            </div>
+                                                            <p className="text-2xl font-black font-mono text-slate-900 dark:text-white">{data.clicks}</p>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-white/30" />
+                                                                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-white/40">Tempo Gasto</p>
+                                                            </div>
+                                                            <p className="text-2xl font-black font-mono text-slate-900 dark:text-white">{fmtDuration(data.duration)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>
