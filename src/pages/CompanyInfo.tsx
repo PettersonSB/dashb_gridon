@@ -65,7 +65,8 @@ const CompanyInfoPage = () => {
         const { data, error } = await supabase.storage.from('company_video').upload(fileName, file, { upsert: true });
         
         if (error) {
-            setVideoError("Erro ao enviar vídeo: verifique se o bucket 'company_video' está público ou criado.");
+            console.error('Upload error:', error);
+            setVideoError(`Erro ao enviar vídeo: ${error.message || 'Verifique as políticas de Storage no Supabase.'}`);
         } else if (data) {
             const { data: publicData } = supabase.storage.from('company_video').getPublicUrl(data.path);
             set("institutional_video_url", publicData.publicUrl);
