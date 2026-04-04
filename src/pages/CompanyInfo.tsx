@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Save, Loader2, CheckCircle } from "lucide-react";
+import { Save, Loader2, CheckCircle, UploadCloud, Film, X } from "lucide-react";
 import { useSupabaseSingle, upsertRow } from "@/hooks/useSupabase";
+import { supabase } from "@/lib/supabase";
 import type { CompanyInfo as CompanyInfoType } from "@/lib/types";
 import { PortfolioManager } from "@/components/PortfolioManager";
 
@@ -14,6 +15,64 @@ const CompanyInfoPage = () => {
     });
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [uploadingVideo, setUploadingVideo] = useState(false);
+    const [videoError, setVideoError] = useState("");
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setVideoError("");
+
+        if (file.size > 45 * 1024 * 1024) {
+            setVideoError("O vídeo excedeu o limite de 45MB.");
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.src = url;
+        
+        let hasError = false;
+        await new Promise<void>((resolve) => {
+            video.onloadedmetadata = () => {
+                if (video.duration > 62) {
+                    setVideoError("O vídeo excede o tempo máximo de 1 minuto.");
+                    hasError = true;
+                }
+                resolve();
+            };
+            video.onerror = () => {
+                setVideoError("Arquivo corrompido ou formato inválido.");
+                hasError = true;
+                resolve();
+            };
+        });
+
+        if (hasError) return;
+
+        setUploadingVideo(true);
+
+        if (form.institutional_video_url && form.institutional_video_url.includes('company_video')) {
+            const oldPath = form.institutional_video_url.split('/company_video/')[1];
+            if (oldPath) {
+                await supabase.storage.from('company_video').remove([oldPath]);
+            }
+        }
+
+        const ext = file.name.split('.').pop() || 'mp4';
+        const fileName = `${Date.now()}_video.${ext}`;
+        const { data, error } = await supabase.storage.from('company_video').upload(fileName, file, { upsert: true });
+        
+        if (error) {
+            setVideoError("Erro ao enviar vídeo: verifique se o bucket 'company_video' está público ou criado.");
+        } else if (data) {
+            const { data: publicData } = supabase.storage.from('company_video').getPublicUrl(data.path);
+            set("institutional_video_url", publicData.publicUrl);
+            await handleSave(); // Auto save
+        }
+        setUploadingVideo(false);
+    };
 
     useEffect(() => {
         if (company) {
@@ -144,9 +203,44 @@ const CompanyInfoPage = () => {
             <div className="glass-card p-6 space-y-5">
                 <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider">Apresentação da Empresa</h3>
                 <div>
-                    <label className="form-label">Link do Vídeo Institucional (YouTube)</label>
-                    <input className="form-input" placeholder="https://www.youtube.com/watch?v=..." value={form.institutional_video_url} onChange={(e) => set("institutional_video_url", e.target.value)} />
-                    <p className="text-xs text-white/40 mt-1">Este vídeo aparecerá automaticamente nas propostas de orçamento.</p>
+                    <label className="form-label">Vídeo Institucional</label>
+                    <p className="text-xs text-white/40 mb-3">Máximo 1 minuto e 45MB. Ele substituirá automaticamente o vídeo atual.</p>
+                    
+                    {form.institutional_video_url ? (
+                        <div className="relative rounded-lg overflow-hidden border border-white/10 group bg-black/40">
+                            <video className="w-full max-h-[300px] object-cover" src={form.institutional_video_url} controls={false} />
+                            
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <label className="cursor-pointer glow-btn inline-flex items-center gap-2 mb-2">
+                                    <UploadCloud className="w-4 h-4" /> Trocar Vídeo
+                                    <input type="file" accept="video/mp4, video/webm, video/ogg" className="hidden" onChange={handleVideoUpload} disabled={uploadingVideo} />
+                                </label>
+                                <button type="button" onClick={() => set("institutional_video_url", "")} className="text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1">
+                                    <X className="w-3 h-3" /> Remover Vídeo
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <label className={`cursor-pointer w-full flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg transition-colors
+                            ${uploadingVideo ? 'border-primary/50 bg-primary/5 cursor-wait' : 'border-white/10 hover:border-primary/50 hover:bg-white/5'}`}>
+                            {uploadingVideo ? (
+                                <>
+                                    <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                                    <span className="text-sm text-primary font-medium">Enviando vídeo... Aguarde.</span>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                                        <Film className="w-6 h-6 text-white/40" />
+                                    </div>
+                                    <span className="text-sm text-white/60 font-medium">Selecionar vídeo do dispositivo</span>
+                                    <span className="text-xs text-white/30 mt-1">MP4 ou WebM (Max 45MB)</span>
+                                </>
+                            )}
+                            <input type="file" accept="video/mp4, video/webm, video/ogg" className="hidden" onChange={handleVideoUpload} disabled={uploadingVideo} />
+                        </label>
+                    )}
+                    {videoError && <p className="text-red-400 text-xs mt-2 font-medium">{videoError}</p>}
                 </div>
             </div>
 

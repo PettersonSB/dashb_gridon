@@ -96,7 +96,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             .select("event_data")
             .eq("budget_id", budgetId)
             .eq("event_type", "audio_progress");
-        
+
         if (audioData && audioData.length > 0) {
             const maxPct = Math.max(...audioData.map(e => (e.event_data as any)?.milestone || 0));
             if (isFinite(maxPct)) setMaxAudioPct(maxPct);
@@ -108,7 +108,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             .select("event_data")
             .eq("budget_id", budgetId)
             .eq("event_type", "video_progress");
-        
+
         if (videoData && videoData.length > 0) {
             const maxPct = Math.max(...videoData.map(e => (e.event_data as any)?.milestone || 0));
             if (isFinite(maxPct)) setMaxVideoPct(maxPct);
@@ -174,7 +174,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
             eventsChannelRef.current?.unsubscribe();
             clearInterval(liveInterval);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [budgetId]);
 
     // ─── Computed metrics ────────────────────────────────────────────
@@ -220,7 +220,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
     const multiStats = useMemo(() => {
         const stats: Record<string, { clicks: number, duration: number }> = {};
         const sessionsEvents: Record<string, any[]> = {};
-        
+
         multiEvents.forEach(e => {
             if (!sessionsEvents[e.session_id]) sessionsEvents[e.session_id] = [];
             sessionsEvents[e.session_id].push(e);
@@ -235,7 +235,7 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
 
                 let endTime = 0;
                 if (i + 1 < evts.length) {
-                    endTime = new Date(evts[i+1].created_at).getTime();
+                    endTime = new Date(evts[i + 1].created_at).getTime();
                 } else if (sessionData?.last_seen_at) {
                     endTime = new Date(sessionData.last_seen_at).getTime();
                 } else {
@@ -546,17 +546,17 @@ export default function AnalyticsModal({ budgetId, customerName, onClose }: Anal
                                         <Activity className="w-4 h-4 text-emerald-500" />
                                         <p className="text-[11px] font-semibold text-slate-400 dark:text-white/30 uppercase tracking-widest leading-none">Análise Comparativa de Versões (Mobile/Desktop)</p>
                                     </div>
-                                    
+
                                     {Object.keys(multiStats).length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-32 text-center">
                                             <p className="text-slate-400 dark:text-white/30 text-sm">Nenhum evento múltiplo registrado ainda.</p>
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {Object.entries(multiStats).sort((a,b) => b[1].duration - a[1].duration).map(([optName, data], idx) => (
+                                            {Object.entries(multiStats).sort((a, b) => b[1].duration - a[1].duration).map(([optName, data], idx) => (
                                                 <div key={optName} className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06] rounded-xl p-5 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300">
                                                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-400/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none group-hover:bg-emerald-500/10 transition-all duration-500" />
-                                                    
+
                                                     {idx === 0 && (
                                                         <div className="absolute top-3 right-3 flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-emerald-500/20">
                                                             <Activity className="w-3 h-3" /> Campeão
