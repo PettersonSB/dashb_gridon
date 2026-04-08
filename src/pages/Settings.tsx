@@ -2,7 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/services/profileService';
 import { settingsService } from '@/services/settingsService';
-import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon, Smartphone, Download, ChevronRight, Sparkles } from 'lucide-react';
+
+interface AppVersion {
+    id: string;
+    version: string;
+    build_number: number;
+    apk_url: string;
+    mandatory: boolean;
+    changelog: string;
+    created_at: string;
+}
 
 export default function Settings() {
     const { user } = useAuth();
@@ -25,6 +36,10 @@ export default function Settings() {
     const [isSavingSiteTheme, setIsSavingSiteTheme] = useState(false);
     const [themeMessage, setThemeMessage] = useState({ type: '', text: '' });
 
+    // App Download State
+    const [appVersion, setAppVersion] = useState<AppVersion | null>(null);
+    const [isLoadingApp, setIsLoadingApp] = useState(true);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -33,7 +48,27 @@ export default function Settings() {
             setSiteTheme(theme);
         };
         loadSettings();
+        fetchLatestAppVersion();
     }, []);
+
+    const fetchLatestAppVersion = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('app_versions')
+                .select('*')
+                .order('build_number', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (!error && data) {
+                setAppVersion(data as AppVersion);
+            }
+        } catch {
+            // Silently fail
+        } finally {
+            setIsLoadingApp(false);
+        }
+    };
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -302,6 +337,90 @@ export default function Settings() {
                             {themeMessage.text}
                         </div>
                     )}
+                </div>
+
+                {/* Bloco: Aplicativo Gridon (Full Width) */}
+                <div className="glass-card md:col-span-2 overflow-hidden">
+                    {/* Gradient header */}
+                    <div className="relative px-6 pt-6 pb-5" style={{ background: 'linear-gradient(135deg, hsl(195 100% 50% / 0.06), transparent, hsl(220 80% 55% / 0.04))' }}>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            <span className="text-xs font-semibold text-primary uppercase tracking-[0.15em]">Aplicativo</span>
+                        </div>
+                        <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                            <Smartphone className="w-5 h-5 text-primary" />
+                            Gridon App para Android
+                        </h3>
+                        <p className="text-sm text-white/40 mt-1">
+                            Baixe e compartilhe o aplicativo para gerenciar orçamentos pelo celular.
+                        </p>
+                    </div>
+
+                    <div className="px-6 pb-6 pt-2">
+                        {isLoadingApp ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                            </div>
+                        ) : !appVersion ? (
+                            <div className="flex items-center gap-4 py-6 px-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                                <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                                    <Smartphone className="w-6 h-6 text-white/30" />
+                                </div>
+                                <p className="text-sm text-white/40">Nenhuma versão do app disponível no momento.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-5">
+                                {/* App card */}
+                                <div className="flex items-start gap-4">
+                                    {/* App icon with gradient */}
+                                    <div className="relative flex-shrink-0">
+                                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(195 100% 50%), hsl(195 100% 40%))' }}>
+                                            <Smartphone className="w-8 h-8 text-white" />
+                                        </div>
+                                        {/* Active pulse */}
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[hsl(228,30%,6%)] flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-base font-semibold text-white mb-1">Gridon</h4>
+                                        <p className="text-xs text-white/40 mb-3">Acesse orçamentos, clientes e métricas direto do celular.</p>
+
+                                        {/* Version badge */}
+                                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            Versão {appVersion.version} · Build {appVersion.build_number}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Changelog */}
+                                {appVersion.changelog && (
+                                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                                        <p className="text-xs font-semibold text-white/30 uppercase tracking-wider mb-2">Novidades</p>
+                                        <p className="text-sm text-white/50 leading-relaxed whitespace-pre-line">{appVersion.changelog}</p>
+                                    </div>
+                                )}
+
+                                {/* Download button */}
+                                <a
+                                    href={appVersion.apk_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="glow-btn w-full inline-flex items-center justify-center gap-3 group"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    Baixar APK
+                                    <ChevronRight className="w-4 h-4 opacity-60 group-hover:translate-x-1 transition-transform" />
+                                </a>
+
+                                <p className="text-center text-[11px] text-white/20">
+                                    Android 7.0+ · Última atualização: {new Date(appVersion.created_at).toLocaleDateString('pt-BR')}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
             </div>
