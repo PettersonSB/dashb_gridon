@@ -354,22 +354,24 @@ export default function Settings() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {/* Header row: icon + info + download */}
-                            <div className="flex items-center gap-4">
-                                <img
-                                    src="/android-chrome-192x192.png"
-                                    alt="Gridon App"
-                                    className="w-12 h-12 rounded-xl flex-shrink-0"
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-base font-semibold text-white">Gridon App para Android</h3>
-                                    <p className="text-xs text-white/40">Baixe o aplicativo para gerenciar orçamentos pelo celular.</p>
+                            {/* Header: icon + info (always row), button below on mobile */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <img
+                                        src="/android-chrome-192x192.png"
+                                        alt="Gridon App"
+                                        className="w-11 h-11 rounded-xl flex-shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                        <h3 className="text-base font-semibold text-white">Gridon App para Android</h3>
+                                        <p className="text-xs text-white/40">Baixe o aplicativo para gerenciar orçamentos pelo celular.</p>
+                                    </div>
                                 </div>
                                 <a
                                     href={appVersion.apk_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex-shrink-0 bg-primary hover:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                                    className="w-full sm:w-auto flex-shrink-0 bg-primary hover:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                 >
                                     <Download className="w-4 h-4" />
                                     Baixar APK
