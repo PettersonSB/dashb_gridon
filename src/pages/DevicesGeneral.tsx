@@ -23,6 +23,7 @@ export default function DevicesGeneral() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'online' | 'offline'>('all');
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const {
         data: devices = [],
@@ -34,15 +35,21 @@ export default function DevicesGeneral() {
         refetchInterval: 30000, // auto-refresh a cada 30s
     });
 
-    // Sincronizar dispositivos com a Tuya via Edge Function
+    // Sincronizar dispositivos com a Tuya + buscar dados elétricos
     const handleSync = async () => {
         setIsSyncing(true);
         try {
+            // 1. Sincronizar lista de dispositivos
             await deviceService.syncDevices();
             await refetch();
+
+            // 2. Buscar dados elétricos em tempo real de cada dispositivo
+            await deviceService.refreshAllDevicesData();
+            await refetch();
+
             emitToast({
                 title: 'Sincronizado!',
-                description: 'Dispositivos atualizados com sucesso.',
+                description: 'Dispositivos e dados elétricos atualizados.',
             });
         } catch (err) {
             console.error(err);
@@ -53,6 +60,28 @@ export default function DevicesGeneral() {
             });
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    // Atualizar apenas os dados elétricos (sem re-sincronizar a lista)
+    const handleRefreshData = async () => {
+        setIsRefreshing(true);
+        try {
+            await deviceService.refreshAllDevicesData();
+            await refetch();
+            emitToast({
+                title: 'Dados atualizados!',
+                description: 'Leituras elétricas atualizadas em tempo real.',
+            });
+        } catch (err) {
+            console.error(err);
+            emitToast({
+                title: 'Erro',
+                description: 'Não foi possível atualizar os dados.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsRefreshing(false);
         }
     };
 
@@ -84,16 +113,12 @@ export default function DevicesGeneral() {
 
     const formatVoltage = (v: number | null) => {
         if (v == null) return '—';
-        // A Tuya costuma retornar tensão em decivolts (ex: 2200 = 220.0V)
-        const val = v > 1000 ? v / 10 : v;
-        return `${val.toFixed(1)} V`;
+        return `${v.toFixed(1)} V`;
     };
 
     const formatCurrent = (c: number | null) => {
         if (c == null) return '—';
-        // A Tuya costuma retornar corrente em mA (ex: 540 = 0.54A)
-        const val = c > 100 ? c / 1000 : c;
-        return `${val.toFixed(2)} A`;
+        return `${c.toFixed(2)} A`;
     };
 
     const formatUpdatedAt = (dt: string) => {
@@ -123,14 +148,26 @@ export default function DevicesGeneral() {
                     </div>
                 </div>
 
-                <button
-                    onClick={handleSync}
-                    disabled={isSyncing}
-                    className="glow-btn flex items-center gap-2 text-sm !px-5 !py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Sincronizando...' : 'Sincronizar Tuya'}
-                </button>
+                <div className="flex items-center gap-2">
+                    {devices.length > 0 && (
+                        <button
+                            onClick={handleRefreshData}
+                            disabled={isRefreshing || isSyncing}
+                            className="btn-ghost flex items-center gap-2 text-sm !border !border-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Activity className={`w-4 h-4 ${isRefreshing ? 'animate-pulse' : ''}`} />
+                            {isRefreshing ? 'Atualizando...' : 'Atualizar Dados'}
+                        </button>
+                    )}
+                    <button
+                        onClick={handleSync}
+                        disabled={isSyncing || isRefreshing}
+                        className="glow-btn flex items-center gap-2 text-sm !px-5 !py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'Sincronizando...' : 'Sincronizar Tuya'}
+                    </button>
+                </div>
             </div>
 
             {/* Stats Overview */}

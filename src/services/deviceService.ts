@@ -1,6 +1,15 @@
 import { supabase } from '@/lib/supabase';
 import { Device, DeviceLog } from '@/lib/types';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+/** Helper para obter o token JWT da sessão ativa */
+async function getAuthToken(): Promise<string> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || ANON_KEY;
+}
+
 export const deviceService = {
 
     /** Busca todos os dispositivos (última leitura / cache) */
@@ -66,43 +75,31 @@ export const deviceService = {
     },
 
     /**
-     * Chama a Edge Function do Supabase que sincroniza os dispositivos com a Tuya.
-     * Após receber a resposta, faz upsert na tabela `devices` para persistir os dados.
-     * Retorna a lista atualizada de dispositivos.
+     * Sincroniza os dispositivos com a Tuya via Edge Function.
+     * Persiste os dados na tabela `devices` via upsert.
      */
     async syncDevices() {
-        // 1. Obter o user_id e sessão do usuário logado
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Usuário não autenticado');
 
-        const { data: { session } } = await supabase.auth.getSession();
+        const token = await getAuthToken();
 
-        // 2. Chamar a Edge Function via fetch direto com token JWT
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-        const response = await fetch(`${supabaseUrl}/functions/v1/sync-devices`, {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/sync-devices`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token || anonKey}`,
-                'apikey': anonKey,
+                'Authorization': `Bearer ${token}`,
+                'apikey': ANON_KEY,
             },
         });
 
         if (!response.ok) {
             const errBody = await response.text();
-            console.error('Edge Function error:', response.status, errBody);
+            console.error('sync-devices error:', response.status, errBody);
             throw new Error(`Edge Function retornou ${response.status}`);
         }
 
-        const data = await response.json();
-        const error = null;
-        if (error) throw error;
-
-        // A resposta da Edge Function tem o formato:
-        // { etapa: "SUCESSO", total: 2, devices: [{ device_id, name, online }, ...] }
-        const syncResult = data as {
+        const syncResult = await response.json() as {
             etapa: string;
             total: number;
             devices: Array<{
@@ -116,12 +113,12 @@ export const deviceService = {
             return syncResult;
         }
 
-        // 3. Upsert dos dispositivos na tabela `devices`
+        // Upsert dos dispositivos na tabela `devices`
         const upsertRows = syncResult.devices.map((d) => ({
             device_id: d.device_id,
             user_id: user.id,
             name: d.name,
-            online: String(d.online), // converter boolean → string "true"/"false"
+            online: String(d.online),
             updated_at: new Date().toISOString(),
         }));
 
@@ -138,15 +135,83 @@ export const deviceService = {
     },
 
     /**
-     * Chama a Edge Function tuya-token para buscar dados em tempo real 
-     * de um dispositivo específico na Tuya.
+     * Busca dados elétricos em tempo real de um dispositivo na Tuya via Edge Function `tuya-token`.
+     * Retorna: { voltage, current, power, isOn, online }
      */
     async fetchRealtimeData(deviceId: string) {
-        const { data, error } = await supabase.functions.invoke('tuya-token', {
-            body: { device_id: deviceId },
+        const token = await getAuthToken();
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/tuya-token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': ANON_KEY,
+            },
+            body: JSON.stringify({ device_id: deviceId }),
         });
 
-        if (error) throw error;
-        return data;
+        if (!response.ok) {
+            const errBody = await response.text();
+            console.error(`tuya-token error for ${deviceId}:`, response.status, errBody);
+            throw new Error(`Edge Function retornou ${response.status}`);
+        }
+
+        return await response.json() as {
+            etapa: string;
+            voltage: number | null;
+            current: number | null;
+            power: number | null;
+            isOn: boolean;
+            online: string;
+        };
+    },
+
+    /**
+     * Busca os dados elétricos de TODOS os dispositivos em paralelo,
+     * atualiza a tabela `devices` com os valores e retorna os dados.
+     */
+    async refreshAllDevicesData() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
+        // 1. Buscar lista de dispositivos já salvos no banco
+        const devices = await this.getDevices();
+        if (!devices.length) return [];
+
+        // 2. Buscar dados em tempo real de cada dispositivo (paralelo)
+        const results = await Promise.allSettled(
+            devices.map(async (device) => {
+                const realtime = await this.fetchRealtimeData(device.device_id);
+
+                // 3. Atualizar no banco
+                const { error } = await supabase
+                    .from('devices')
+                    .update({
+                        voltage: realtime.voltage,
+                        current: realtime.current,
+                        power: realtime.power,
+                        is_on: realtime.isOn,
+                        online: realtime.online === 'online' ? 'true' : 'false',
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('device_id', device.device_id);
+
+                if (error) console.error(`Erro ao atualizar ${device.device_id}:`, error);
+
+                return { device_id: device.device_id, ...realtime };
+            })
+        );
+
+        const successful = results
+            .filter((r) => r.status === 'fulfilled')
+            .map((r) => (r as PromiseFulfilledResult<any>).value);
+
+        const failed = results.filter((r) => r.status === 'rejected');
+        if (failed.length) {
+            console.warn(`${failed.length} dispositivo(s) falharam na atualização`);
+        }
+
+        return successful;
     },
 };
