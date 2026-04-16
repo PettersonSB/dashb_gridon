@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deviceService } from '@/services/deviceService';
 import { Device } from '@/lib/types';
 import { emitToast } from '@/components/ui/Toaster';
+import DeviceDetailModal from '@/components/DeviceDetailModal';
 import {
     Smartphone,
     Zap,
@@ -16,7 +17,27 @@ import {
     Search,
     LayoutGrid,
     List,
+    Timer,
+    ChevronDown,
 } from 'lucide-react';
+
+const REFRESH_OPTIONS = [
+    { label: '1 min', value: 60 },
+    { label: '2 min', value: 120 },
+    { label: '5 min', value: 300 },
+    { label: '10 min', value: 600 },
+    { label: 'Manual', value: 0 },
+];
+
+const STORAGE_KEY_INTERVAL = 'gridon_device_refresh_interval';
+
+function loadInterval(): number {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY_INTERVAL);
+        if (saved) return parseInt(saved, 10);
+    } catch { /* ignore */ }
+    return 300; // 5 min default
+}
 
 export default function DevicesGeneral() {
     const queryClient = useQueryClient();
@@ -24,6 +45,14 @@ export default function DevicesGeneral() {
     const [filterStatus, setFilterStatus] = useState<'all' | 'online' | 'offline'>('all');
     const [isSyncing, setIsSyncing] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+
+    // Auto-refresh state
+    const [intervalSeconds, setIntervalSeconds] = useState(loadInterval);
+    const [countdown, setCountdown] = useState(loadInterval());
+    const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const refreshLock = useRef(false);
 
     const {
         data: devices = [],
@@ -32,8 +61,60 @@ export default function DevicesGeneral() {
     } = useQuery({
         queryKey: ['devices'],
         queryFn: () => deviceService.getDevices(),
-        refetchInterval: 30000, // auto-refresh a cada 30s
+        refetchInterval: 30000,
     });
+
+    // Silent auto-refresh cycle
+    const doSilentRefresh = useCallback(async () => {
+        if (refreshLock.current) return;
+        refreshLock.current = true;
+        try {
+            await deviceService.refreshAllDevicesData();
+            await refetch();
+        } catch (e) {
+            console.warn('Auto-refresh falhou:', e);
+        } finally {
+            refreshLock.current = false;
+        }
+    }, [refetch]);
+
+    // Countdown timer effect
+    useEffect(() => {
+        if (intervalSeconds === 0) {
+            // Manual mode — no timer
+            if (timerRef.current) clearInterval(timerRef.current);
+            return;
+        }
+
+        setCountdown(intervalSeconds);
+
+        timerRef.current = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    doSilentRefresh();
+                    return intervalSeconds;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [intervalSeconds, doSilentRefresh]);
+
+    const changeInterval = (seconds: number) => {
+        setIntervalSeconds(seconds);
+        setCountdown(seconds);
+        localStorage.setItem(STORAGE_KEY_INTERVAL, String(seconds));
+        setShowIntervalDropdown(false);
+    };
+
+    const formatCountdown = (s: number) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m}:${sec.toString().padStart(2, '0')}`;
+    };
 
     // Sincronizar dispositivos com a Tuya + buscar dados elétricos
     const handleSync = async () => {
@@ -173,8 +254,43 @@ export default function DevicesGeneral() {
                     </div>
                 </div>
 
-                {/* Buttons */}
+                {/* Buttons + Timer */}
                 <div className="flex items-center gap-2">
+                    {/* Countdown Timer */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowIntervalDropdown(!showIntervalDropdown)}
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
+                        >
+                            <Timer className="w-4 h-4 text-primary" />
+                            {intervalSeconds === 0 ? (
+                                <span className="text-white/50">Manual</span>
+                            ) : (
+                                <span className="text-white/70 font-mono tabular-nums min-w-[36px] text-center">
+                                    {formatCountdown(countdown)}
+                                </span>
+                            )}
+                            <ChevronDown className="w-3 h-3 text-white/30" />
+                        </button>
+
+                        {showIntervalDropdown && (
+                            <div className="absolute right-0 top-full mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-xl py-1 z-50 min-w-[140px] animate-fade-in">
+                                {REFRESH_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => changeInterval(opt.value)}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-white/5 transition-colors ${
+                                            intervalSeconds === opt.value ? 'text-primary font-semibold' : 'text-white/60'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                        {opt.value === 300 && <span className="text-[10px] text-white/30 ml-2">(padrão)</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {devices.length > 0 && (
                         <button
                             onClick={handleRefreshData}
@@ -252,9 +368,18 @@ export default function DevicesGeneral() {
                             formatVoltage={formatVoltage}
                             formatCurrent={formatCurrent}
                             formatUpdatedAt={formatUpdatedAt}
+                            onClick={() => setSelectedDevice(device)}
                         />
                     ))}
                 </div>
+            )}
+
+            {/* Device Detail Modal */}
+            {selectedDevice && (
+                <DeviceDetailModal
+                    device={selectedDevice}
+                    onClose={() => setSelectedDevice(null)}
+                />
             )}
         </div>
     );
@@ -268,18 +393,22 @@ function DeviceCard({
     formatVoltage,
     formatCurrent,
     formatUpdatedAt,
+    onClick,
 }: {
     device: Device;
     formatPower: (w: number | null) => string;
     formatVoltage: (v: number | null) => string;
     formatCurrent: (c: number | null) => string;
     formatUpdatedAt: (dt: string) => string;
+    onClick: () => void;
 }) {
     const isOnline = device.online === 'true';
     const isOn = device.is_on === true;
 
     return (
-        <div className="bg-[#1A1D24] border border-white/[0.04] rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 w-full relative overflow-hidden group hover:border-white/10 transition-colors">
+        <div
+            onClick={onClick}
+            className="bg-[#1A1D24] border border-white/[0.04] rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 w-full relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
             
             {/* Status Indicator Glow */}
             <div

@@ -184,7 +184,7 @@ export const deviceService = {
             devices.map(async (device) => {
                 const realtime = await this.fetchRealtimeData(device.device_id);
 
-                // 3. Atualizar no banco
+                // 3. Atualizar no banco (tabela devices — valores atuais)
                 const { error } = await supabase
                     .from('devices')
                     .update({
@@ -198,6 +198,21 @@ export const deviceService = {
                     .eq('device_id', device.device_id);
 
                 if (error) console.error(`Erro ao atualizar ${device.device_id}:`, error);
+
+                // 4. Gravar snapshot no histórico (tabela device_logs)
+                if (realtime.voltage != null || realtime.current != null || realtime.power != null) {
+                    const { error: logError } = await supabase
+                        .from('device_logs')
+                        .insert({
+                            device_id: device.device_id,
+                            user_id: user.id,
+                            voltage: realtime.voltage,
+                            current: realtime.current,
+                            power: realtime.power,
+                        });
+
+                    if (logError) console.warn(`Erro ao gravar log de ${device.device_id}:`, logError);
+                }
 
                 return { device_id: device.device_id, ...realtime };
             })
@@ -213,5 +228,60 @@ export const deviceService = {
         }
 
         return successful;
+    },
+
+    /**
+     * Busca o histórico de logs de um dispositivo para um determinado período.
+     * Retorna os registros brutos ordenados por data.
+     * 
+     * Ranges:
+     * - 'day'   → últimas 24h
+     * - 'week'  → últimos 7 dias
+     * - 'month' → últimos 30 dias
+     * - 'year'  → últimos 365 dias
+     */
+    async getDeviceHistory(deviceId: string, range: 'day' | 'week' | 'month' | 'year', offset = 0) {
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date;
+
+        // Calcular janela baseada no range + offset (para navegação)
+        switch (range) {
+            case 'day':
+                endDate = new Date(now);
+                endDate.setDate(endDate.getDate() - offset);
+                startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 1);
+                break;
+            case 'week':
+                endDate = new Date(now);
+                endDate.setDate(endDate.getDate() - (offset * 7));
+                startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 7);
+                break;
+            case 'month':
+                endDate = new Date(now);
+                endDate.setMonth(endDate.getMonth() - offset);
+                startDate = new Date(endDate);
+                startDate.setMonth(startDate.getMonth() - 1);
+                break;
+            case 'year':
+                endDate = new Date(now);
+                endDate.setFullYear(endDate.getFullYear() - offset);
+                startDate = new Date(endDate);
+                startDate.setFullYear(startDate.getFullYear() - 1);
+                break;
+        }
+
+        const { data, error } = await supabase
+            .from('device_logs')
+            .select('*')
+            .eq('device_id', deviceId)
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return { logs: data as DeviceLog[], startDate, endDate };
     },
 };
