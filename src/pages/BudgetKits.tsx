@@ -25,10 +25,11 @@ export default function BudgetKits() {
     const [editingKit, setEditingKit] = useState<SolarKit | null>(null);
     const [activeTab, setActiveTab] = useState('list');
     const [successMessage, setSuccessMessage] = useState('');
+    const [isKitModalOpen, setIsKitModalOpen] = useState(false);
 
     const handleEditKit = (kit: SolarKit) => {
         setEditingKit(kit);
-        setActiveTab('new');
+        setIsKitModalOpen(true);
     };
 
     const handleDeleteKit = async (id: string) => {
@@ -66,19 +67,13 @@ export default function BudgetKits() {
                 </div>
             )}
 
-            <Tabs value={activeTab} onValueChange={(v) => {
-                setActiveTab(v);
-                if (v === 'new' && !editingKit) setEditingKit(null);
-            }} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="bg-slate-900 border border-white/5">
                     <TabsTrigger value="list" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                         Kits Cadastrados
                     </TabsTrigger>
                     <TabsTrigger value="products" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                         Produtos
-                    </TabsTrigger>
-                    <TabsTrigger value="new" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                        {editingKit ? 'Editar Kit' : 'Novo Kit'}
                     </TabsTrigger>
                 </TabsList>
 
@@ -87,9 +82,12 @@ export default function BudgetKits() {
                     <KitList
                         kits={kits}
                         isLoadingKits={isLoadingKits}
-                        setActiveTab={setActiveTab}
                         handleEditKit={handleEditKit}
                         handleDeleteKit={handleDeleteKit}
+                        onOpenNewKit={() => {
+                            setEditingKit(null);
+                            setIsKitModalOpen(true);
+                        }}
                     />
                 </TabsContent>
 
@@ -97,23 +95,37 @@ export default function BudgetKits() {
                 <TabsContent value="products" className="space-y-6 outline-none">
                     <ProductList />
                 </TabsContent>
-
-                {/* TAB: NEW / EDIT */}
-                <TabsContent value="new" className="glass-card p-6 md:p-8 outline-none">
-
-                    <KitForm
-                        initialKit={editingKit}
-                        onSuccess={() => {
-                            refetchKits();
-                            setActiveTab('list');
-                        }}
-                        onCancel={() => {
-                            setEditingKit(null);
-                            setActiveTab('list');
-                        }}
-                    />
-                </TabsContent>
             </Tabs>
+
+            {/* MODAL POP-UP FOR KIT FORM */}
+            {isKitModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-[#1A1D24] border border-white/10 rounded-2xl shadow-2xl custom-scrollbar relative">
+                        {/* Close button sticky at the top right of modal container */}
+                        <div className="sticky top-0 right-0 p-4 flex justify-end z-[60] bg-gradient-to-b from-[#1A1D24] to-transparent pointer-events-none">
+                             <button
+                                onClick={() => setIsKitModalOpen(false)}
+                                className="pointer-events-auto bg-black/50 text-white/50 hover:text-white p-2 rounded-full backdrop-blur-md hover:bg-white/10 transition-colors"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="p-6 md:p-8 pt-0">
+                            <KitForm
+                                initialKit={editingKit}
+                                onSuccess={() => {
+                                    refetchKits();
+                                    setIsKitModalOpen(false);
+                                }}
+                                onCancel={() => {
+                                    setEditingKit(null);
+                                    setIsKitModalOpen(false);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
         </div>

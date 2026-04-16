@@ -1,16 +1,16 @@
 import React from 'react';
-import { Loader2, Sun, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Sun, Edit2, Trash2, Image as ImageIcon, Plus } from 'lucide-react';
 import { SolarKit } from '@/lib/types';
 
 interface KitListProps {
     kits: SolarKit[];
     isLoadingKits: boolean;
-    setActiveTab: (tab: string) => void;
     handleEditKit: (kit: SolarKit) => void;
     handleDeleteKit: (id: string) => void;
+    onOpenNewKit: () => void;
 }
 
-export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditKit, handleDeleteKit }: KitListProps) {
+export default function KitList({ kits, isLoadingKits, handleEditKit, handleDeleteKit, onOpenNewKit }: KitListProps) {
     if (isLoadingKits) {
         return (
             <div className="flex justify-center p-12">
@@ -26,7 +26,7 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
                 <h3 className="text-xl font-bold text-white mb-2 font-display">Nenhum Kit Encontrado</h3>
                 <p className="text-white/40 mb-6 max-w-sm">Você ainda não possui kits cadastrados. Crie um novo kit para poder gerar orçamentos.</p>
                 <button
-                    onClick={() => setActiveTab('new')}
+                    onClick={onOpenNewKit}
                     className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 >
                     Cadastrar Kit
@@ -36,8 +36,20 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
     }
 
     return (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {kits.map(kit => (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center bg-white/[0.02] p-2 rounded-xl border border-white/5">
+                <span className="text-sm text-white/50 px-2">{kits.length} kit(s) cadastrado(s)</span>
+                <button
+                    onClick={onOpenNewKit}
+                    className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
+                >
+                    <Plus className="w-4 h-4" />
+                    Novo Kit
+                </button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {kits.map(kit => (
                 <div key={kit.id} className="glass-card hover:bg-white/5 transition-colors overflow-hidden flex flex-col">
 
                     <div className="p-5 flex-1 flex flex-col">
@@ -126,6 +138,7 @@ export default function KitList({ kits, isLoadingKits, setActiveTab, handleEditK
                     </div>
                 </div>
             ))}
+            </div>
         </div>
     );
 }
