@@ -279,83 +279,85 @@ function DeviceCard({
     const isOn = device.is_on === true;
 
     return (
-        <div className="glass-card-hover group relative overflow-hidden flex flex-col p-4 gap-4 w-full">
-            {/* Status Indicator Light – top border glow */}
+        <div className="bg-[#1A1D24] border border-white/[0.04] rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 w-full relative overflow-hidden group hover:border-white/10 transition-colors">
+            
+            {/* Status Indicator Glow */}
             <div
                 className={`absolute top-0 left-0 right-0 h-[2px] transition-colors ${
                     isOnline
                         ? isOn
-                            ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.4)]'
-                            : 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)]'
-                        : 'bg-red-400/50'
+                            ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.3)]'
+                            : 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.2)]'
+                        : 'bg-red-400/30'
                 }`}
             />
 
-            {/* Top Row: Name, ID, Power */}
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex flex-col min-w-0 flex-1">
-                    <h4 className="text-base font-semibold text-cyan-400 truncate group-hover:text-cyan-300 transition-colors">
-                        {device.name || 'Sem nome'}
-                    </h4>
-                    <p className="text-[10px] text-white/40 mt-0.5 font-mono truncate">
-                        {device.device_id}
-                    </p>
+            {/* --- LEFT SECTION: Name & Info --- */}
+            <div className="flex flex-col flex-1 min-w-0 w-full">
+                <h4 className="text-[17px] font-bold text-[#00C2FF] truncate">
+                    {device.name || 'Sem nome'}
+                </h4>
+                <p className="text-[11px] text-[#A0AEC0] mt-0.5 font-mono truncate">
+                    {device.device_id}
+                </p>
+                <div className="w-[80%] h-px bg-white/[0.06] mt-3 mb-2" />
+                <span className="text-[12px] text-[#718096] font-medium">
+                    Atualizado: {formatUpdatedAt(device.updated_at).replace('Atualizado: ', '')}
+                </span>
+            </div>
+
+            {/* --- MIDDLE SECTION: Power Box --- */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+                <div className={`w-[46px] h-[52px] rounded-2xl flex items-center justify-center border-2 ${
+                    isOn
+                        ? 'border-[#EAB308] bg-[#EAB308]/5'
+                        : 'border-[#4A5568] bg-transparent'
+                }`}>
+                    <Power className={`w-6 h-6 ${isOn ? 'text-[#EAB308]' : 'text-[#4A5568]'}`} strokeWidth={2.5} />
                 </div>
-                
-                {/* Power Compact Box */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className={`w-9 h-9 rounded-xl flex flex-shrink-0 items-center justify-center transition-colors border ${
-                        isOn
-                            ? 'border-amber-500/40 bg-amber-500/10'
-                            : 'bg-white/[0.04] border-white/[0.06]'
-                    }`}>
-                        <Power className={`w-4 h-4 ${isOn ? 'text-amber-500' : 'text-white/20'}`} />
-                    </div>
-                    <div className="flex flex-col justify-center">
-                        <span className="text-xl font-display font-bold text-white tracking-tight leading-none">
-                            {formatPower(device.power)}
-                        </span>
-                        <p className="text-[9px] text-white/40 mt-1 uppercase tracking-wider font-medium">
-                            {isOn ? 'Ativo' : 'Inativo'}
-                        </p>
-                    </div>
+                <div className="flex flex-col justify-center">
+                    <span className="text-[28px] font-bold text-white leading-none tracking-tight">
+                        {formatPower(device.power)}
+                    </span>
+                    <span className="text-[11px] text-[#A0AEC0] mt-1 leading-tight">
+                        {isOn ? (
+                            <>Consumindo<br/>agora</>
+                        ) : (
+                            <>Desligado<br/>agora</>
+                        )}
+                    </span>
                 </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-full h-px bg-white/5" />
-
-            {/* Bottom Row: Metrics & Status */}
-            <div className="flex items-center justify-between gap-3">
-                <div className="bg-white/[0.02] rounded-xl border border-white/[0.04] p-2.5 flex flex-1">
-                    <div className="flex-1 flex flex-col items-start pr-2 relative">
-                        <div className="flex items-center gap-1 mb-1">
-                            <Zap className="w-3 h-3 text-blue-400" />
-                            <span className="text-[9px] text-white/50 uppercase tracking-widest font-medium">Tensão</span>
+            {/* --- RIGHT SECTION: Metrics --- */}
+            <div className="flex flex-col items-end shrink-0 w-full md:w-auto mt-2 md:mt-0">
+                <div className="bg-[#13151A] rounded-2xl border border-white/[0.03] p-3 flex items-center w-full min-w-[210px]">
+                    {/* Tensão */}
+                    <div className="flex-1 flex flex-col pl-2 pr-4 relative">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                            <Zap className="w-[14px] h-[14px] text-[#4299E1]" strokeWidth={2.5} />
+                            <span className="text-[10px] text-[#A0AEC0] uppercase tracking-widest font-semibold">Tensão</span>
                         </div>
-                        <span className="text-sm font-bold text-white leading-none">{formatVoltage(device.voltage)}</span>
-                        {/* Divider */}
-                        <div className="absolute right-0 top-0.5 bottom-0.5 w-px bg-white/[0.06]" />
+                        <span className="text-lg font-bold text-white leading-none">{formatVoltage(device.voltage)}</span>
+                        {/* Vertical Divider */}
+                        <div className="absolute right-0 top-1 bottom-1 w-px bg-white/[0.06]" />
                     </div>
-                    <div className="flex-1 flex flex-col items-start pl-3">
-                        <div className="flex items-center gap-1 mb-1">
-                            <Activity className="w-3 h-3 text-cyan-400" />
-                            <span className="text-[9px] text-white/50 uppercase tracking-widest font-medium">Corrente</span>
+                    {/* Corrente */}
+                    <div className="flex-1 flex flex-col pl-4 pr-2">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                            <Activity className="w-[14px] h-[14px] text-[#00C2FF]" strokeWidth={2.5} />
+                            <span className="text-[10px] text-[#A0AEC0] uppercase tracking-widest font-semibold">Corrente</span>
                         </div>
-                        <span className="text-sm font-bold text-white leading-none">{formatCurrent(device.current)}</span>
+                        <span className="text-lg font-bold text-white leading-none">{formatCurrent(device.current)}</span>
                     </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1.5 flex-shrink-0 justify-center">
-                    <span className="text-[9px] text-white/30 uppercase tracking-widest font-medium text-right max-w-[80px]">
-                        Atualizado:
+                {/* Bottom Right Dot */}
+                <div className="flex items-center gap-2 mt-2 pr-1">
+                    <span className="text-[11px] text-[#718096] font-medium">
+                        Atualizado: {formatUpdatedAt(device.updated_at).replace('Atualizado: ', '')}
                     </span>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-white/40 font-medium">
-                            {formatUpdatedAt(device.updated_at).replace('Atualizado: ', '')}
-                        </span>
-                        <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                    </div>
+                    <div className={`w-[9px] h-[9px] rounded-full ${isOnline ? 'bg-[#38A169]' : 'bg-[#E53E3E]'}`} />
                 </div>
             </div>
         </div>
