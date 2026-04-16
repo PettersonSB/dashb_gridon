@@ -137,43 +137,43 @@ export default function DevicesGeneral() {
     return (
         <div className="animate-fade-in space-y-8 pb-20">
             {/* Header */}
-            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-8">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex flex-shrink-0 items-center justify-center">
-                            <Smartphone className="w-5 h-5 text-violet-400" />
-                        </div>
-                        <div>
-                            <h2 className="section-title !mb-0">Dispositivos</h2>
-                            <p className="section-subtitle">Monitoramento em tempo real dos seus dispositivos IoT</p>
-                        </div>
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative">
+                {/* Title */}
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex flex-shrink-0 items-center justify-center">
+                        <Smartphone className="w-5 h-5 text-violet-400" />
                     </div>
-
-                    {/* Inline Stats */}
-                    <div className="flex items-center gap-6 px-6 py-2.5 bg-white/[0.02] border border-white/[0.04] rounded-2xl w-fit">
-                        <div className="flex flex-col items-center">
-                            <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
-                                <Smartphone className="w-3 h-3 text-violet-400" /> Total
-                            </span>
-                            <span className="text-xl font-display font-bold text-white mt-0.5">{totalDevices}</span>
-                        </div>
-                        <div className="w-px h-8 bg-white/[0.06]" />
-                        <div className="flex flex-col items-center">
-                            <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
-                                <Wifi className="w-3 h-3 text-emerald-400" /> Online
-                            </span>
-                            <span className="text-xl font-display font-bold text-emerald-400 mt-0.5">{onlineCount}</span>
-                        </div>
-                        <div className="w-px h-8 bg-white/[0.06]" />
-                        <div className="flex flex-col items-center">
-                            <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
-                                <WifiOff className="w-3 h-3 text-red-400" /> Offline
-                            </span>
-                            <span className="text-xl font-display font-bold text-red-400 mt-0.5">{offlineCount}</span>
-                        </div>
+                    <div>
+                        <h2 className="section-title !mb-0">Dispositivos</h2>
+                        <p className="section-subtitle">Monitoramento em tempo real dos seus dispositivos IoT</p>
                     </div>
                 </div>
 
+                {/* Inline Stats (Centered) */}
+                <div className="flex items-center gap-6 px-6 py-2.5 bg-white/[0.02] border border-white/[0.04] rounded-2xl w-fit xl:absolute xl:left-1/2 xl:-translate-x-1/2">
+                    <div className="flex flex-col items-center">
+                        <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
+                            <Smartphone className="w-3 h-3 text-violet-400" /> Total
+                        </span>
+                        <span className="text-xl font-display font-bold text-white mt-0.5">{totalDevices}</span>
+                    </div>
+                    <div className="w-px h-8 bg-white/[0.06]" />
+                    <div className="flex flex-col items-center">
+                        <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
+                            <Wifi className="w-3 h-3 text-emerald-400" /> Online
+                        </span>
+                        <span className="text-xl font-display font-bold text-emerald-400 mt-0.5">{onlineCount}</span>
+                    </div>
+                    <div className="w-px h-8 bg-white/[0.06]" />
+                    <div className="flex flex-col items-center">
+                        <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
+                            <WifiOff className="w-3 h-3 text-red-400" /> Offline
+                        </span>
+                        <span className="text-xl font-display font-bold text-red-400 mt-0.5">{offlineCount}</span>
+                    </div>
+                </div>
+
+                {/* Buttons */}
                 <div className="flex items-center gap-2">
                     {devices.length > 0 && (
                         <button
