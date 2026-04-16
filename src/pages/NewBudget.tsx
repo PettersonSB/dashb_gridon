@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon, ChevronDown, CheckCircle2, XCircle, Copy } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
@@ -608,6 +608,17 @@ export default function NewBudget() {
                     <p className="section-subtitle">{isEditing ? 'Atualize as informações da proposta financeira' : 'Gere propostas financeiras atreladas aos Kits Solares'}</p>
                 </div>
             </div>
+
+            {/* Alerta de Orçamento Duplicado */}
+            {new URLSearchParams(location.search).get('duplicated') === 'true' && (
+                <div className="mb-6 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-start gap-3 animate-fade-in">
+                    <Copy className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                        <h4 className="text-sm font-semibold text-cyan-400">Orçamento Duplicado</h4>
+                        <p className="text-xs text-cyan-400/70 mt-0.5">Este orçamento foi duplicado de um existente. Atualize os dados do cliente e demais informações com cautela antes de salvar.</p>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="grid lg:grid-cols-12 gap-8 items-start">
                 {/* Coluna Esquerda: Dados do Formulário */}

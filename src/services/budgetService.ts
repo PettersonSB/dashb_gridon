@@ -69,6 +69,41 @@ export const budgetService = {
         return data as SolarBudget;
     },
 
+    async duplicateBudget(originalId: string): Promise<SolarBudget> {
+        // 1. Buscar o orçamento original completo
+        const { data: original, error: fetchError } = await supabase
+            .from('solar_budgets')
+            .select('*')
+            .eq('id', originalId)
+            .single();
+
+        if (fetchError || !original) throw fetchError || new Error('Orçamento não encontrado');
+
+        // 2. Remover campos que devem ser regenerados
+        const { id, created_at, status, created_by, created_by_name, created_by_avatar, ...clonePayload } = original;
+
+        // 3. Obter usuário atual
+        const { data: userData } = await supabase.auth.getUser();
+        const createdByName = userData.user?.user_metadata?.full_name || userData.user?.email || 'Sistema';
+        const createdByAvatar = userData.user?.user_metadata?.avatar_url || null;
+
+        // 4. Inserir como novo orçamento
+        const { data: newBudget, error: insertError } = await supabase
+            .from('solar_budgets')
+            .insert([{
+                ...clonePayload,
+                status: 'novo',
+                created_by: userData.user?.id || null,
+                created_by_name: createdByName,
+                created_by_avatar: createdByAvatar
+            }])
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+        return newBudget as SolarBudget;
+    },
+
     async deleteBudget(id: string) {
         const { error } = await supabase
             .from('solar_budgets')

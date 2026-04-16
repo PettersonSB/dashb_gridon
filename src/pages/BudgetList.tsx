@@ -16,7 +16,8 @@ import {
     ThumbsUp,
     ThumbsDown,
     Clock,
-    BarChart2
+    BarChart2,
+    Copy
 } from "lucide-react";
 import { budgetService } from "@/services/budgetService";
 import { SolarBudget } from "@/lib/types";
@@ -180,6 +181,18 @@ export default function BudgetList() {
             loadBudgets();
         } catch (error) {
             emitToast({ title: "Erro", description: "Erro ao excluir o orçamento.", variant: "destructive" });
+        }
+    };
+
+    const handleDuplicate = async (id: string) => {
+        if (!await confirmAction({ title: "Duplicar Orçamento", message: "Será criada uma cópia idêntica deste orçamento para que você possa editá-la. Deseja continuar?", variant: "info" })) return;
+        try {
+            const newBudget = await budgetService.duplicateBudget(id);
+            emitToast({ title: "Sucesso", description: "Orçamento duplicado com sucesso! Redirecionando para edição..." });
+            navigate(`/budget/edit/${newBudget.id}?duplicated=true`);
+        } catch (error) {
+            console.error(error);
+            emitToast({ title: "Erro", description: "Erro ao duplicar o orçamento.", variant: "destructive" });
         }
     };
 
@@ -442,6 +455,15 @@ export default function BudgetList() {
                                                             {budget.status === 'suspenso' ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
                                                         </button>
                                                     )}
+
+                                                    {/* Duplicar */}
+                                                    <button
+                                                        onClick={() => handleDuplicate(budget.id)}
+                                                        className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-lg transition-colors"
+                                                        title="Duplicar Orçamento"
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
 
                                                     {/* Editar */}
                                                     <button
