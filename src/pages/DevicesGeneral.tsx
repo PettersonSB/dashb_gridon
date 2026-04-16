@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deviceService } from '@/services/deviceService';
 import { Device } from '@/lib/types';
@@ -22,11 +22,10 @@ import {
 } from 'lucide-react';
 
 const REFRESH_OPTIONS = [
-    { label: '1 min', value: 60 },
-    { label: '2 min', value: 120 },
-    { label: '5 min', value: 300 },
-    { label: '10 min', value: 600 },
-    { label: 'Manual', value: 0 },
+    { label: '1 min', value: 60, cron: '*/1 * * * *' },
+    { label: '2 min', value: 120, cron: '*/2 * * * *' },
+    { label: '5 min', value: 300, cron: '*/5 * * * *' },
+    { label: '10 min', value: 600, cron: '*/10 * * * *' },
 ];
 
 const STORAGE_KEY_INTERVAL = 'gridon_device_refresh_interval';
@@ -47,12 +46,11 @@ export default function DevicesGeneral() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
-    // Auto-refresh state
+    // Server-aware timer state
     const [intervalSeconds, setIntervalSeconds] = useState(loadInterval);
     const [countdown, setCountdown] = useState(loadInterval());
     const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const refreshLock = useRef(false);
 
     const {
         data: devices = [],
@@ -61,37 +59,29 @@ export default function DevicesGeneral() {
     } = useQuery({
         queryKey: ['devices'],
         queryFn: () => deviceService.getDevices(),
-        refetchInterval: 30000,
+        refetchInterval: 30000, // relê o banco a cada 30s para pegar novos dados do cron
     });
 
-    // Silent auto-refresh cycle
-    const doSilentRefresh = useCallback(async () => {
-        if (refreshLock.current) return;
-        refreshLock.current = true;
-        try {
-            await deviceService.refreshAllDevicesData();
-            await refetch();
-        } catch (e) {
-            console.warn('Auto-refresh falhou:', e);
-        } finally {
-            refreshLock.current = false;
-        }
-    }, [refetch]);
-
-    // Countdown timer effect
+    // Countdown timer — apenas estima a próxima execução do cron e relê o banco
     useEffect(() => {
-        if (intervalSeconds === 0) {
-            // Manual mode — no timer
-            if (timerRef.current) clearInterval(timerRef.current);
-            return;
+        // Calcula countdown inicial baseado no updated_at mais recente
+        if (devices.length > 0) {
+            const latestUpdate = devices.reduce((latest, d) => {
+                const t = new Date(d.updated_at).getTime();
+                return t > latest ? t : latest;
+            }, 0);
+            const elapsed = Math.floor((Date.now() - latestUpdate) / 1000);
+            const remaining = Math.max(0, intervalSeconds - elapsed);
+            setCountdown(remaining);
         }
 
-        setCountdown(intervalSeconds);
+        if (timerRef.current) clearInterval(timerRef.current);
 
         timerRef.current = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
-                    doSilentRefresh();
+                    // Cron deve ter executado — relê o banco
+                    refetch();
                     return intervalSeconds;
                 }
                 return prev - 1;
@@ -101,13 +91,25 @@ export default function DevicesGeneral() {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [intervalSeconds, doSilentRefresh]);
+    }, [intervalSeconds, devices.length]);
 
-    const changeInterval = (seconds: number) => {
+    const changeInterval = async (seconds: number) => {
+        const option = REFRESH_OPTIONS.find(o => o.value === seconds);
         setIntervalSeconds(seconds);
         setCountdown(seconds);
         localStorage.setItem(STORAGE_KEY_INTERVAL, String(seconds));
         setShowIntervalDropdown(false);
+
+        // Atualizar o cron no servidor
+        if (option) {
+            try {
+                await deviceService.updateRefreshInterval(option.cron);
+                emitToast({ title: 'Intervalo atualizado', description: `Coleta automática agora a cada ${option.label}.` });
+            } catch (e) {
+                console.error('Erro ao atualizar cron:', e);
+                emitToast({ title: 'Aviso', description: 'Intervalo salvo localmente. O cron do servidor pode precisar de ajuste manual.', variant: 'destructive' });
+            }
+        }
     };
 
     const formatCountdown = (s: number) => {
@@ -263,13 +265,9 @@ export default function DevicesGeneral() {
                             className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
                         >
                             <Timer className="w-4 h-4 text-primary" />
-                            {intervalSeconds === 0 ? (
-                                <span className="text-white/50">Manual</span>
-                            ) : (
-                                <span className="text-white/70 font-mono tabular-nums min-w-[36px] text-center">
-                                    {formatCountdown(countdown)}
-                                </span>
-                            )}
+                            <span className="text-white/70 font-mono tabular-nums min-w-[36px] text-center">
+                                {formatCountdown(countdown)}
+                            </span>
                             <ChevronDown className="w-3 h-3 text-white/30" />
                         </button>
 

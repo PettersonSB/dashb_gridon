@@ -231,21 +231,16 @@ export const deviceService = {
     },
 
     /**
-     * Busca o histórico de logs de um dispositivo para um determinado período.
-     * Retorna os registros brutos ordenados por data.
-     * 
-     * Ranges:
-     * - 'day'   → últimas 24h
-     * - 'week'  → últimos 7 dias
-     * - 'month' → últimos 30 dias
-     * - 'year'  → últimos 365 dias
+     * Busca o histórico de um dispositivo usando a estratégia de 2 camadas:
+     * - day/week  → device_logs (dados brutos a cada 5 min)
+     * - month     → device_daily_summary (resumos diários)
+     * - year      → device_monthly_summary (resumos mensais)
      */
     async getDeviceHistory(deviceId: string, range: 'day' | 'week' | 'month' | 'year', offset = 0) {
         const now = new Date();
         let startDate: Date;
         let endDate: Date;
 
-        // Calcular janela baseada no range + offset (para navegação)
         switch (range) {
             case 'day':
                 endDate = new Date(now);
@@ -273,15 +268,83 @@ export const deviceService = {
                 break;
         }
 
+        // Camada 1: Dados brutos (dia e semana)
+        if (range === 'day' || range === 'week') {
+            const { data, error } = await supabase
+                .from('device_logs')
+                .select('*')
+                .eq('device_id', deviceId)
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString())
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return { logs: data as DeviceLog[], startDate, endDate };
+        }
+
+        // Camada 2: Resumo diário (mês)
+        if (range === 'month') {
+            const { data, error } = await supabase
+                .from('device_daily_summary')
+                .select('*')
+                .eq('device_id', deviceId)
+                .gte('date', startDate.toISOString().split('T')[0])
+                .lte('date', endDate.toISOString().split('T')[0])
+                .order('date', { ascending: true });
+
+            if (error) throw error;
+
+            // Converte para formato compatível com DeviceLog
+            const logs = (data || []).map((d: any) => ({
+                id: d.id,
+                device_id: d.device_id,
+                user_id: '',
+                voltage: d.avg_voltage,
+                current: d.avg_current,
+                power: d.avg_power,
+                created_at: `${d.date}T12:00:00Z`,
+            })) as DeviceLog[];
+
+            return { logs, startDate, endDate };
+        }
+
+        // Camada 3: Resumo mensal (ano)
         const { data, error } = await supabase
-            .from('device_logs')
+            .from('device_monthly_summary')
             .select('*')
             .eq('device_id', deviceId)
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
-            .order('created_at', { ascending: true });
+            .order('year_month', { ascending: true });
 
         if (error) throw error;
-        return { logs: data as DeviceLog[], startDate, endDate };
+
+        // Filtrar pelo range de datas e converter
+        const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+        const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`;
+
+        const filteredData = (data || []).filter((d: any) => d.year_month >= startStr && d.year_month <= endStr);
+
+        const logs = filteredData.map((d: any) => ({
+            id: d.id,
+            device_id: d.device_id,
+            user_id: '',
+            voltage: d.avg_voltage,
+            current: d.avg_current,
+            power: d.avg_power,
+            created_at: `${d.year_month}-15T12:00:00Z`,
+        })) as DeviceLog[];
+
+        return { logs, startDate, endDate };
+    },
+
+    /**
+     * Altera o intervalo do cron de coleta via RPC no banco.
+     * @param cronExpression ex: '*/5 * * * *' para 5 min
+     */
+    async updateRefreshInterval(cronExpression: string) {
+        const { error } = await supabase.rpc('update_device_refresh_interval', {
+            new_cron: cronExpression,
+        });
+        if (error) throw error;
     },
 };
+
