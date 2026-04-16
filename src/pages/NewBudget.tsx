@@ -47,6 +47,10 @@ export default function NewBudget() {
     const [customerNeighborhood, setCustomerNeighborhood] = useState('');
     const [customerState, setCustomerState] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
+    
+    // CRM State (Autocomplete)
+    const [allProspects, setAllProspects] = useState<any[]>([]);
+    const [showProspectDropdown, setShowProspectDropdown] = useState(false);
 
     // Form State - Installation
     const [averageMonthlyConsumption, setAverageMonthlyConsumption] = useState('');
@@ -231,6 +235,14 @@ export default function NewBudget() {
     useEffect(() => {
         const init = async () => {
             await loadKits();
+            // Carrega prospects para o autocomplete
+            try {
+                const fetchedProps = await prospectService.getProspects();
+                setAllProspects(fetchedProps || []);
+            } catch (e) {
+                console.warn('Falha ao carregar prospects', e);
+            }
+
             if (isEditing && id) {
                 await loadBudgetToEdit(id);
             } else if (prefillProspect) {
@@ -611,16 +623,48 @@ export default function NewBudget() {
                     </h3>
 
                     <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                             <label className="text-sm font-medium text-white/70">Nome Completo</label>
                             <input
                                 type="text"
                                 value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
+                                onFocus={() => setShowProspectDropdown(true)}
+                                onBlur={() => setTimeout(() => setShowProspectDropdown(false), 200)}
+                                onChange={(e) => {
+                                    setCustomerName(e.target.value);
+                                    setShowProspectDropdown(true);
+                                }}
                                 placeholder="João da Silva"
                                 className="form-input"
                                 required
                             />
+                            {showProspectDropdown && allProspects.length > 0 && customerName.length > 1 && (
+                                <div className="absolute z-50 top-full mt-1 w-full max-h-60 overflow-y-auto bg-slate-800 border border-white/10 rounded-xl shadow-xl">
+                                    {allProspects
+                                        .filter(p => p.name.toLowerCase().includes(customerName.toLowerCase()) || p.phone.includes(customerName))
+                                        .map(p => (
+                                            <div 
+                                                key={p.id}
+                                                className="px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0"
+                                                onMouseDown={(e) => {
+                                                    // Prevent blur from closing before we click
+                                                    e.preventDefault();
+                                                    setCustomerName(p.name);
+                                                    setCustomerPhone(p.phone);
+                                                    setCustomerEmail(p.email || '');
+                                                    setCustomerCity(p.city || '');
+                                                    setCustomerState(p.state || '');
+                                                    setCustomerNeighborhood(p.neighborhood || '');
+                                                    setShowProspectDropdown(false);
+                                                }}
+                                            >
+                                                <div className="font-semibold text-white text-sm">{p.name}</div>
+                                                <div className="text-xs text-white/50">{p.phone} {p.city ? `- ${p.city}` : ''}</div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-white/70">Telefone / WhatsApp</label>

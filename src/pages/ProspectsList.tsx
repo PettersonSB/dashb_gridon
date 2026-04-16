@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Users, Plus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
-    Calendar, DollarSign, Loader2, ArrowRight
+    Calendar, DollarSign, Loader2, ArrowRight, Receipt
 } from 'lucide-react';
 import { prospectService } from '@/services/prospectService';
 import { Prospect } from '@/lib/types';
@@ -196,9 +196,11 @@ export default function ProspectsList() {
                                             <span className="truncate">{prospect.email}</span>
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-2 text-sm text-white/60">
-                                        <DollarSign className="w-4 h-4 text-white/40" />
-                                        {prospect.budgets_count || 0} Orçamentos gerados
+                                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                                            <Receipt className="w-4 h-4" />
+                                            {prospect.budgets_count || 0} Orçamento(s) gerado(s)
+                                        </div>
                                     </div>
                                 </div>
                             </div>
