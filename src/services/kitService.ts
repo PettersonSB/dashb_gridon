@@ -45,7 +45,47 @@ export const kitService = {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data as SolarKit[];
+
+        const kits = data as SolarKit[];
+
+        // Busca orçamentos múltiplos para cruzar kit_ids dentro do JSON multi_options
+        try {
+            const { data: multiBudgets } = await supabase
+                .from('solar_budgets')
+                .select('id, customer_name, status, multi_options')
+                .eq('is_multi', true)
+                .not('multi_options', 'is', null);
+
+            if (multiBudgets && multiBudgets.length > 0) {
+                for (const kit of kits) {
+                    // IDs de orçamentos já vinculados pelo JOIN direto
+                    const existingBudgetIds = new Set((kit.budgets || []).map((b: any) => b.id));
+
+                    for (const budget of multiBudgets) {
+                        // Se já está vinculado pelo kit_id raiz, pula
+                        if (existingBudgetIds.has(budget.id)) continue;
+
+                        const options = budget.multi_options as any[];
+                        if (!options) continue;
+
+                        // Verifica se alguma opção do multi usa este kit
+                        const usesThisKit = options.some((opt: any) => opt.kit_id === kit.id);
+                        if (usesThisKit) {
+                            if (!kit.budgets) kit.budgets = [];
+                            kit.budgets.push({
+                                id: budget.id,
+                                customer_name: budget.customer_name,
+                                status: budget.status
+                            });
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Falha ao cruzar multi_options com kits:', e);
+        }
+
+        return kits;
     },
 
     async createKit(kit: Omit<SolarKit, 'id' | 'created_at' | 'equipment_brand' | 'panel_brand' | 'items'>, items: { product_id: string, quantity: number }[]) {
