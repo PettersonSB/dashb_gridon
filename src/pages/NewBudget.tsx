@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon, ChevronDown, CheckCircle2, XCircle } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
+import { prospectService } from '@/services/prospectService';
 import { kitService } from '@/services/kitService';
 import { SolarBudget, SolarKit, CustomBudgetCard } from '@/lib/types';
 import AudioRecorderModal from '@/components/AudioRecorderModal';
@@ -27,8 +28,10 @@ const SUPPLY_TYPE_LABELS: Record<string, string> = {
 
 export default function NewBudget() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams();
     const isEditing = !!id;
+    const prefillProspect = location.state?.prefillProspect;
 
     // UI State
     const [isLoadingData, setIsLoadingData] = useState(isEditing);
@@ -230,10 +233,18 @@ export default function NewBudget() {
             await loadKits();
             if (isEditing && id) {
                 await loadBudgetToEdit(id);
+            } else if (prefillProspect) {
+                setCustomerName(prefillProspect.name || '');
+                setCustomerPhone(prefillProspect.phone || '');
+                setCustomerEmail(prefillProspect.email || '');
+                setCustomerCity(prefillProspect.city || '');
+                setCustomerState(prefillProspect.state || '');
+                setCustomerNeighborhood(prefillProspect.neighborhood || '');
             }
         };
         init();
-    }, [id, isEditing]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isEditing, prefillProspect]);
 
     const loadKits = async () => {
         try {
@@ -339,7 +350,43 @@ export default function NewBudget() {
                 );
             }
 
+            // Tratar Prospect (Auto-criação ou Sincronização)
+            let prospectId = prefillProspect?.id || null;
+
+            if (!prospectId && customerPhone) {
+                try {
+                    // Tenta buscar por telefone
+                    const existing = await prospectService.findProspectByPhone(customerPhone);
+                    if (existing) {
+                        prospectId = existing.id;
+                        // Atualizar dados do prospect com os mais recentes do orçamento
+                        await prospectService.updateProspect(existing.id, {
+                            name: customerName,
+                            email: customerEmail || existing.email,
+                            city: customerCity || existing.city,
+                            state: customerState || existing.state,
+                            neighborhood: customerNeighborhood || existing.neighborhood
+                        });
+                    } else {
+                        // Criar novo prospect auto-capturado
+                        const newProspect = await prospectService.createProspect({
+                            name: customerName,
+                            phone: customerPhone,
+                            email: customerEmail || null,
+                            city: customerCity || null,
+                            state: customerState || null,
+                            neighborhood: customerNeighborhood || null,
+                            status: 'novo'
+                        });
+                        prospectId = newProspect.id;
+                    }
+                } catch (e) {
+                    console.warn("Falha silenciosa ao sincronizar prospect", e);
+                }
+            }
+
             const payload: any = {
+                prospect_id: prospectId,
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 customer_city: customerCity,

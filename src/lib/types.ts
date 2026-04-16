@@ -299,6 +299,9 @@ export interface SolarBudget {
     is_multi?: boolean;
     multi_options?: MultiOption[] | null;
 
+    // Relacionamento com Prospect (CRM)
+    prospect_id?: string | null;
+
     // Auditoria e Joins
     created_by: string | null;
     created_by_name?: string | null;
@@ -341,3 +344,20 @@ export interface DeviceLog {
 
     created_at: string;
 }
+
+export interface Prospect {
+    id: string;
+    name: string;
+    phone: string;
+    email: string | null;
+    city: string | null;
+    state: string | null;
+    neighborhood: string | null;
+    status: 'novo' | 'em contato' | 'negociando' | 'ganho' | 'perdido';
+    created_at: string;
+    updated_at: string;
+    
+    // Auxiliares (Joins)
+    budgets_count?: number; // Para mostrar quantos orçamentos esse prospect possui
+}
+
