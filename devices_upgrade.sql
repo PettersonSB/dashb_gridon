@@ -73,7 +73,7 @@ SELECT cron.schedule(
     SELECT net.http_post(
         url := 'https://bfsddnjwjbqlxfxxlorf.supabase.co/functions/v1/cron-refresh-devices',
         headers := jsonb_build_object(
-            'Authorization', 'Bearer <SUA_SERVICE_ROLE_KEY>',
+            'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmc2Rkbmp3amJxbHhmeHhsb3JmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTA1MjI0OSwiZXhwIjoyMDg0NjI4MjQ5fQ.Ywn6X_yNATxrM6Ay9KMXddxvGiHSYM50ffVHYPe0zTc',
             'Content-Type', 'application/json'
         ),
         body := '{}'::jsonb
@@ -162,7 +162,7 @@ BEGIN
         SELECT net.http_post(
             url := 'https://bfsddnjwjbqlxfxxlorf.supabase.co/functions/v1/cron-refresh-devices',
             headers := jsonb_build_object(
-                'Authorization', 'Bearer <SUA_SERVICE_ROLE_KEY>',
+                'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmc2Rkbmp3amJxbHhmeHhsb3JmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTA1MjI0OSwiZXhwIjoyMDg0NjI4MjQ5fQ.Ywn6X_yNATxrM6Ay9KMXddxvGiHSYM50ffVHYPe0zTc',
                 'Content-Type', 'application/json'
             ),
             body := '{}'::jsonb
