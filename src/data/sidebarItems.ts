@@ -11,6 +11,7 @@ import {
     DollarSign,
     Sun,
     Calculator,
+    Smartphone, // Need to import an icon for Dispositivos
     type LucideIcon,
 } from "lucide-react";
 
@@ -23,7 +24,7 @@ export interface SidebarItem {
 }
 
 export const sidebarItems: SidebarItem[] = [
-    { label: "Landing page", href: "/", icon: LayoutDashboard },
+    { label: "Site", href: "/", icon: LayoutDashboard },
     { label: "Hero", href: "/hero", icon: Sparkles, group: "Seções" },
     { label: "Problemas", href: "/problems", icon: AlertTriangle, group: "Seções" },
     { label: "Soluções", href: "/services", icon: Wrench, group: "Seções" },
@@ -42,6 +43,15 @@ export const sidebarItems: SidebarItem[] = [
             { label: 'Todos os Orçamentos', href: '/budget/list' },
             { label: 'Novo Orçamento', href: '/budget/new' },
             { label: 'Kit Solar', href: '/budget/kits' }
+        ],
+    },
+    {
+        label: 'Dispositivos',
+        href: '#',
+        icon: Smartphone,
+        group: "Dispositivos",
+        dropdown: [
+            { label: 'Geral', href: '/devices/general' }
         ],
     },
 ];

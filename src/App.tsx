@@ -27,6 +27,7 @@ const BudgetKits = React.lazy(() => import("@/pages/BudgetKits"));
 const NewBudget = React.lazy(() => import("@/pages/NewBudget"));
 const BudgetPreview = React.lazy(() => import("@/pages/BudgetPreview"));
 const Settings = React.lazy(() => import("@/pages/Settings"));
+const DevicesGeneral = React.lazy(() => import("@/pages/DevicesGeneral"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,7 @@ function App() {
                   <Route path="/budget/edit/:id" element={<NewBudget />} />
                   <Route path="/budget/preview/:id" element={<BudgetPreview />} />
                   <Route path="/budget/kits" element={<BudgetKits />} />
+                  <Route path="/devices/general" element={<DevicesGeneral />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
               </Routes>

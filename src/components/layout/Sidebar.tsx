@@ -13,32 +13,34 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
     const isExpanded = isPinned || isHovered;
 
     // Group items
-    const landingPageGroups: Record<string, typeof sidebarItems> = {};
+    const siteGroups: Record<string, typeof sidebarItems> = {};
     const ungrouped: typeof sidebarItems = [];
 
     sidebarItems.forEach((item) => {
-        if (item.label === "Landing page" || (item.group && item.group !== "Orçamento")) {
+        if (item.label === "Site" || (item.group && item.group !== "Orçamento" && item.group !== "Dispositivos")) {
             if (item.group) {
-                if (!landingPageGroups[item.group]) landingPageGroups[item.group] = [];
-                landingPageGroups[item.group].push(item);
+                if (!siteGroups[item.group]) siteGroups[item.group] = [];
+                siteGroups[item.group].push(item);
             }
         } else if (item.label === "Orçamento" || item.group === "Orçamento") {
+            // Handled manually
+        } else if (item.label === "Dispositivos" || item.group === "Dispositivos") {
             // Handled manually
         } else {
             ungrouped.push(item);
         }
     });
 
-    const isLandingPageRelated = (path: string) => {
+    const isSiteRelated = (path: string) => {
         if (path === "/") return true;
-        for (const items of Object.values(landingPageGroups)) {
+        for (const items of Object.values(siteGroups)) {
             if (items.some(item => path === item.href || path.startsWith(item.href + '/'))) return true;
         }
         return false;
     };
 
-    // Groups that are nested inside "Landing page"
-    const groups: Record<string, typeof sidebarItems> = landingPageGroups;
+    // Groups that are nested inside "Site"
+    const groups: Record<string, typeof sidebarItems> = siteGroups;
 
     // Determine which nested groups should be initially open
     const getInitialOpenGroups = () => {
@@ -52,8 +54,9 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
     };
 
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
-    const [isLandingPageOpen, setIsLandingPageOpen] = useState(false);
+    const [isSiteOpen, setIsSiteOpen] = useState(false);
     const [isBudgetOpen, setIsBudgetOpen] = useState(location.pathname.startsWith('/budget'));
+    const [isDevicesOpen, setIsDevicesOpen] = useState(location.pathname.startsWith('/devices'));
 
     const toggleGroup = (group: string) => {
         setOpenGroups(prev => ({
@@ -62,12 +65,16 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
         }));
     };
 
-    const toggleLandingPage = () => {
-        setIsLandingPageOpen(!isLandingPageOpen);
+    const toggleSite = () => {
+        setIsSiteOpen(!isSiteOpen);
     };
 
     const toggleBudget = () => {
         setIsBudgetOpen(!isBudgetOpen);
+    };
+
+    const toggleDevices = () => {
+        setIsDevicesOpen(!isDevicesOpen);
     };
 
     return (
@@ -117,33 +124,33 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                     </NavLink>
                 ))}
 
-                {/* Landing Page Master Dropdown */}
+                {/* Site Master Dropdown */}
                 <div className="pt-2 pb-2">
                     <button
-                        onClick={isExpanded ? toggleLandingPage : undefined}
-                        title={!isExpanded ? "Landing page" : undefined}
-                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${isLandingPageRelated(location.pathname) && (!isExpanded || !isLandingPageOpen)
+                        onClick={isExpanded ? toggleSite : undefined}
+                        title={!isExpanded ? "Site" : undefined}
+                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${isSiteRelated(location.pathname) && (!isExpanded || !isSiteOpen)
                             ? "bg-primary/10 text-primary" // Active but collapsed state
                             : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                             }`}
                     >
                         <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
-                            {/* Assuming the first item is the landing page root to borrow its icon */}
-                            {sidebarItems.find(i => i.label === "Landing page")?.icon && React.createElement(sidebarItems.find(i => i.label === "Landing page")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
-                            {isExpanded && <span className="font-medium truncate">Landing page</span>}
+                            {/* Assuming the first item is the site root to borrow its icon */}
+                            {sidebarItems.find(i => i.label === "Site")?.icon && React.createElement(sidebarItems.find(i => i.label === "Site")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                            {isExpanded && <span className="font-medium truncate">Site</span>}
                         </div>
                         {isExpanded && (
                             <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isLandingPageOpen ? 'rotate-180' : ''}`}
+                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isSiteOpen ? 'rotate-180' : ''}`}
                             />
                         )}
                     </button>
 
                     <div
-                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isLandingPageOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isSiteOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
                             }`}
                     >
-                        {/* Direct Landing Page Link inside the dropdown */}
+                        {/* Direct Site Link inside the dropdown */}
                         <NavLink
                             to="/"
                             end
@@ -240,6 +247,52 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                                         ) : (
                                             <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
                                         )}
+                                        {subItem.label}
+                                    </NavLink>
+                                ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dispositivos Master Dropdown */}
+                <div className="pt-2 pb-2">
+                    <button
+                        onClick={isExpanded ? toggleDevices : undefined}
+                        title={!isExpanded ? "Dispositivos" : undefined}
+                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/devices') && (!isExpanded || !isDevicesOpen)
+                            ? "bg-primary/10 text-primary" // Active but collapsed state
+                            : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                            }`}
+                    >
+                        <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
+                            {sidebarItems.find(i => i.label === "Dispositivos")?.icon && React.createElement(sidebarItems.find(i => i.label === "Dispositivos")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                            {isExpanded && <span className="font-medium truncate">Dispositivos</span>}
+                        </div>
+                        {isExpanded && (
+                            <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isDevicesOpen ? 'rotate-180' : ''}`}
+                            />
+                        )}
+                    </button>
+
+                    <div
+                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isDevicesOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                            }`}
+                    >
+                        {/* Dispositivos nested items */}
+                        <div className="pt-2 space-y-1">
+                            {sidebarItems
+                                .find(item => item.label === "Dispositivos")
+                                ?.dropdown?.map((subItem) => (
+                                    <NavLink
+                                        key={subItem.href}
+                                        to={subItem.href}
+                                        end={subItem.href === '/devices'}
+                                        className={({ isActive }) =>
+                                            `sidebar-item !py-1.5 !px-4 !text-[13px] !rounded-lg ml-2 ${isActive ? "active" : ""}`
+                                        }
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
                                         {subItem.label}
                                     </NavLink>
                                 ))}
