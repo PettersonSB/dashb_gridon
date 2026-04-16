@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon, ChevronDown, CheckCircle2, XCircle, Copy } from 'lucide-react';
+import { Save, Loader2, User, Home, Zap, MapPin, Calculator, DollarSign, Percent, TrendingUp, HandCoins, HardHat, Receipt, BarChart3, Pencil, Plus, Mic, Play, Pause, Trash2, Image as ImageIcon, ChevronDown, CheckCircle2, XCircle, Copy, X, Check } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { budgetService } from '@/services/budgetService';
@@ -8,11 +8,26 @@ import { prospectService } from '@/services/prospectService';
 import { kitService } from '@/services/kitService';
 import { SolarBudget, SolarKit, CustomBudgetCard } from '@/lib/types';
 import AudioRecorderModal from '@/components/AudioRecorderModal';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 
-const INSTALLATION_LOCATIONS = [
+const DEFAULT_INSTALLATION_LOCATIONS = [
     'telhado fibrocimento', 'telhado colonial', 'telhado de concreto',
     'telhado zinco', 'laje', 'solo'
-] as const;
+];
+
+const STORAGE_KEY_LOCATIONS = 'gridon_installation_locations';
+
+function loadInstallationLocations(): string[] {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
+        if (saved) return JSON.parse(saved);
+    } catch (e) { /* ignore */ }
+    return [...DEFAULT_INSTALLATION_LOCATIONS];
+}
+
+function saveInstallationLocations(locations: string[]) {
+    localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
+}
 
 const CONSTRUCTION_TYPES = [
     'residencial', 'comercial', 'industrial',
@@ -55,7 +70,10 @@ export default function NewBudget() {
     // Form State - Installation
     const [averageMonthlyConsumption, setAverageMonthlyConsumption] = useState('');
     const [energyTariff, setEnergyTariff] = useState('1.10'); // default value
-    const [installationLocation, setInstallationLocation] = useState<SolarBudget['installation_location']>('telhado colonial');
+    const [installationLocation, setInstallationLocation] = useState<string>('telhado colonial');
+    const [installationLocations, setInstallationLocations] = useState<string[]>(loadInstallationLocations);
+    const [isAddingLocation, setIsAddingLocation] = useState(false);
+    const [newLocationName, setNewLocationName] = useState('');
     const [constructionType, setConstructionType] = useState<SolarBudget['construction_type']>('residencial');
     const [supplyType, setSupplyType] = useState<SolarBudget['supply_type']>('monofasico');
     const [installationWarranty, setInstallationWarranty] = useState('');
@@ -773,17 +791,101 @@ export default function NewBudget() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-white/70">Local de Instalação</label>
-                            <select
-                                value={installationLocation}
-                                onChange={(e) => setInstallationLocation(e.target.value as any)}
-                                className="form-input capitalize"
-                                required
-                            >
-                                {INSTALLATION_LOCATIONS.map(loc => (
-                                    <option key={loc} value={loc} className="bg-slate-900 capitalize">{loc}</option>
-                                ))}
-                            </select>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-white/70">Local de Instalação</label>
+                                {!isAddingLocation ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsAddingLocation(true); setNewLocationName(''); }}
+                                        className="p-1 rounded-md hover:bg-primary/20 text-primary transition-colors"
+                                        title="Adicionar novo local"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (newLocationName.trim()) {
+                                                const updated = [...installationLocations, newLocationName.trim().toLowerCase()];
+                                                setInstallationLocations(updated);
+                                                saveInstallationLocations(updated);
+                                                setInstallationLocation(newLocationName.trim().toLowerCase());
+                                            }
+                                            setIsAddingLocation(false);
+                                            setNewLocationName('');
+                                        }}
+                                        className="p-1 rounded-md hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                                        title="Confirmar novo local"
+                                    >
+                                        <Check className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                            {isAddingLocation ? (
+                                <input
+                                    type="text"
+                                    value={newLocationName}
+                                    onChange={(e) => setNewLocationName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (newLocationName.trim()) {
+                                                const updated = [...installationLocations, newLocationName.trim().toLowerCase()];
+                                                setInstallationLocations(updated);
+                                                saveInstallationLocations(updated);
+                                                setInstallationLocation(newLocationName.trim().toLowerCase());
+                                            }
+                                            setIsAddingLocation(false);
+                                            setNewLocationName('');
+                                        }
+                                    }}
+                                    placeholder="Ex: garagem, estacionamento..."
+                                    className="form-input"
+                                    autoFocus
+                                />
+                            ) : (
+                                <select
+                                    value={installationLocation}
+                                    onChange={(e) => setInstallationLocation(e.target.value)}
+                                    className="form-input capitalize"
+                                    required
+                                >
+                                    {installationLocations.map(loc => (
+                                        <option key={loc} value={loc} className="bg-slate-900 capitalize">{loc}</option>
+                                    ))}
+                                </select>
+                            )}
+                            {!isAddingLocation && installationLocations.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {installationLocations.map(loc => (
+                                        <span key={loc} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] capitalize border transition-colors ${
+                                            installationLocation === loc
+                                                ? 'bg-primary/20 border-primary/30 text-primary'
+                                                : 'bg-white/5 border-white/10 text-white/50'
+                                        }`}>
+                                            {loc}
+                                            <button
+                                                type="button"
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (!await confirmAction({ title: 'Remover Local', message: `Deseja remover "${loc}" da lista de locais de instalação?`, variant: 'danger' })) return;
+                                                    const updated = installationLocations.filter(l => l !== loc);
+                                                    setInstallationLocations(updated);
+                                                    saveInstallationLocations(updated);
+                                                    if (installationLocation === loc && updated.length > 0) {
+                                                        setInstallationLocation(updated[0]);
+                                                    }
+                                                }}
+                                                className="hover:text-red-400 transition-colors ml-0.5"
+                                                title={`Remover ${loc}`}
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2">
