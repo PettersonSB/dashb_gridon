@@ -338,7 +338,7 @@ export const deviceService = {
 
     /**
      * Altera o intervalo do cron de coleta via RPC no banco.
-     * @param cronExpression ex: '*/5 * * * *' para 5 min
+     * @param cronExpression ex: "estrelinha/5 * * * *" para 5 min
      */
     async updateRefreshInterval(cronExpression: string) {
         const { error } = await supabase.rpc('update_device_refresh_interval', {
