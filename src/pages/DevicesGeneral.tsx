@@ -62,25 +62,34 @@ export default function DevicesGeneral() {
         refetchInterval: 30000, // relê o banco a cada 30s para pegar novos dados do cron
     });
 
-    // Countdown timer — apenas estima a próxima execução do cron e relê o banco
+    // Calcula o countdown baseado no updated_at mais recente dos devices
+    // Roda sempre que os devices são carregados/atualizados
+    const latestUpdateRef = useRef(0);
+
     useEffect(() => {
-        // Calcula countdown inicial baseado no updated_at mais recente
         if (devices.length > 0) {
             const latestUpdate = devices.reduce((latest, d) => {
                 const t = new Date(d.updated_at).getTime();
                 return t > latest ? t : latest;
             }, 0);
-            const elapsed = Math.floor((Date.now() - latestUpdate) / 1000);
-            const remaining = Math.max(0, intervalSeconds - elapsed);
-            setCountdown(remaining);
-        }
 
+            // Só recalcula se a data de atualização realmente mudou
+            if (latestUpdate !== latestUpdateRef.current) {
+                latestUpdateRef.current = latestUpdate;
+                const elapsed = Math.floor((Date.now() - latestUpdate) / 1000);
+                const remaining = Math.max(1, intervalSeconds - elapsed);
+                setCountdown(remaining);
+            }
+        }
+    }, [devices, intervalSeconds]);
+
+    // Tick do countdown — roda independente, 1x por segundo
+    useEffect(() => {
         if (timerRef.current) clearInterval(timerRef.current);
 
         timerRef.current = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
-                    // Cron deve ter executado — relê o banco
                     refetch();
                     return intervalSeconds;
                 }
@@ -91,7 +100,7 @@ export default function DevicesGeneral() {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [intervalSeconds, devices.length]);
+    }, [intervalSeconds]);
 
     const changeInterval = async (seconds: number) => {
         const option = REFRESH_OPTIONS.find(o => o.value === seconds);
