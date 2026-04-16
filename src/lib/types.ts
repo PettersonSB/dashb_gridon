@@ -313,3 +313,31 @@ export interface SolarBudget {
     created_at: string;
     kit?: SolarKit; // For nested joins
 }
+
+export interface Device {
+    id: string;
+    device_id: string;
+    user_id: string;
+    name: string | null;
+
+    voltage: number | null;
+    current: number | null;
+    power: number | null;
+
+    is_on: boolean | null;
+    online: string | null;
+
+    updated_at: string;
+}
+
+export interface DeviceLog {
+    id: string;
+    device_id: string;
+    user_id: string;
+
+    voltage: number | null;
+    current: number | null;
+    power: number | null;
+
+    created_at: string;
+}
