@@ -214,9 +214,18 @@ export default function DevicesGeneral() {
     };
 
     const formatUpdatedAt = (dt: string) => {
-        const date = new Date(dt);
+        if (!dt) return '—';
+        // Se a string do Supabase vier sem indicador de timezone (como '2026-04-16T20:00:00'),
+        // forçamos o 'Z' no final para o JavaScript interpretar corretamente como hora UTC.
+        const isoStr = (!dt.endsWith('Z') && !dt.includes('+') && !dt.match(/-\d{2}:\d{2}$/)) ? dt + 'Z' : dt;
+        
+        const date = new Date(isoStr);
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
+        
+        // Se a data estiver no futuro (possível descompasso de relógio entre DB e Cliente), arredondamos para "Agora"
+        if (diffMs < 0) return 'Agora';
+
         const diffMin = Math.floor(diffMs / 60000);
 
         if (diffMin < 1) return 'Agora';
