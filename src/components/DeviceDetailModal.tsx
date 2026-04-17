@@ -42,10 +42,13 @@ function aggregateLogs(logs: DeviceLog[], range: HistoryRange) {
         let label: string;
 
         switch (range) {
-            case 'day':
-                key = `${d.getHours()}`;
-                label = `${d.getHours().toString().padStart(2, '0')}h`;
+            case 'day': {
+                const hh = d.getHours().toString().padStart(2, '0');
+                const mm = d.getMinutes() >= 30 ? '30' : '00';
+                key = `${hh}:${mm}`;
+                label = `${hh}:${mm}h`;
                 break;
+            }
             case 'week':
             case 'month':
                 key = `${d.getDate()}/${d.getMonth() + 1}`;
