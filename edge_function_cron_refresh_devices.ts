@@ -59,6 +59,16 @@ Deno.serve(async (req) => {
 
         const realtime = await tuyaResponse.json()
 
+        const saoPauloTimestamp = new Intl.DateTimeFormat('sv-SE', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }).format(new Date()).replace(' ', 'T')
+
         // 3. Atualizar tabela devices (valores atuais)
         const { error: updateError } = await supabase
           .from('devices')
@@ -68,7 +78,7 @@ Deno.serve(async (req) => {
             power: realtime.power,
             is_on: realtime.isOn,
             online: realtime.online === 'online' ? 'true' : 'false',
-            updated_at: new Date().toISOString(),
+            updated_at: saoPauloTimestamp,
           })
           .eq('device_id', device.device_id)
 
@@ -86,6 +96,7 @@ Deno.serve(async (req) => {
               voltage: realtime.voltage,
               current: realtime.current,
               power: realtime.power,
+              created_at: saoPauloTimestamp,
             })
 
           if (logError) {

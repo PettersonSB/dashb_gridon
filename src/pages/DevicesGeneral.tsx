@@ -215,9 +215,16 @@ export default function DevicesGeneral() {
 
     const formatUpdatedAt = (dt: string) => {
         if (!dt) return '—';
-        // Se a string do Supabase vier sem indicador de timezone (como '2026-04-16T20:00:00'),
-        // forçamos o 'Z' no final para o JavaScript interpretar corretamente como hora UTC.
-        const isoStr = (!dt.endsWith('Z') && !dt.includes('+') && !dt.match(/-\d{2}:\d{2}$/)) ? dt + 'Z' : dt;
+        
+        // Agora que o backend (Edge Function) salva exatamente no horário de Brasília,
+        // garantimos que o JS entenda como horário de Brasília ao manter sem Z e parsear
+        const dtStr = dt.includes('.') ? dt.split('.')[0] : dt; // Limpa milissegundos
+        let isoStr = dtStr;
+        
+        // Se a string veio com Z, remover pois o horário já é o correto do Brasil
+        if (isoStr.endsWith('Z')) {
+            isoStr = isoStr.slice(0, -1);
+        }
         
         const date = new Date(isoStr);
         const now = new Date();

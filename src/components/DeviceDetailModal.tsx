@@ -31,12 +31,13 @@ function aggregateLogs(logs: DeviceLog[], range: HistoryRange) {
     const buckets: Record<string, { label: string; voltage: number[]; current: number[]; power: number[] }> = {};
 
     logs.forEach((log) => {
-        // Formata a string para o formato ISO UTC caso o Supabase não retorne o timezone Z
-        const dtStr = (!log.created_at.endsWith('Z') && !log.created_at.includes('+') && !log.created_at.match(/-\d{2}:\d{2}$/)) 
-            ? log.created_at + 'Z' 
-            : log.created_at;
+        const dtStr = log.created_at.includes('.') ? log.created_at.split('.')[0] : log.created_at;
+        let isoStr = dtStr;
+        if (isoStr.endsWith('Z')) {
+            isoStr = isoStr.slice(0, -1);
+        }
             
-        const d = new Date(dtStr);
+        const d = new Date(isoStr);
         let key: string;
         let label: string;
 
