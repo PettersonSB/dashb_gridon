@@ -179,10 +179,22 @@ export const deviceService = {
         const devices = await this.getDevices();
         if (!devices.length) return [];
 
+        // Helper para gerar o timestamp exato de Brasília local para manter o padrão sem timezone do DB
+        const getBrasiliaTimestamp = () => new Intl.DateTimeFormat('sv-SE', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).format(new Date()).replace(' ', 'T');
+
         // 2. Buscar dados em tempo real de cada dispositivo (paralelo)
         const results = await Promise.allSettled(
             devices.map(async (device) => {
                 const realtime = await this.fetchRealtimeData(device.device_id);
+                const localTimestamp = getBrasiliaTimestamp();
 
                 // 3. Atualizar no banco (tabela devices — valores atuais)
                 const { error } = await supabase
@@ -193,7 +205,7 @@ export const deviceService = {
                         power: realtime.power,
                         is_on: realtime.isOn,
                         online: realtime.online === 'online' ? 'true' : 'false',
-                        updated_at: new Date().toISOString(),
+                        updated_at: localTimestamp,
                     })
                     .eq('device_id', device.device_id);
 
@@ -209,6 +221,7 @@ export const deviceService = {
                             voltage: realtime.voltage,
                             current: realtime.current,
                             power: realtime.power,
+                            created_at: localTimestamp,
                         });
 
                     if (logError) console.warn(`Erro ao gravar log de ${device.device_id}:`, logError);
