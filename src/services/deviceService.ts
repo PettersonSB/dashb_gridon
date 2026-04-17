@@ -245,26 +245,33 @@ export const deviceService = {
             case 'day':
                 endDate = new Date(now);
                 endDate.setDate(endDate.getDate() - offset);
+                endDate.setHours(23, 59, 59, 999);
                 startDate = new Date(endDate);
-                startDate.setDate(startDate.getDate() - 1);
+                startDate.setHours(0, 0, 0, 0);
                 break;
             case 'week':
                 endDate = new Date(now);
                 endDate.setDate(endDate.getDate() - (offset * 7));
+                endDate.setHours(23, 59, 59, 999);
                 startDate = new Date(endDate);
-                startDate.setDate(startDate.getDate() - 7);
+                startDate.setDate(startDate.getDate() - 6); // Ultimos 7 dias (incluindo o proprio)
+                startDate.setHours(0, 0, 0, 0);
                 break;
             case 'month':
                 endDate = new Date(now);
                 endDate.setMonth(endDate.getMonth() - offset);
+                endDate.setHours(23, 59, 59, 999);
                 startDate = new Date(endDate);
                 startDate.setMonth(startDate.getMonth() - 1);
+                startDate.setHours(0, 0, 0, 0);
                 break;
             case 'year':
                 endDate = new Date(now);
                 endDate.setFullYear(endDate.getFullYear() - offset);
+                endDate.setHours(23, 59, 59, 999);
                 startDate = new Date(endDate);
                 startDate.setFullYear(startDate.getFullYear() - 1);
+                startDate.setHours(0, 0, 0, 0);
                 break;
         }
 
