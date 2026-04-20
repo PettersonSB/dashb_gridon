@@ -250,6 +250,11 @@ export const deviceService = {
      * - year      → device_monthly_summary (resumos mensais)
      */
     async getDeviceHistory(deviceId: string, range: 'day' | 'week' | 'month' | 'year', offset = 0) {
+        const formatLocalISO = (d: Date) => {
+            const pad = (n: number) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        };
+
         const now = new Date();
         let startDate: Date;
         let endDate: Date;
@@ -294,8 +299,8 @@ export const deviceService = {
                 .from('device_logs')
                 .select('*')
                 .eq('device_id', deviceId)
-                .gte('created_at', startDate.toISOString())
-                .lte('created_at', endDate.toISOString())
+                .gte('created_at', formatLocalISO(startDate))
+                .lte('created_at', formatLocalISO(endDate))
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
@@ -308,8 +313,8 @@ export const deviceService = {
                 .from('device_daily_summary')
                 .select('*')
                 .eq('device_id', deviceId)
-                .gte('date', startDate.toISOString().split('T')[0])
-                .lte('date', endDate.toISOString().split('T')[0])
+                .gte('date', formatLocalISO(startDate).split('T')[0])
+                .lte('date', formatLocalISO(endDate).split('T')[0])
                 .order('date', { ascending: true });
 
             if (error) throw error;
