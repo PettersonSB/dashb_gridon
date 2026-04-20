@@ -1,0 +1,483 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { clientService, ClientAccount, CreateClientPayload } from '@/services/clientService';
+import { deviceService } from '@/services/deviceService';
+import {
+    Users, Plus, Search, Eye, Ban, CheckCircle, XCircle,
+    Calendar, Loader2, Smartphone, Mail, Phone, X,
+    DollarSign, MapPin, Package, Zap, StickyNote
+} from 'lucide-react';
+
+const STATUS_COLORS: Record<string, string> = {
+    ativo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    suspenso: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    desativado: 'bg-red-500/10 text-red-400 border-red-500/20',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+    ativo: 'Ativo',
+    suspenso: 'Suspenso',
+    desativado: 'Desativado',
+};
+
+export default function ClientAccounts() {
+    const navigate = useNavigate();
+    const [clients, setClients] = useState<ClientAccount[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        loadClients();
+    }, []);
+
+    async function loadClients() {
+        try {
+            setLoading(true);
+            const data = await clientService.getClients();
+            setClients(data);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const filtered = clients.filter(c => {
+        const q = searchQuery.toLowerCase();
+        return (
+            c.full_name.toLowerCase().includes(q) ||
+            c.email.toLowerCase().includes(q) ||
+            (c.phone && c.phone.includes(q))
+        );
+    });
+
+    const stats = {
+        total: clients.length,
+        ativos: clients.filter(c => c.status === 'ativo').length,
+        suspensos: clients.filter(c => c.status === 'suspenso').length,
+    };
+
+    function formatDate(dateStr: string | null): string {
+        if (!dateStr) return 'Nunca';
+        try {
+            return new Intl.DateTimeFormat('pt-BR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }).format(new Date(dateStr));
+        } catch {
+            return dateStr;
+        }
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <Users className="w-7 h-7 text-primary" />
+                        App Cliente
+                    </h1>
+                    <p className="text-white/50 mt-1">Gerencie os acessos dos clientes ao Gridon+</p>
+                </div>
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all"
+                >
+                    <Plus className="w-4 h-4" />
+                    Novo Cliente
+                </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                        <Users className="w-5 h-5 text-primary" />
+                        <div>
+                            <p className="text-xs text-white/40">Total de Clientes</p>
+                            <p className="text-xl font-bold text-white">{stats.total}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <div>
+                            <p className="text-xs text-white/40">Ativos</p>
+                            <p className="text-xl font-bold text-emerald-400">{stats.ativos}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                        <Ban className="w-5 h-5 text-amber-400" />
+                        <div>
+                            <p className="text-xs text-white/40">Suspensos</p>
+                            <p className="text-xl font-bold text-amber-400">{stats.suspensos}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input
+                    type="text"
+                    placeholder="Buscar por nome, email ou telefone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-primary/30 transition-all"
+                />
+            </div>
+
+            {/* Error */}
+            {error && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                    {error}
+                </div>
+            )}
+
+            {/* Loading */}
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="text-center py-20 text-white/40">
+                    <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg font-medium">Nenhum cliente encontrado</p>
+                    <p className="mt-2 text-sm">Clique em "Novo Cliente" para cadastrar o primeiro acesso.</p>
+                </div>
+            ) : (
+                /* Client List */
+                <div className="space-y-3">
+                    {filtered.map((client) => (
+                        <div
+                            key={client.id}
+                            onClick={() => navigate(`/devices/clients/${client.user_id}`)}
+                            className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.04] transition-all cursor-pointer"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    {/* Avatar */}
+                                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
+                                        {client.full_name.charAt(0).toUpperCase()}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div>
+                                        <h3 className="text-white font-semibold group-hover:text-primary transition-colors">
+                                            {client.full_name}
+                                        </h3>
+                                        <div className="flex items-center gap-4 mt-1">
+                                            <span className="flex items-center gap-1 text-xs text-white/40">
+                                                <Mail className="w-3 h-3" /> {client.email}
+                                            </span>
+                                            {client.phone && (
+                                                <span className="flex items-center gap-1 text-xs text-white/40">
+                                                    <Phone className="w-3 h-3" /> {client.phone}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    {/* Status */}
+                                    <span className={`px-3 py-1 rounded-lg text-xs font-medium border ${STATUS_COLORS[client.status]}`}>
+                                        {STATUS_LABELS[client.status]}
+                                    </span>
+
+                                    {/* Last Login */}
+                                    <div className="text-right hidden md:block">
+                                        <p className="text-[10px] text-white/30">Último Login</p>
+                                        <p className="text-xs text-white/50">{formatDate(client.last_login_at)}</p>
+                                    </div>
+
+                                    <Eye className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Create Modal */}
+            {showCreateModal && (
+                <CreateClientModal
+                    onClose={() => setShowCreateModal(false)}
+                    onCreated={() => {
+                        setShowCreateModal(false);
+                        loadClients();
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+// ── Modal de Criação de Cliente ─────────────────────────
+
+interface CreateClientModalProps {
+    onClose: () => void;
+    onCreated: () => void;
+}
+
+function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [allDevices, setAllDevices] = useState<any[]>([]);
+    const [loadingDevices, setLoadingDevices] = useState(true);
+
+    // Form state
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [phone, setPhone] = useState('');
+    const [energyTariff, setEnergyTariff] = useState('0.85');
+
+    // Installation
+    const [address, setAddress] = useState('');
+    const [city, setCity] = useState('');
+    const [state, setState] = useState('');
+    const [powerKwp, setPowerKwp] = useState('');
+    const [moduleCount, setModuleCount] = useState('');
+    const [moduleModel, setModuleModel] = useState('');
+    const [inverterModel, setInverterModel] = useState('');
+    const [installDate, setInstallDate] = useState('');
+    const [notes, setNotes] = useState('');
+
+    // Devices selection
+    const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+
+    useEffect(() => {
+        loadAvailableDevices();
+    }, []);
+
+    async function loadAvailableDevices() {
+        try {
+            setLoadingDevices(true);
+            const devices = await clientService.getAvailableDevices();
+            setAllDevices(devices);
+        } catch {
+            // Ignora erro
+        } finally {
+            setLoadingDevices(false);
+        }
+    }
+
+    function toggleDevice(deviceId: string) {
+        setSelectedDeviceIds(prev =>
+            prev.includes(deviceId)
+                ? prev.filter(id => id !== deviceId)
+                : [...prev, deviceId]
+        );
+    }
+
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        if (!fullName || !email || !password) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const payload: CreateClientPayload = {
+                email,
+                password,
+                full_name: fullName,
+                phone: phone || undefined,
+                energy_tariff: parseFloat(energyTariff) || 0.85,
+                installation: {
+                    address: address || undefined,
+                    city: city || undefined,
+                    state: state || undefined,
+                    system_power_kwp: powerKwp ? parseFloat(powerKwp) : undefined,
+                    module_count: moduleCount ? parseInt(moduleCount) : undefined,
+                    module_model: moduleModel || undefined,
+                    inverter_model: inverterModel || undefined,
+                    installation_date: installDate || undefined,
+                    notes: notes || undefined,
+                },
+                device_ids: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
+            };
+
+            await clientService.createClient(payload);
+            onCreated();
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+            <div
+                className="bg-[#0d1117] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-white/[0.06]">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Plus className="w-5 h-5 text-primary" />
+                        Novo Cliente
+                    </h2>
+                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-all">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Dados Pessoais */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                            <Users className="w-4 h-4" /> Dados do Cliente
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Nome Completo *</label>
+                                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Telefone</label>
+                                <input type="text" value={phone} onChange={e => setPhone(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Email *</label>
+                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Senha Provisória *</label>
+                                <input type="text" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <label className="text-xs text-white/40 block mb-1">Tarifa de Energia (R$/kWh)</label>
+                            <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-white/30" />
+                                <input type="number" step="0.01" value={energyTariff} onChange={e => setEnergyTariff(e.target.value)}
+                                    className="w-32 px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Instalação */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                            <MapPin className="w-4 h-4" /> Instalação
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-white/40 block mb-1">Endereço</label>
+                                <input type="text" value={address} onChange={e => setAddress(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Cidade</label>
+                                <input type="text" value={city} onChange={e => setCity(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Estado</label>
+                                <input type="text" value={state} onChange={e => setState(e.target.value)} maxLength={2}
+                                    className="w-20 px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm uppercase focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Potência (kWp)</label>
+                                <input type="number" step="0.1" value={powerKwp} onChange={e => setPowerKwp(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Módulos</label>
+                                <input type="number" value={moduleCount} onChange={e => setModuleCount(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Modelo Módulo</label>
+                                <input type="text" value={moduleModel} onChange={e => setModuleModel(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Modelo Inversor</label>
+                                <input type="text" value={inverterModel} onChange={e => setInverterModel(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-white/40 block mb-1">Data Instalação</label>
+                                <input type="date" value={installDate} onChange={e => setInstallDate(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Dispositivos */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                            <Smartphone className="w-4 h-4" /> Vincular Dispositivos
+                        </h3>
+                        {loadingDevices ? (
+                            <div className="flex items-center gap-2 text-white/30 text-sm">
+                                <Loader2 className="w-4 h-4 animate-spin" /> Carregando dispositivos...
+                            </div>
+                        ) : allDevices.length === 0 ? (
+                            <p className="text-sm text-white/30">Nenhum dispositivo disponível (todos já estão vinculados).</p>
+                        ) : (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {allDevices.map((device: any) => (
+                                    <label
+                                        key={device.device_id}
+                                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                            selectedDeviceIds.includes(device.device_id)
+                                                ? 'bg-primary/10 border-primary/30'
+                                                : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedDeviceIds.includes(device.device_id)}
+                                            onChange={() => toggleDevice(device.device_id)}
+                                            className="accent-primary"
+                                        />
+                                        <div>
+                                            <p className="text-sm text-white font-medium">{device.name}</p>
+                                            <p className="text-xs text-white/30">{device.device_id}</p>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Error */}
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                        <button type="button" onClick={onClose}
+                            className="px-5 py-2.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" disabled={loading || !fullName || !email || !password}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            Criar Cliente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}

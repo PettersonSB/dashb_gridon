@@ -52,7 +52,8 @@ export const sidebarItems: SidebarItem[] = [
         icon: Smartphone,
         group: "Dispositivos",
         dropdown: [
-            { label: 'Geral', href: '/devices/general' }
+            { label: 'Geral', href: '/devices/general' },
+            { label: 'App Cliente', href: '/devices/clients' }
         ],
     },
 ];

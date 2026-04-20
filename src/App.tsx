@@ -28,6 +28,8 @@ const NewBudget = React.lazy(() => import("@/pages/NewBudget"));
 const BudgetPreview = React.lazy(() => import("@/pages/BudgetPreview"));
 const Settings = React.lazy(() => import("@/pages/Settings"));
 const DevicesGeneral = React.lazy(() => import("@/pages/DevicesGeneral"));
+const ClientAccounts = React.lazy(() => import("@/pages/ClientAccounts"));
+const ClientDetail = React.lazy(() => import("@/pages/ClientDetail"));
 const ProspectsList = React.lazy(() => import("@/pages/ProspectsList"));
 
 
@@ -82,6 +84,8 @@ function App() {
                   <Route path="/budget/kits" element={<BudgetKits />} />
                   <Route path="/budget/prospects" element={<ProspectsList />} />
                   <Route path="/devices/general" element={<DevicesGeneral />} />
+                  <Route path="/devices/clients" element={<ClientAccounts />} />
+                  <Route path="/devices/clients/:userId" element={<ClientDetail />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
               </Routes>
