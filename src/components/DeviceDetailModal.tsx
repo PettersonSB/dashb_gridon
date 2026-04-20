@@ -36,7 +36,7 @@ function aggregateLogs(logs: DeviceLog[], range: HistoryRange) {
         if (isoStr.endsWith('Z')) {
             isoStr = isoStr.slice(0, -1);
         }
-            
+
         const d = new Date(isoStr);
         let key: string;
         let label: string;
@@ -226,11 +226,10 @@ export default function DeviceDetailModal({ device, onClose }: Props) {
                                     <button
                                         key={r}
                                         onClick={() => { setRange(r); setOffset(0); }}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                            range === r
-                                                ? 'bg-primary/20 text-primary'
-                                                : 'text-white/40 hover:text-white/60'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${range === r
+                                            ? 'bg-primary/20 text-primary'
+                                            : 'text-white/40 hover:text-white/60'
+                                            }`}
                                     >
                                         {RANGE_LABELS[r]}
                                     </button>
@@ -241,11 +240,10 @@ export default function DeviceDetailModal({ device, onClose }: Props) {
                                     <button
                                         key={m}
                                         onClick={() => setChartMetric(m)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                            chartMetric === m
-                                                ? `text-white`
-                                                : 'text-white/40 hover:text-white/60'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${chartMetric === m
+                                            ? `text-white`
+                                            : 'text-white/40 hover:text-white/60'
+                                            }`}
                                         style={chartMetric === m ? { backgroundColor: metricColors[m] + '33' } : {}}
                                     >
                                         {m === 'power' ? 'Potência' : m === 'voltage' ? 'Tensão' : 'Corrente'}

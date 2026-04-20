@@ -196,6 +196,7 @@ export default function DevicesGeneral() {
     const totalDevices = devices.length;
     const onlineCount = devices.filter((d) => d.online === 'true').length;
     const offlineCount = totalDevices - onlineCount;
+    const offCount = devices.filter((d) => d.is_on === false).length;
     const totalPower = devices.reduce((sum, d) => sum + (d.power ?? 0), 0);
 
     const formatPower = (w: number | null) => {
@@ -278,6 +279,13 @@ export default function DevicesGeneral() {
                             <WifiOff className="w-3 h-3 text-red-400" /> Offline
                         </span>
                         <span className="text-xl font-display font-bold text-red-400 mt-0.5">{offlineCount}</span>
+                    </div>
+                    <div className="w-px h-8 bg-white/[0.06]" />
+                    <div className="flex flex-col items-center">
+                        <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
+                            <Power className="w-3 h-3 text-slate-400" /> OFF
+                        </span>
+                        <span className="text-xl font-display font-bold text-slate-400 mt-0.5">{offCount}</span>
                     </div>
                 </div>
 
