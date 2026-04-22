@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { clientService, ClientAccount, ClientInstallation, EnergyBill, SupportTicket } from '@/services/clientService';
+import { confirmAction } from '@/components/ui/ConfirmDialog';
 import {
     ArrowLeft, User, Mail, Phone, DollarSign, Calendar, Clock,
     Shield, CheckCircle, Ban, XCircle, Trash2, KeyRound,
     Smartphone, Plus, Unlink, Upload, FileText, Download,
-    MessageSquare, Send, Loader2, MapPin, Zap, Package
+    MessageSquare, Send, Loader2, MapPin, Zap, Package, X
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -27,6 +28,8 @@ export default function ClientDetail() {
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
 
     useEffect(() => {
         if (userId) loadAll();
@@ -63,7 +66,14 @@ export default function ClientDetail() {
             deactivate: 'Tem certeza que deseja DESATIVAR permanentemente este cliente?',
             delete: 'ATENÇÃO: Isso irá DELETAR o cliente e TODOS os seus dados. Esta ação é irreversível!',
         };
-        if (!confirm(confirmMsg[action])) return;
+
+        const confirmed = await confirmAction({
+            title: 'Confirmar Ação',
+            message: confirmMsg[action],
+            variant: action === 'delete' || action === 'deactivate' ? 'danger' : action === 'suspend' ? 'warning' : 'info'
+        });
+
+        if (!confirmed) return;
 
         setActionLoading(true);
         try {
@@ -82,14 +92,18 @@ export default function ClientDetail() {
     }
 
     async function handleResetPassword() {
-        const newPassword = prompt('Digite a nova senha provisória (mínimo 6 caracteres):');
-        if (!newPassword || newPassword.length < 6) return;
+        if (!newPassword || newPassword.length < 6) {
+            setError('A nova senha deve ter pelo menos 6 caracteres.');
+            return;
+        }
         if (!userId) return;
 
+        setShowResetModal(false);
         setActionLoading(true);
         try {
             const result = await clientService.manageClient('reset_password', userId, newPassword);
             setSuccess(result.message);
+            setNewPassword(''); // clear after success
         } catch (e: any) {
             setError(e.message);
         } finally {
@@ -179,7 +193,7 @@ export default function ClientDetail() {
                         <CheckCircle className="w-4 h-4" /> Reativar
                     </button>
                 )}
-                <button onClick={handleResetPassword} disabled={actionLoading}
+                <button onClick={() => setShowResetModal(true)} disabled={actionLoading}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/20 transition-all disabled:opacity-50">
                     <KeyRound className="w-4 h-4" /> Resetar Senha
                 </button>
@@ -212,46 +226,191 @@ export default function ClientDetail() {
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'info' && <InfoTab client={client} installation={installation} formatDate={formatDate} />}
+            {activeTab === 'info' && <InfoTab client={client} installation={installation} formatDate={formatDate} onReload={loadAll} />}
             {activeTab === 'devices' && <DevicesTab devices={devices} clientUserId={userId!} onReload={loadAll} />}
             {activeTab === 'bills' && <BillsTab bills={bills} clientUserId={userId!} onReload={loadAll} formatDate={formatDate} />}
             {activeTab === 'tickets' && <TicketsTab tickets={tickets} onReload={loadAll} formatDate={formatDate} />}
+
+            {/* Reset Password Modal */}
+            {showResetModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowResetModal(false)}>
+                    <div className="bg-[#0d1117] border border-white/[0.06] rounded-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <KeyRound className="w-5 h-5 text-blue-400" /> Resetar Senha
+                            </h3>
+                            <button onClick={() => setShowResetModal(false)} className="text-white/40 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <p className="text-sm text-white/60 mb-4">
+                            Digite a nova senha provisória para o cliente. Ele será obrigado a trocá-la no próximo acesso.
+                        </p>
+                        <input
+                            type="text"
+                            placeholder="Nova senha (min. 6 caracteres)"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:border-blue-500/50 transition-all mb-4"
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowResetModal(false)} className="px-4 py-2 text-sm text-white/50 hover:text-white transition-all">
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleResetPassword}
+                                disabled={newPassword.length < 6}
+                                className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition-all disabled:opacity-50"
+                            >
+                                Confirmar Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
 // ── Tab: Info ──────────────────────────────────────────
 
-function InfoTab({ client, installation, formatDate }: { client: ClientAccount; installation: ClientInstallation | null; formatDate: (s: string | null) => string }) {
+function InfoTab({ client, installation, formatDate, onReload }: { client: ClientAccount; installation: ClientInstallation | null; formatDate: (s: string | null) => string; onReload: () => void }) {
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+    // Client fields
+    const [fullName, setFullName] = useState(client.full_name);
+    const [phone, setPhone] = useState(client.phone || '');
+    const [tariff, setTariff] = useState(String(client.energy_tariff));
+
+    // Installation fields
+    const [address, setAddress] = useState(installation?.address || '');
+    const [city, setCity] = useState(installation?.city || '');
+    const [instState, setInstState] = useState(installation?.state || '');
+    const [powerKwp, setPowerKwp] = useState(installation?.system_power_kwp ? String(installation.system_power_kwp) : '');
+    const [modCount, setModCount] = useState(installation?.module_count ? String(installation.module_count) : '');
+    const [modModel, setModModel] = useState(installation?.module_model || '');
+    const [invModel, setInvModel] = useState(installation?.inverter_model || '');
+    const [instDate, setInstDate] = useState(installation?.installation_date || '');
+    const [notes, setNotes] = useState(installation?.notes || '');
+
+    async function handleSave() {
+        setSaving(true);
+        setSaveMsg(null);
+        try {
+            await clientService.updateClient(client.user_id, {
+                full_name: fullName,
+                phone: phone || null,
+                energy_tariff: parseFloat(tariff) || 0.85,
+            } as any);
+
+            await clientService.updateInstallation(client.user_id, {
+                address: address || null,
+                city: city || null,
+                state: instState || null,
+                system_power_kwp: powerKwp ? parseFloat(powerKwp) : null,
+                module_count: modCount ? parseInt(modCount) : null,
+                module_model: modModel || null,
+                inverter_model: invModel || null,
+                installation_date: instDate || null,
+                notes: notes || null,
+            } as any);
+
+            setSaveMsg('Dados salvos com sucesso!');
+            setEditing(false);
+            onReload();
+        } catch (e: any) {
+            setSaveMsg('Erro: ' + e.message);
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    const inputCls = "w-full px-3 py-1.5 bg-white/[0.05] border border-white/[0.12] rounded-lg text-white text-sm focus:outline-none focus:border-primary/40 transition-all";
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Dados da Conta */}
-            <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-3">
-                <h3 className="text-sm font-semibold text-primary flex items-center gap-2"><User className="w-4 h-4" /> Conta</h3>
-                <InfoRow label="Nome" value={client.full_name} />
-                <InfoRow label="Email" value={client.email} />
-                <InfoRow label="Telefone" value={client.phone || '—'} />
-                <InfoRow label="Tarifa" value={`R$ ${client.energy_tariff}/kWh`} />
-                <InfoRow label="Troca Senha" value={client.must_change_password ? '⚠️ Pendente' : '✅ Já trocou'} />
-                <InfoRow label="Último Login" value={formatDate(client.last_login_at)} />
-                <InfoRow label="Criado em" value={formatDate(client.created_at)} />
+        <div className="space-y-4">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between">
+                <span />
+                <div className="flex items-center gap-2">
+                    {saveMsg && <span className={`text-xs ${saveMsg.startsWith('Erro') ? 'text-red-400' : 'text-emerald-400'}`}>{saveMsg}</span>}
+                    {editing ? (
+                        <>
+                            <button onClick={() => setEditing(false)} className="px-4 py-1.5 text-sm text-white/40 hover:text-white rounded-lg hover:bg-white/5 transition-all">Cancelar</button>
+                            <button onClick={handleSave} disabled={saving}
+                                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all">
+                                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />} Salvar
+                            </button>
+                        </>
+                    ) : (
+                        <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-white/[0.05] border border-white/[0.08] text-white/60 text-sm rounded-lg hover:bg-white/[0.08] hover:text-white transition-all">
+                            ✏️ Editar
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {/* Instalação */}
-            <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-3">
-                <h3 className="text-sm font-semibold text-primary flex items-center gap-2"><MapPin className="w-4 h-4" /> Instalação</h3>
-                {installation ? (
-                    <>
-                        <InfoRow label="Endereço" value={[installation.address, installation.city, installation.state].filter(Boolean).join(', ') || '—'} />
-                        <InfoRow label="Potência" value={installation.system_power_kwp ? `${installation.system_power_kwp} kWp` : '—'} />
-                        <InfoRow label="Módulos" value={installation.module_count ? `${installation.module_count}` : '—'} />
-                        <InfoRow label="Modelo Módulo" value={installation.module_model || '—'} />
-                        <InfoRow label="Inversor" value={installation.inverter_model || '—'} />
-                        <InfoRow label="Instalado em" value={installation.installation_date || '—'} />
-                    </>
-                ) : (
-                    <p className="text-sm text-white/30">Nenhuma instalação cadastrada</p>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Dados da Conta */}
+                <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+                    <h3 className="text-sm font-semibold text-primary flex items-center gap-2"><User className="w-4 h-4" /> Conta</h3>
+                    {editing ? (
+                        <div className="space-y-3">
+                            <div><label className="text-xs text-white/40 block mb-1">Nome</label><input value={fullName} onChange={e => setFullName(e.target.value)} className={inputCls} /></div>
+                            <div><label className="text-xs text-white/40 block mb-1">Telefone</label><input value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} /></div>
+                            <div><label className="text-xs text-white/40 block mb-1">Tarifa (R$/kWh)</label><input type="number" step="0.01" value={tariff} onChange={e => setTariff(e.target.value)} className={inputCls} /></div>
+                        </div>
+                    ) : (
+                        <>
+                            <InfoRow label="Nome" value={client.full_name} />
+                            <InfoRow label="Email" value={client.email} />
+                            <InfoRow label="Telefone" value={client.phone || '—'} />
+                            <InfoRow label="Tarifa" value={`R$ ${client.energy_tariff}/kWh`} />
+                        </>
+                    )}
+                    <div className="border-t border-white/[0.06] pt-3 mt-3 space-y-2">
+                        <InfoRow label="Troca Senha" value={client.must_change_password ? '⚠️ Pendente' : '✅ Já trocou'} />
+                        <InfoRow label="Último Login" value={formatDate(client.last_login_at)} />
+                        <InfoRow label="Criado em" value={formatDate(client.created_at)} />
+                    </div>
+                </div>
+
+                {/* Instalação */}
+                <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+                    <h3 className="text-sm font-semibold text-primary flex items-center gap-2"><MapPin className="w-4 h-4" /> Instalação</h3>
+                    {editing ? (
+                        <div className="space-y-3">
+                            <div><label className="text-xs text-white/40 block mb-1">Endereço</label><input value={address} onChange={e => setAddress(e.target.value)} className={inputCls} /></div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="text-xs text-white/40 block mb-1">Cidade</label><input value={city} onChange={e => setCity(e.target.value)} className={inputCls} /></div>
+                                <div><label className="text-xs text-white/40 block mb-1">Estado</label><input value={instState} onChange={e => setInstState(e.target.value)} maxLength={2} className={inputCls + ' uppercase'} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="text-xs text-white/40 block mb-1">Potência (kWp)</label><input type="number" step="0.1" value={powerKwp} onChange={e => setPowerKwp(e.target.value)} className={inputCls} /></div>
+                                <div><label className="text-xs text-white/40 block mb-1">Módulos</label><input type="number" value={modCount} onChange={e => setModCount(e.target.value)} className={inputCls} /></div>
+                            </div>
+                            <div><label className="text-xs text-white/40 block mb-1">Modelo Módulo</label><input value={modModel} onChange={e => setModModel(e.target.value)} className={inputCls} /></div>
+                            <div><label className="text-xs text-white/40 block mb-1">Modelo Inversor</label><input value={invModel} onChange={e => setInvModel(e.target.value)} className={inputCls} /></div>
+                            <div><label className="text-xs text-white/40 block mb-1">Data Instalação</label><input type="date" value={instDate} onChange={e => setInstDate(e.target.value)} className={inputCls} /></div>
+                            <div><label className="text-xs text-white/40 block mb-1">Observações</label><textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={inputCls + ' resize-none'} /></div>
+                        </div>
+                    ) : installation ? (
+                        <>
+                            <InfoRow label="Endereço" value={[installation.address, installation.city, installation.state].filter(Boolean).join(', ') || '—'} />
+                            <InfoRow label="Potência" value={installation.system_power_kwp ? `${installation.system_power_kwp} kWp` : '—'} />
+                            <InfoRow label="Módulos" value={installation.module_count ? `${installation.module_count}` : '—'} />
+                            <InfoRow label="Modelo Módulo" value={installation.module_model || '—'} />
+                            <InfoRow label="Inversor" value={installation.inverter_model || '—'} />
+                            <InfoRow label="Instalado em" value={installation.installation_date || '—'} />
+                            {installation.notes && <InfoRow label="Observações" value={installation.notes} />}
+                        </>
+                    ) : (
+                        <p className="text-sm text-white/30">Nenhuma instalação cadastrada. Clique em Editar para adicionar.</p>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -261,7 +420,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex justify-between items-center">
             <span className="text-xs text-white/40">{label}</span>
-            <span className="text-sm text-white/70">{value}</span>
+            <span className="text-sm text-white/70 text-right max-w-[60%]">{value}</span>
         </div>
     );
 }

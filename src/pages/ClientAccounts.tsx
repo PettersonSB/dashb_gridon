@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientService, ClientAccount, CreateClientPayload } from '@/services/clientService';
-import { deviceService } from '@/services/deviceService';
 import {
     Users, Plus, Search, Eye, Ban, CheckCircle, XCircle,
-    Calendar, Loader2, Smartphone, Mail, Phone, X,
-    DollarSign, MapPin, Package, Zap, StickyNote
+    Loader2, Smartphone, Mail, Phone, X,
+    DollarSign, MapPin, Clock
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -19,6 +18,32 @@ const STATUS_LABELS: Record<string, string> = {
     suspenso: 'Suspenso',
     desativado: 'Desativado',
 };
+
+/** Retorna texto relativo como "há 2 dias", "há 5 min" etc. */
+function timeAgo(dateStr: string | null): { text: string; color: string } {
+    if (!dateStr) return { text: 'Nunca', color: 'text-white/30' };
+    const now = Date.now();
+    const then = new Date(dateStr).getTime();
+    const diffMs = now - then;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    let text: string;
+    if (diffMin < 1) text = 'Agora';
+    else if (diffMin < 60) text = `há ${diffMin} min`;
+    else if (diffHours < 24) text = `há ${diffHours}h`;
+    else if (diffDays < 7) text = `há ${diffDays}d`;
+    else if (diffDays < 30) text = `há ${Math.floor(diffDays / 7)} sem`;
+    else text = `há ${Math.floor(diffDays / 30)} mês${Math.floor(diffDays / 30) > 1 ? 'es' : ''}`;
+
+    let color: string;
+    if (diffDays <= 3) color = 'text-emerald-400';
+    else if (diffDays <= 14) color = 'text-amber-400';
+    else color = 'text-red-400/60';
+
+    return { text, color };
+}
 
 export default function ClientAccounts() {
     const navigate = useNavigate();
@@ -35,6 +60,7 @@ export default function ClientAccounts() {
     async function loadClients() {
         try {
             setLoading(true);
+            setError(null);
             const data = await clientService.getClients();
             setClients(data);
         } catch (e: any) {
@@ -57,19 +83,8 @@ export default function ClientAccounts() {
         total: clients.length,
         ativos: clients.filter(c => c.status === 'ativo').length,
         suspensos: clients.filter(c => c.status === 'suspenso').length,
+        desativados: clients.filter(c => c.status === 'desativado').length,
     };
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return 'Nunca';
-        try {
-            return new Intl.DateTimeFormat('pt-BR', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }).format(new Date(dateStr));
-        } catch {
-            return dateStr;
-        }
-    }
 
     return (
         <div className="space-y-6">
@@ -84,7 +99,7 @@ export default function ClientAccounts() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                 >
                     <Plus className="w-4 h-4" />
                     Novo Cliente
@@ -92,34 +107,11 @@ export default function ClientAccounts() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-primary" />
-                        <div>
-                            <p className="text-xs text-white/40">Total de Clientes</p>
-                            <p className="text-xl font-bold text-white">{stats.total}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
-                        <div>
-                            <p className="text-xs text-white/40">Ativos</p>
-                            <p className="text-xl font-bold text-emerald-400">{stats.ativos}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="flex items-center gap-3">
-                        <Ban className="w-5 h-5 text-amber-400" />
-                        <div>
-                            <p className="text-xs text-white/40">Suspensos</p>
-                            <p className="text-xl font-bold text-amber-400">{stats.suspensos}</p>
-                        </div>
-                    </div>
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard icon={Users} label="Total de Clientes" value={stats.total} color="text-primary" bgColor="bg-primary/10" borderColor="border-primary/20" />
+                <StatCard icon={CheckCircle} label="Ativos" value={stats.ativos} color="text-emerald-400" bgColor="bg-emerald-500/10" borderColor="border-emerald-500/20" />
+                <StatCard icon={Ban} label="Suspensos" value={stats.suspensos} color="text-amber-400" bgColor="bg-amber-500/10" borderColor="border-amber-500/20" />
+                <StatCard icon={XCircle} label="Desativados" value={stats.desativados} color="text-red-400" bgColor="bg-red-500/10" borderColor="border-red-500/20" />
             </div>
 
             {/* Search */}
@@ -136,8 +128,9 @@ export default function ClientAccounts() {
 
             {/* Error */}
             {error && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                    {error}
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+                    <span>{error}</span>
+                    <button onClick={() => setError(null)} className="text-white/40 hover:text-white ml-4">✕</button>
                 </div>
             )}
 
@@ -155,54 +148,66 @@ export default function ClientAccounts() {
             ) : (
                 /* Client List */
                 <div className="space-y-3">
-                    {filtered.map((client) => (
-                        <div
-                            key={client.id}
-                            onClick={() => navigate(`/devices/clients/${client.user_id}`)}
-                            className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.04] transition-all cursor-pointer"
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    {/* Avatar */}
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
-                                        {client.full_name.charAt(0).toUpperCase()}
-                                    </div>
+                    {filtered.map((client) => {
+                        const loginInfo = timeAgo(client.last_login_at);
+                        return (
+                            <div
+                                key={client.id}
+                                onClick={() => navigate(`/devices/clients/${client.user_id}`)}
+                                className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.04] transition-all cursor-pointer"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        {/* Avatar */}
+                                        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
+                                            {client.full_name.charAt(0).toUpperCase()}
+                                        </div>
 
-                                    {/* Info */}
-                                    <div>
-                                        <h3 className="text-white font-semibold group-hover:text-primary transition-colors">
-                                            {client.full_name}
-                                        </h3>
-                                        <div className="flex items-center gap-4 mt-1">
-                                            <span className="flex items-center gap-1 text-xs text-white/40">
-                                                <Mail className="w-3 h-3" /> {client.email}
-                                            </span>
-                                            {client.phone && (
+                                        {/* Info */}
+                                        <div>
+                                            <h3 className="text-white font-semibold group-hover:text-primary transition-colors">
+                                                {client.full_name}
+                                            </h3>
+                                            <div className="flex items-center gap-4 mt-1">
                                                 <span className="flex items-center gap-1 text-xs text-white/40">
-                                                    <Phone className="w-3 h-3" /> {client.phone}
+                                                    <Mail className="w-3 h-3" /> {client.email}
                                                 </span>
-                                            )}
+                                                {client.phone && (
+                                                    <span className="flex items-center gap-1 text-xs text-white/40">
+                                                        <Phone className="w-3 h-3" /> {client.phone}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center gap-4">
-                                    {/* Status */}
-                                    <span className={`px-3 py-1 rounded-lg text-xs font-medium border ${STATUS_COLORS[client.status]}`}>
-                                        {STATUS_LABELS[client.status]}
-                                    </span>
+                                    <div className="flex items-center gap-4">
+                                        {/* Must Change Password */}
+                                        {client.must_change_password && (
+                                            <span className="px-2 py-1 rounded-md text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 hidden lg:block">
+                                                Senha pendente
+                                            </span>
+                                        )}
 
-                                    {/* Last Login */}
-                                    <div className="text-right hidden md:block">
-                                        <p className="text-[10px] text-white/30">Último Login</p>
-                                        <p className="text-xs text-white/50">{formatDate(client.last_login_at)}</p>
+                                        {/* Status */}
+                                        <span className={`px-3 py-1 rounded-lg text-xs font-medium border ${STATUS_COLORS[client.status]}`}>
+                                            {STATUS_LABELS[client.status]}
+                                        </span>
+
+                                        {/* Last Login */}
+                                        <div className="text-right hidden md:block min-w-[80px]">
+                                            <p className="text-[10px] text-white/30 flex items-center gap-1 justify-end">
+                                                <Clock className="w-3 h-3" /> Último acesso
+                                            </p>
+                                            <p className={`text-xs font-medium ${loginInfo.color}`}>{loginInfo.text}</p>
+                                        </div>
+
+                                        <Eye className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
                                     </div>
-
-                                    <Eye className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -216,6 +221,26 @@ export default function ClientAccounts() {
                     }}
                 />
             )}
+        </div>
+    );
+}
+
+// ── Stat Card ───────────────────────────────────────────
+
+function StatCard({ icon: Icon, label, value, color, bgColor, borderColor }: {
+    icon: any; label: string; value: number; color: string; bgColor: string; borderColor: string;
+}) {
+    return (
+        <div className={`p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:${borderColor} transition-all`}>
+            <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl ${bgColor} border ${borderColor} flex items-center justify-center`}>
+                    <Icon className={`w-5 h-5 ${color}`} />
+                </div>
+                <div>
+                    <p className="text-xs text-white/40">{label}</p>
+                    <p className={`text-xl font-bold ${color}`}>{value}</p>
+                </div>
+            </div>
         </div>
     );
 }
@@ -315,6 +340,8 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
         }
     }
 
+    const inputClass = "w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30 transition-all";
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
             <div
@@ -341,23 +368,19 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Nome Completo *</label>
-                                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Telefone</label>
-                                <input type="text" value={phone} onChange={e => setPhone(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Email *</label>
-                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Senha Provisória *</label>
-                                <input type="text" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className={inputClass} />
                             </div>
                         </div>
                         <div className="mt-4">
@@ -378,13 +401,11 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="md:col-span-2">
                                 <label className="text-xs text-white/40 block mb-1">Endereço</label>
-                                <input type="text" value={address} onChange={e => setAddress(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={address} onChange={e => setAddress(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Cidade</label>
-                                <input type="text" value={city} onChange={e => setCity(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={city} onChange={e => setCity(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Estado</label>
@@ -393,28 +414,23 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Potência (kWp)</label>
-                                <input type="number" step="0.1" value={powerKwp} onChange={e => setPowerKwp(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="number" step="0.1" value={powerKwp} onChange={e => setPowerKwp(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Módulos</label>
-                                <input type="number" value={moduleCount} onChange={e => setModuleCount(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="number" value={moduleCount} onChange={e => setModuleCount(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Modelo Módulo</label>
-                                <input type="text" value={moduleModel} onChange={e => setModuleModel(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={moduleModel} onChange={e => setModuleModel(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Modelo Inversor</label>
-                                <input type="text" value={inverterModel} onChange={e => setInverterModel(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="text" value={inverterModel} onChange={e => setInverterModel(e.target.value)} className={inputClass} />
                             </div>
                             <div>
                                 <label className="text-xs text-white/40 block mb-1">Data Instalação</label>
-                                <input type="date" value={installDate} onChange={e => setInstallDate(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30" />
+                                <input type="date" value={installDate} onChange={e => setInstallDate(e.target.value)} className={inputClass} />
                             </div>
                         </div>
                     </div>
@@ -435,11 +451,10 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                                 {allDevices.map((device: any) => (
                                     <label
                                         key={device.device_id}
-                                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                            selectedDeviceIds.includes(device.device_id)
+                                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedDeviceIds.includes(device.device_id)
                                                 ? 'bg-primary/10 border-primary/30'
                                                 : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]'
-                                        }`}
+                                            }`}
                                     >
                                         <input
                                             type="checkbox"

@@ -1,13 +1,5 @@
 import { supabase } from '@/lib/supabase';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
-/** Helper para obter o token JWT da sessão ativa */
-async function getAuthToken(): Promise<string> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || '';
-}
-
 // ── Tipos ──────────────────────────────────────────
 
 export interface ClientAccount {
@@ -131,21 +123,36 @@ export const clientService = {
 
     /** Cria um novo cliente chamando a Edge Function create-client-account */
     async createClient(payload: CreateClientPayload): Promise<{ user_id: string; email: string }> {
-        const token = await getAuthToken();
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (!token) {
+            throw new Error('Você precisa estar logado para criar um cliente. Faça login novamente.');
+        }
 
         const response = await fetch(`${SUPABASE_URL}/functions/v1/create-client-account`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
+                'apikey': ANON_KEY,
             },
             body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
+        const responseText = await response.text();
+        let result: any;
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            throw new Error(`Erro inesperado do servidor (${response.status}): ${responseText}`);
+        }
 
         if (!response.ok) {
-            throw new Error(result.error || 'Erro ao criar cliente');
+            throw new Error(result.error || result.message || `Erro ao criar cliente (${response.status})`);
         }
 
         return result;
@@ -155,13 +162,22 @@ export const clientService = {
 
     /** Altera o status de um cliente (suspender, ativar, desativar, resetar senha, deletar) */
     async manageClient(action: 'suspend' | 'activate' | 'deactivate' | 'reset_password' | 'delete', clientUserId: string, newPassword?: string): Promise<{ message: string }> {
-        const token = await getAuthToken();
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (!token) {
+            throw new Error('Você precisa estar logado. Faça login novamente.');
+        }
 
         const response = await fetch(`${SUPABASE_URL}/functions/v1/manage-client-account`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
+                'apikey': ANON_KEY,
             },
             body: JSON.stringify({
                 action,
@@ -170,10 +186,16 @@ export const clientService = {
             }),
         });
 
-        const result = await response.json();
+        const responseText = await response.text();
+        let result: any;
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            throw new Error(`Erro inesperado do servidor (${response.status}): ${responseText}`);
+        }
 
         if (!response.ok) {
-            throw new Error(result.error || 'Erro na operação');
+            throw new Error(result.error || result.message || `Erro na operação (${response.status})`);
         }
 
         return result;
