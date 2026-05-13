@@ -8,6 +8,8 @@ import {
     Smartphone, Plus, Unlink, Upload, FileText, Download,
     MessageSquare, Send, Loader2, MapPin, Zap, Package, X
 } from 'lucide-react';
+import { LocationMap } from '@/components/LocationMap';
+import { supabase } from '@/lib/supabase';
 
 const STATUS_COLORS: Record<string, string> = {
     ativo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -286,15 +288,69 @@ function InfoTab({ client, installation, formatDate, onReload }: { client: Clien
     const [tariff, setTariff] = useState(String(client.energy_tariff));
 
     // Installation fields
+    const [cep, setCep] = useState(installation?.cep || '');
     const [address, setAddress] = useState(installation?.address || '');
+    const [neighborhood, setNeighborhood] = useState(installation?.neighborhood || '');
     const [city, setCity] = useState(installation?.city || '');
     const [instState, setInstState] = useState(installation?.state || '');
     const [powerKwp, setPowerKwp] = useState(installation?.system_power_kwp ? String(installation.system_power_kwp) : '');
     const [modCount, setModCount] = useState(installation?.module_count ? String(installation.module_count) : '');
+    const [modPower, setModPower] = useState(installation?.module_power_w ? String(installation.module_power_w) : '');
     const [modModel, setModModel] = useState(installation?.module_model || '');
     const [invModel, setInvModel] = useState(installation?.inverter_model || '');
+    const [invType, setInvType] = useState(installation?.inverter_type || 'inversor');
     const [instDate, setInstDate] = useState(installation?.installation_date || '');
     const [notes, setNotes] = useState(installation?.notes || '');
+    const [latitude, setLatitude] = useState<number | undefined>(installation?.latitude || undefined);
+    const [longitude, setLongitude] = useState<number | undefined>(installation?.longitude || undefined);
+    const [fetchingCep, setFetchingCep] = useState(false);
+    
+    // Photo upload
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(installation?.installation_photo_url || null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setPhotoFile(file);
+            setPhotoPreview(URL.createObjectURL(file));
+        }
+    }
+
+    const [showPhotoLightbox, setShowPhotoLightbox] = useState(false);
+
+    async function handleCepBlur() {
+        const rawCep = cep.replace(/\D/g, '');
+        if (rawCep.length !== 8) return;
+
+        setFetchingCep(true);
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${rawCep}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.street) setAddress(data.street);
+                if (data.neighborhood) setNeighborhood(data.neighborhood);
+                if (data.city) setCity(data.city);
+                if (data.state) setInstState(data.state);
+
+                // Attempt geocoding with Nominatim
+                const query = `${data.street ? data.street + ',' : ''} ${data.city ? data.city + ',' : ''} ${data.state ? data.state + ',' : ''} Brazil`;
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData && geoData.length > 0) {
+                        setLatitude(parseFloat(geoData[0].lat));
+                        setLongitude(parseFloat(geoData[0].lon));
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao buscar CEP", error);
+        } finally {
+            setFetchingCep(false);
+        }
+    }
 
     async function handleSave() {
         setSaving(true);
@@ -306,15 +362,43 @@ function InfoTab({ client, installation, formatDate, onReload }: { client: Clien
                 energy_tariff: parseFloat(tariff) || 0.85,
             } as any);
 
+            let photoUrl: string | null | undefined = installation?.installation_photo_url;
+            if (photoFile) {
+                const ext = photoFile.name.split('.').pop();
+                const filename = `installation_${client.user_id}_${Date.now()}.${ext}`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('client-documents')
+                    .upload(`installations/${filename}`, photoFile, { upsert: true });
+
+                if (uploadError) {
+                    console.error('Erro ao fazer upload da foto:', uploadError);
+                    setSaveMsg(`Erro ao enviar foto: ${uploadError.message}`);
+                    setSaving(false);
+                    return;
+                } else if (uploadData) {
+                    const { data: publicUrlData } = supabase.storage
+                        .from('client-documents')
+                        .getPublicUrl(uploadData.path);
+                    photoUrl = publicUrlData.publicUrl;
+                }
+            }
+
             await clientService.updateInstallation(client.user_id, {
+                cep: cep || null,
                 address: address || null,
+                neighborhood: neighborhood || null,
                 city: city || null,
                 state: instState || null,
+                latitude: latitude,
+                longitude: longitude,
                 system_power_kwp: powerKwp ? parseFloat(powerKwp) : null,
                 module_count: modCount ? parseInt(modCount) : null,
+                module_power_w: modPower ? parseInt(modPower) : null,
                 module_model: modModel || null,
                 inverter_model: invModel || null,
+                inverter_type: invType || null,
                 installation_date: instDate || null,
+                installation_photo_url: photoUrl,
                 notes: notes || null,
             } as any);
 
@@ -331,6 +415,7 @@ function InfoTab({ client, installation, formatDate, onReload }: { client: Clien
     const inputCls = "w-full px-3 py-1.5 bg-white/[0.05] border border-white/[0.12] rounded-lg text-white text-sm focus:outline-none focus:border-primary/40 transition-all";
 
     return (
+        <>
         <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex items-center justify-between">
@@ -383,6 +468,10 @@ function InfoTab({ client, installation, formatDate, onReload }: { client: Clien
                     <h3 className="text-sm font-semibold text-primary flex items-center gap-2"><MapPin className="w-4 h-4" /> Instalação</h3>
                     {editing ? (
                         <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div><label className="text-xs text-white/40 block mb-1">CEP {fetchingCep && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}</label><input value={cep} onChange={e => setCep(e.target.value)} onBlur={handleCepBlur} placeholder="00000-000" className={inputCls} /></div>
+                                <div><label className="text-xs text-white/40 block mb-1">Bairro</label><input value={neighborhood} onChange={e => setNeighborhood(e.target.value)} className={inputCls} /></div>
+                            </div>
                             <div><label className="text-xs text-white/40 block mb-1">Endereço</label><input value={address} onChange={e => setAddress(e.target.value)} className={inputCls} /></div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div><label className="text-xs text-white/40 block mb-1">Cidade</label><input value={city} onChange={e => setCity(e.target.value)} className={inputCls} /></div>
@@ -390,22 +479,93 @@ function InfoTab({ client, installation, formatDate, onReload }: { client: Clien
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div><label className="text-xs text-white/40 block mb-1">Potência (kWp)</label><input type="number" step="0.1" value={powerKwp} onChange={e => setPowerKwp(e.target.value)} className={inputCls} /></div>
-                                <div><label className="text-xs text-white/40 block mb-1">Módulos</label><input type="number" value={modCount} onChange={e => setModCount(e.target.value)} className={inputCls} /></div>
+                                <div>
+                                    <label className="text-xs text-white/40 block mb-1">Módulos</label>
+                                    <div className="flex gap-2">
+                                        <div className="relative" style={{ width: '110px' }}>
+                                            <input type="number" value={modCount} onChange={e => setModCount(e.target.value)} className={inputCls + ' text-center pr-10'} />
+                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/30 pointer-events-none font-medium">Qnt</span>
+                                        </div>
+                                        <div className="relative flex-1">
+                                            <input type="number" value={modPower} onChange={e => setModPower(e.target.value)} placeholder="600" className={inputCls + ' pr-6 text-center'} />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/30 pointer-events-none">W</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div><label className="text-xs text-white/40 block mb-1">Modelo Módulo</label><input value={modModel} onChange={e => setModModel(e.target.value)} className={inputCls} /></div>
-                            <div><label className="text-xs text-white/40 block mb-1">Modelo Inversor</label><input value={invModel} onChange={e => setInvModel(e.target.value)} className={inputCls} /></div>
-                            <div><label className="text-xs text-white/40 block mb-1">Data Instalação</label><input type="date" value={instDate} onChange={e => setInstDate(e.target.value)} className={inputCls} /></div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="text-xs text-white/40 block mb-1">Modelo Módulo</label><input value={modModel} onChange={e => setModModel(e.target.value)} className={inputCls} /></div>
+                                <div><label className="text-xs text-white/40 block mb-1">Modelo Inversor</label><input value={invModel} onChange={e => setInvModel(e.target.value)} className={inputCls} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-white/40 block mb-1">Tipo de Inversor</label>
+                                    <select value={invType} onChange={e => setInvType(e.target.value)} className={inputCls + ' appearance-none'}>
+                                        <option value="inversor">Inversor</option>
+                                        <option value="micro_inversor">Micro Inversor</option>
+                                        <option value="inversor_hibrido">Inversor Híbrido</option>
+                                    </select>
+                                </div>
+                                <div><label className="text-xs text-white/40 block mb-1">Data Instalação</label><input type="date" value={instDate} onChange={e => setInstDate(e.target.value)} className={inputCls} /></div>
+                            </div>
                             <div><label className="text-xs text-white/40 block mb-1">Observações</label><textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={inputCls + ' resize-none'} /></div>
+                            
+                            <div className="md:col-span-2 mt-2">
+                                <label className="text-xs text-white/40 block mb-1">Foto da Instalação</label>
+                                <div 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`w-full h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${
+                                        photoPreview ? 'border-primary/50 bg-primary/5 overflow-hidden p-1' : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20'
+                                    }`}
+                                >
+                                    <input type="file" ref={fileInputRef} onChange={handlePhotoChange} accept="image/*" className="hidden" />
+                                    {photoPreview ? (
+                                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover rounded-lg" />
+                                    ) : (
+                                        <>
+                                            <Upload className="w-6 h-6 text-white/40 mb-2" />
+                                            <span className="text-sm text-white/60">Clique para enviar a foto</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="pt-3 border-t border-white/[0.06]">
+                                <h4 className="text-xs font-semibold text-white/60 mb-2">Localização (Mapa)</h4>
+                                <div className="grid grid-cols-2 gap-3 mb-2">
+                                    <div><label className="text-xs text-white/40 block mb-1">Latitude</label><input type="number" step="any" value={latitude ?? ''} onChange={e => setLatitude(e.target.value ? parseFloat(e.target.value) : undefined)} className={inputCls} /></div>
+                                    <div><label className="text-xs text-white/40 block mb-1">Longitude</label><input type="number" step="any" value={longitude ?? ''} onChange={e => setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)} className={inputCls} /></div>
+                                </div>
+                                <LocationMap lat={latitude} lng={longitude} editable={true} onChange={(lat, lng) => { setLatitude(lat); setLongitude(lng); }} />
+                            </div>
                         </div>
                     ) : installation ? (
                         <>
-                            <InfoRow label="Endereço" value={[installation.address, installation.city, installation.state].filter(Boolean).join(', ') || '—'} />
+                            {installation.cep && <InfoRow label="CEP" value={installation.cep} />}
+                            <InfoRow label="Endereço" value={[installation.address, installation.neighborhood, installation.city, installation.state].filter(Boolean).join(', ') || '—'} />
                             <InfoRow label="Potência" value={installation.system_power_kwp ? `${installation.system_power_kwp} kWp` : '—'} />
-                            <InfoRow label="Módulos" value={installation.module_count ? `${installation.module_count}` : '—'} />
+                            <InfoRow label="Módulos" value={installation.module_count ? `${installation.module_count} un ${installation.module_power_w ? `(${installation.module_power_w}W)` : ''}` : '—'} />
                             <InfoRow label="Modelo Módulo" value={installation.module_model || '—'} />
-                            <InfoRow label="Inversor" value={installation.inverter_model || '—'} />
+                            <InfoRow label="Inversor" value={`${installation.inverter_type === 'micro_inversor' ? 'Micro Inversor' : installation.inverter_type === 'inversor_hibrido' ? 'Inversor Híbrido' : 'Inversor'} ${installation.inverter_model ? `(${installation.inverter_model})` : ''}`} />
                             <InfoRow label="Instalado em" value={installation.installation_date || '—'} />
                             {installation.notes && <InfoRow label="Observações" value={installation.notes} />}
+                            {installation.installation_photo_url && (
+                                <div className="mt-4">
+                                    <h4 className="text-xs font-semibold text-white/60 mb-2">Foto da Instalação</h4>
+                                    <img 
+                                        src={installation.installation_photo_url} 
+                                        alt="Instalação" 
+                                        className="w-20 h-20 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 hover:border-primary/40 transition-all" 
+                                        onClick={() => setShowPhotoLightbox(true)}
+                                    />
+                                </div>
+                            )}
+                            {(installation.latitude !== null && installation.longitude !== null) && (
+                                <div className="mt-4">
+                                    <h4 className="text-xs font-semibold text-white/60 mb-2">Localização no Mapa</h4>
+                                    <LocationMap lat={installation.latitude} lng={installation.longitude} editable={false} />
+                                </div>
+                            )}
                         </>
                     ) : (
                         <p className="text-sm text-white/30">Nenhuma instalação cadastrada. Clique em Editar para adicionar.</p>
@@ -413,6 +573,29 @@ function InfoTab({ client, installation, formatDate, onReload }: { client: Clien
                 </div>
             </div>
         </div>
+
+        {/* Lightbox da foto da instalação */}
+        {showPhotoLightbox && installation?.installation_photo_url && (
+            <div 
+                className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer"
+                onClick={() => setShowPhotoLightbox(false)}
+            >
+                <div className="relative max-w-4xl max-h-[90vh] p-2" onClick={e => e.stopPropagation()}>
+                    <button 
+                        onClick={() => setShowPhotoLightbox(false)}
+                        className="absolute -top-3 -right-3 z-10 w-8 h-8 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-red-500/80 transition-all"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                    <img 
+                        src={installation.installation_photo_url} 
+                        alt="Instalação" 
+                        className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl border border-white/10" 
+                    />
+                </div>
+            </div>
+        )}
+        </>
     );
 }
 

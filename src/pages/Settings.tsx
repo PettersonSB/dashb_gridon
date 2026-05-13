@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { profileService } from '@/services/profileService';
 import { settingsService } from '@/services/settingsService';
 import { supabase } from '@/lib/supabase';
-import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon, Smartphone, Download, ChevronRight, Sparkles } from 'lucide-react';
+import TeamTab from '@/components/TeamTab';
+import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon, Smartphone, Download, ChevronRight, Sparkles, Users, User } from 'lucide-react';
 
 interface AppVersion {
     id: string;
@@ -17,6 +19,8 @@ interface AppVersion {
 
 export default function Settings() {
     const { user } = useAuth();
+    const { canManageTeam } = usePermissions();
+    const [activeTab, setActiveTab] = useState<'conta' | 'equipe'>('conta');
 
     // Form State - Profile
     const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
@@ -142,10 +146,31 @@ export default function Settings() {
     return (
         <div className="animate-fade-in space-y-6 pb-20 max-w-4xl mx-auto">
             <div>
-                <h2 className="section-title !mb-0">Configurações da Conta</h2>
-                <p className="section-subtitle">Gerencie seu perfil de administrador e credenciais de acesso</p>
+                <h2 className="section-title !mb-0">Configurações</h2>
+                <p className="section-subtitle">Gerencie sua conta e equipe</p>
             </div>
 
+            {/* Tabs */}
+            <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06] w-fit">
+                <button onClick={() => setActiveTab('conta')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'conta' ? 'bg-primary/10 text-primary' : 'text-white/50 hover:text-white hover:bg-white/[0.04]'}`}>
+                    <User className="w-4 h-4" />Conta
+                </button>
+                {canManageTeam && (
+                    <button onClick={() => setActiveTab('equipe')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'equipe' ? 'bg-primary/10 text-primary' : 'text-white/50 hover:text-white hover:bg-white/[0.04]'}`}>
+                        <Users className="w-4 h-4" />Equipe
+                    </button>
+                )}
+            </div>
+
+            {/* Tab: Equipe */}
+            {activeTab === 'equipe' && canManageTeam && (
+                <TeamTab />
+            )}
+
+            {/* Tab: Conta */}
+            {activeTab === 'conta' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* Bloco: Perfil */}
@@ -393,6 +418,7 @@ export default function Settings() {
                 </div>
 
             </div>
+            )}
         </div>
     );
 }

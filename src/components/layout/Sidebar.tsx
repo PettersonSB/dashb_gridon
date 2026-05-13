@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { NavLink, useLocation, Link } from "react-router-dom";
 import { sidebarItems } from "@/data/sidebarItems";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { LogOut, ChevronDown, Settings, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: () => void }) => {
     const { user, signOut } = useAuth();
+    const { hasPermission, canAccessModule } = usePermissions();
     const location = useLocation();
     
     // Manage hover state
@@ -31,16 +33,74 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
         }
     });
 
+    // ── Mapeamento de rotas para permissões ──────────────────
+    const siteRoutePermMap: Record<string, string> = {
+        '/': 'dashboard',
+        '/hero': 'hero',
+        '/problems': 'problems',
+        '/services': 'services',
+        '/stats': 'stats',
+        '/testimonials': 'testimonials',
+        '/blog': 'blog',
+        '/company': 'company',
+        '/seo': 'seo',
+    };
+
+    const budgetRoutePermMap: Record<string, string> = {
+        '/budget': 'overview',
+        '/budget/list': 'list',
+        '/budget/new': 'create',
+        '/budget/prospects': 'prospects',
+        '/budget/kits': 'kits',
+    };
+
+    const devicesRoutePermMap: Record<string, string> = {
+        '/devices/general': 'general',
+        '/devices/clients': 'clients',
+    };
+
+    // ── Filtrar itens do Site por permissão ──────────────────
+    const filteredSiteGroups: Record<string, typeof sidebarItems> = {};
+    Object.entries(siteGroups).forEach(([group, items]) => {
+        const filtered = items.filter(item => {
+            const perm = siteRoutePermMap[item.href];
+            return perm ? hasPermission('site', perm) : true;
+        });
+        if (filtered.length > 0) {
+            filteredSiteGroups[group] = filtered;
+        }
+    });
+
+    // ── Filtrar dropdown do Orçamento por permissão ──────────
+    const budgetItem = sidebarItems.find(item => item.label === "Orçamento");
+    const filteredBudgetDropdown = budgetItem?.dropdown?.filter(sub => {
+        const perm = budgetRoutePermMap[sub.href];
+        return perm ? hasPermission('budget', perm) : true;
+    }) || [];
+
+    // ── Filtrar dropdown dos Dispositivos por permissão ──────
+    const devicesItem = sidebarItems.find(item => item.label === "Dispositivos");
+    const filteredDevicesDropdown = devicesItem?.dropdown?.filter(sub => {
+        const perm = devicesRoutePermMap[sub.href];
+        return perm ? hasPermission('devices', perm) : true;
+    }) || [];
+
+    // ── Verificar visibilidade dos módulos ──────────────────
+    const showSite = canAccessModule('site');
+    const showBudget = canAccessModule('budget') && filteredBudgetDropdown.length > 0;
+    const showDevices = canAccessModule('devices') && filteredDevicesDropdown.length > 0;
+    const showSiteDashboard = hasPermission('site', 'dashboard');
+
     const isSiteRelated = (path: string) => {
         if (path === "/") return true;
-        for (const items of Object.values(siteGroups)) {
+        for (const items of Object.values(filteredSiteGroups)) {
             if (items.some(item => path === item.href || path.startsWith(item.href + '/'))) return true;
         }
         return false;
     };
 
     // Groups that are nested inside "Site"
-    const groups: Record<string, typeof sidebarItems> = siteGroups;
+    const groups: Record<string, typeof sidebarItems> = filteredSiteGroups;
 
     // Determine which nested groups should be initially open
     const getInitialOpenGroups = () => {
@@ -124,112 +184,115 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                     </NavLink>
                 ))}
 
-                {/* Site Master Dropdown */}
-                <div className="pt-2 pb-2">
-                    <button
-                        onClick={isExpanded ? toggleSite : undefined}
-                        title={!isExpanded ? "Site" : undefined}
-                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${isSiteRelated(location.pathname) && (!isExpanded || !isSiteOpen)
-                            ? "bg-primary/10 text-primary" // Active but collapsed state
-                            : "text-white/60 hover:bg-white/[0.04] hover:text-white"
-                            }`}
-                    >
-                        <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
-                            {/* Assuming the first item is the site root to borrow its icon */}
-                            {sidebarItems.find(i => i.label === "Site")?.icon && React.createElement(sidebarItems.find(i => i.label === "Site")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
-                            {isExpanded && <span className="font-medium truncate">Site</span>}
-                        </div>
-                        {isExpanded && (
-                            <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isSiteOpen ? 'rotate-180' : ''}`}
-                            />
-                        )}
-                    </button>
-
-                    <div
-                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isSiteOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
-                            }`}
-                    >
-                        {/* Direct Site Link inside the dropdown */}
-                        <NavLink
-                            to="/"
-                            end
-                            className={({ isActive }) =>
-                                `sidebar-item mt-2 !text-[13px] ${isActive ? "active" : ""}`
-                            }
+                {/* Site Master Dropdown — só visível se tem permissões */}
+                {showSite && (
+                    <div className="pt-2 pb-2">
+                        <button
+                            onClick={isExpanded ? toggleSite : undefined}
+                            title={!isExpanded ? "Site" : undefined}
+                            className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${isSiteRelated(location.pathname) && (!isExpanded || !isSiteOpen)
+                                ? "bg-primary/10 text-primary" // Active but collapsed state
+                                : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                                }`}
                         >
-                            Visão Geral
-                        </NavLink>
+                            <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
+                                {/* Assuming the first item is the site root to borrow its icon */}
+                                {sidebarItems.find(i => i.label === "Site")?.icon && React.createElement(sidebarItems.find(i => i.label === "Site")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                                {isExpanded && <span className="font-medium truncate">Site</span>}
+                            </div>
+                            {isExpanded && (
+                                <ChevronDown
+                                    className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isSiteOpen ? 'rotate-180' : ''}`}
+                                />
+                            )}
+                        </button>
 
-                        {/* Nested Groups */}
-                        {Object.entries(groups).map(([group, items]) => {
-                            const isOpen = openGroups[group];
+                        <div
+                            className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isSiteOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                                }`}
+                        >
+                            {/* Direct Site Link inside the dropdown — só se tem permissão dashboard */}
+                            {showSiteDashboard && (
+                                <NavLink
+                                    to="/"
+                                    end
+                                    className={({ isActive }) =>
+                                        `sidebar-item mt-2 !text-[13px] ${isActive ? "active" : ""}`
+                                    }
+                                >
+                                    Visão Geral
+                                </NavLink>
+                            )}
 
-                            return (
-                                <div key={group} className="pt-3">
-                                    <button
-                                        onClick={() => toggleGroup(group)}
-                                        className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider hover:text-white/70 transition-colors"
-                                    >
-                                        <span>{group}</span>
-                                        <ChevronDown
-                                            className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                                        />
-                                    </button>
+                            {/* Nested Groups — filtrados por permissão */}
+                            {Object.entries(groups).map(([group, items]) => {
+                                const isOpen = openGroups[group];
 
-                                    <div
-                                        className={`mt-1 space-y-0.5 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                                            }`}
-                                    >
-                                        {items.map((item) => (
-                                            <NavLink
-                                                key={item.href}
-                                                to={item.href}
-                                                className={({ isActive }) =>
-                                                    `sidebar-item !py-1.5 !px-3 !text-[13px] !rounded-lg ml-1 ${isActive ? "active" : ""}`
-                                                }
-                                            >
-                                                <item.icon className="w-4 h-4 flex-shrink-0 opacity-70" />
-                                                {item.label}
-                                            </NavLink>
-                                        ))}
+                                return (
+                                    <div key={group} className="pt-3">
+                                        <button
+                                            onClick={() => toggleGroup(group)}
+                                            className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider hover:text-white/70 transition-colors"
+                                        >
+                                            <span>{group}</span>
+                                            <ChevronDown
+                                                className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                                            />
+                                        </button>
+
+                                        <div
+                                            className={`mt-1 space-y-0.5 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                                                }`}
+                                        >
+                                            {items.map((item) => (
+                                                <NavLink
+                                                    key={item.href}
+                                                    to={item.href}
+                                                    className={({ isActive }) =>
+                                                        `sidebar-item !py-1.5 !px-3 !text-[13px] !rounded-lg ml-1 ${isActive ? "active" : ""}`
+                                                    }
+                                                >
+                                                    <item.icon className="w-4 h-4 flex-shrink-0 opacity-70" />
+                                                    {item.label}
+                                                </NavLink>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Orçamento Master Dropdown */}
-                <div className="pt-2 pb-2">
-                    <button
-                        onClick={isExpanded ? toggleBudget : undefined}
-                        title={!isExpanded ? "Orçamento" : undefined}
-                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/budget') && (!isExpanded || !isBudgetOpen)
-                            ? "bg-primary/10 text-primary" // Active but collapsed state
-                            : "text-white/60 hover:bg-white/[0.04] hover:text-white"
-                            }`}
-                    >
-                        <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
-                            {sidebarItems.find(i => i.label === "Orçamento")?.icon && React.createElement(sidebarItems.find(i => i.label === "Orçamento")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
-                            {isExpanded && <span className="font-medium truncate">Orçamento</span>}
+                                );
+                            })}
                         </div>
-                        {isExpanded && (
-                            <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isBudgetOpen ? 'rotate-180' : ''}`}
-                            />
-                        )}
-                    </button>
+                    </div>
+                )}
 
-                    <div
-                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isBudgetOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
-                            }`}
-                    >
-                        {/* Orçamento nested items */}
-                        <div className="pt-2 space-y-1">
-                            {sidebarItems
-                                .find(item => item.label === "Orçamento")
-                                ?.dropdown?.map((subItem) => (
+                {/* Orçamento Master Dropdown — só visível se tem permissões */}
+                {showBudget && (
+                    <div className="pt-2 pb-2">
+                        <button
+                            onClick={isExpanded ? toggleBudget : undefined}
+                            title={!isExpanded ? "Orçamento" : undefined}
+                            className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/budget') && (!isExpanded || !isBudgetOpen)
+                                ? "bg-primary/10 text-primary" // Active but collapsed state
+                                : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                                }`}
+                        >
+                            <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
+                                {sidebarItems.find(i => i.label === "Orçamento")?.icon && React.createElement(sidebarItems.find(i => i.label === "Orçamento")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                                {isExpanded && <span className="font-medium truncate">Orçamento</span>}
+                            </div>
+                            {isExpanded && (
+                                <ChevronDown
+                                    className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isBudgetOpen ? 'rotate-180' : ''}`}
+                                />
+                            )}
+                        </button>
+
+                        <div
+                            className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isBudgetOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                                }`}
+                        >
+                            {/* Orçamento nested items — filtrados */}
+                            <div className="pt-2 space-y-1">
+                                {filteredBudgetDropdown.map((subItem) => (
                                     <NavLink
                                         key={subItem.href}
                                         to={subItem.href}
@@ -238,52 +301,44 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                                             `sidebar-item !py-1.5 !px-4 !text-[13px] !rounded-lg ml-2 ${isActive ? "active" : ""}`
                                         }
                                     >
-                                        {subItem.label === "Todos os Orçamentos" ? (
-                                            <img 
-                                                src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/icons_gridon/historico-de-pedidos.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpY29uc19ncmlkb24vaGlzdG9yaWNvLWRlLXBlZGlkb3MucG5nIiwiaWF0IjoxNzc0NTc3MzkwLCJleHAiOjMzMjc5MDQxMzkwfQ.8xjn8zIz3vuH2lVnNwpWs55ZlK4qDLPTKElZe3cc3Cc" 
-                                                alt="" 
-                                                className="w-4 h-4 object-contain mr-2 opacity-70 group-hover:opacity-100 transition-opacity"
-                                            />
-                                        ) : (
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
-                                        )}
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
                                         {subItem.label}
                                     </NavLink>
                                 ))}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
-                {/* Dispositivos Master Dropdown */}
-                <div className="pt-2 pb-2">
-                    <button
-                        onClick={isExpanded ? toggleDevices : undefined}
-                        title={!isExpanded ? "Dispositivos" : undefined}
-                        className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/devices') && (!isExpanded || !isDevicesOpen)
-                            ? "bg-primary/10 text-primary" // Active but collapsed state
-                            : "text-white/60 hover:bg-white/[0.04] hover:text-white"
-                            }`}
-                    >
-                        <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
-                            {sidebarItems.find(i => i.label === "Dispositivos")?.icon && React.createElement(sidebarItems.find(i => i.label === "Dispositivos")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
-                            {isExpanded && <span className="font-medium truncate">Dispositivos</span>}
-                        </div>
-                        {isExpanded && (
-                            <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isDevicesOpen ? 'rotate-180' : ''}`}
-                            />
-                        )}
-                    </button>
+                {/* Dispositivos Master Dropdown — só visível se tem permissões */}
+                {showDevices && (
+                    <div className="pt-2 pb-2">
+                        <button
+                            onClick={isExpanded ? toggleDevices : undefined}
+                            title={!isExpanded ? "Dispositivos" : undefined}
+                            className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/devices') && (!isExpanded || !isDevicesOpen)
+                                ? "bg-primary/10 text-primary" // Active but collapsed state
+                                : "text-white/60 hover:bg-white/[0.04] hover:text-white"
+                                }`}
+                        >
+                            <div className={`flex items-center gap-3 ${!isExpanded ? "justify-center w-full" : ""}`}>
+                                {sidebarItems.find(i => i.label === "Dispositivos")?.icon && React.createElement(sidebarItems.find(i => i.label === "Dispositivos")!.icon as React.ElementType, { className: "w-5 h-5 flex-shrink-0" })}
+                                {isExpanded && <span className="font-medium truncate">Dispositivos</span>}
+                            </div>
+                            {isExpanded && (
+                                <ChevronDown
+                                    className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isDevicesOpen ? 'rotate-180' : ''}`}
+                                />
+                            )}
+                        </button>
 
-                    <div
-                        className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isDevicesOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
-                            }`}
-                    >
-                        {/* Dispositivos nested items */}
-                        <div className="pt-2 space-y-1">
-                            {sidebarItems
-                                .find(item => item.label === "Dispositivos")
-                                ?.dropdown?.map((subItem) => (
+                        <div
+                            className={`mt-1 pl-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out border-l border-white/[0.04] ml-5 ${(isDevicesOpen && isExpanded) ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                                }`}
+                        >
+                            {/* Dispositivos nested items — filtrados */}
+                            <div className="pt-2 space-y-1">
+                                {filteredDevicesDropdown.map((subItem) => (
                                     <NavLink
                                         key={subItem.href}
                                         to={subItem.href}
@@ -296,9 +351,10 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                                         {subItem.label}
                                     </NavLink>
                                 ))}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </nav>
 
             {/* Footer - User + Sign Out */}

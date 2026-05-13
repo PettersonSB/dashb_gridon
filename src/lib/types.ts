@@ -361,3 +361,78 @@ export interface Prospect {
     budgets_count?: number; // Para mostrar quantos orçamentos esse prospect possui
 }
 
+export type TeamRole = 'owner' | 'admin' | 'vendedor';
+
+export interface TeamPermissions {
+    site?: string[];      // ['dashboard','hero','problems','services','stats','testimonials','blog','company','seo']
+    budget?: string[];    // ['overview','list','create','prospects','kits']
+    devices?: string[];   // ['general','clients']
+}
+
+export interface TeamMember {
+    id: string;
+    user_id: string;
+    email: string;
+    full_name: string;
+    role: TeamRole;
+    permissions: TeamPermissions;
+    status: 'ativo' | 'suspenso';
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+    avatar_url?: string; // Obtido do user_metadata via Auth
+}
+
+// Mapa completo de todas as permissões disponíveis (para UI de checkboxes)
+export const ALL_PERMISSIONS: Record<string, { label: string; items: { key: string; label: string }[] }> = {
+    site: {
+        label: 'Site',
+        items: [
+            { key: 'dashboard', label: 'Visão Geral' },
+            { key: 'hero', label: 'Hero' },
+            { key: 'problems', label: 'Problemas' },
+            { key: 'services', label: 'Soluções' },
+            { key: 'stats', label: 'Métricas' },
+            { key: 'testimonials', label: 'Depoimentos' },
+            { key: 'blog', label: 'Blog' },
+            { key: 'company', label: 'Empresa' },
+            { key: 'seo', label: 'SEO' },
+        ],
+    },
+    budget: {
+        label: 'Proposta',
+        items: [
+            { key: 'overview', label: 'Visão Geral' },
+            { key: 'list', label: 'Todos os Orçamentos' },
+            { key: 'create', label: 'Novo Orçamento' },
+            { key: 'prospects', label: 'Prospects' },
+            { key: 'kits', label: 'Kit Solar' },
+        ],
+    },
+    devices: {
+        label: 'Dispositivos',
+        items: [
+            { key: 'general', label: 'Geral' },
+            { key: 'clients', label: 'App Cliente' },
+        ],
+    },
+};
+
+// Presets de permissões para criação rápida
+export const PERMISSION_PRESETS: Record<string, { label: string; permissions: TeamPermissions }> = {
+    vendedor: {
+        label: 'Vendedor Padrão',
+        permissions: {
+            budget: ['overview', 'list', 'create', 'prospects'],
+        },
+    },
+    admin: {
+        label: 'Admin Completo',
+        permissions: {
+            site: ['dashboard', 'hero', 'problems', 'services', 'stats', 'testimonials', 'blog', 'company', 'seo'],
+            budget: ['overview', 'list', 'create', 'prospects', 'kits'],
+            devices: ['general', 'clients'],
+        },
+    },
+};
+

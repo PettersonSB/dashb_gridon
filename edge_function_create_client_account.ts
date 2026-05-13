@@ -134,11 +134,18 @@ Deno.serve(async (req) => {
       if (installation.address) installData.address = installation.address
       if (installation.city) installData.city = installation.city
       if (installation.state) installData.state = installation.state
+      if (installation.cep) installData.cep = installation.cep
+      if (installation.neighborhood) installData.neighborhood = installation.neighborhood
+      if (installation.latitude !== undefined) installData.latitude = installation.latitude
+      if (installation.longitude !== undefined) installData.longitude = installation.longitude
       if (installation.system_power_kwp) installData.system_power_kwp = installation.system_power_kwp
       if (installation.module_count) installData.module_count = installation.module_count
+      if (installation.module_power_w) installData.module_power_w = installation.module_power_w
       if (installation.module_model) installData.module_model = installation.module_model
       if (installation.inverter_model) installData.inverter_model = installation.inverter_model
+      if (installation.inverter_type) installData.inverter_type = installation.inverter_type
       if (installation.installation_date) installData.installation_date = installation.installation_date
+      if (installation.installation_photo_url) installData.installation_photo_url = installation.installation_photo_url
       if (installation.notes) installData.notes = installation.notes
 
       const { error: installError } = await supabaseAdmin

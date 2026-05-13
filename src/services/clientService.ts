@@ -20,14 +20,21 @@ export interface ClientAccount {
 export interface ClientInstallation {
     id: string;
     client_user_id: string;
+    cep: string | null;
     address: string | null;
+    neighborhood: string | null;
     city: string | null;
     state: string | null;
+    latitude: number | null;
+    longitude: number | null;
     system_power_kwp: number | null;
     module_count: number | null;
+    module_power_w: number | null;
     module_model: string | null;
     inverter_model: string | null;
+    inverter_type: string | null;
     installation_date: string | null;
+    installation_photo_url: string | null;
     notes: string | null;
     created_at: string;
 }
@@ -67,14 +74,21 @@ export interface CreateClientPayload {
     phone?: string;
     energy_tariff: number;
     installation?: {
+        cep?: string;
         address?: string;
+        neighborhood?: string;
         city?: string;
         state?: string;
+        latitude?: number;
+        longitude?: number;
         system_power_kwp?: number;
         module_count?: number;
+        module_power_w?: number;
         module_model?: string;
         inverter_model?: string;
+        inverter_type?: string;
         installation_date?: string;
+        installation_photo_url?: string;
         notes?: string;
     };
     device_ids?: string[];
@@ -217,12 +231,19 @@ export const clientService = {
 
     /** Atualiza a instalação de um cliente */
     async updateInstallation(clientUserId: string, updates: Partial<ClientInstallation>): Promise<void> {
+        const payload: any = { ...updates, client_user_id: clientUserId };
+        // Garante que campos undefined se tornem null para o banco
+        if (updates.cep === undefined) payload.cep = updates.cep;
+        if (updates.neighborhood === undefined) payload.neighborhood = updates.neighborhood;
+        if (updates.latitude === undefined) payload.latitude = updates.latitude;
+        if (updates.longitude === undefined) payload.longitude = updates.longitude;
+        if (updates.module_power_w === undefined) payload.module_power_w = updates.module_power_w;
+        if (updates.inverter_type === undefined) payload.inverter_type = updates.inverter_type;
+        if (updates.installation_photo_url === undefined) payload.installation_photo_url = updates.installation_photo_url;
+
         const { error } = await supabase
             .from('client_installations')
-            .upsert({
-                ...updates,
-                client_user_id: clientUserId,
-            }, { onConflict: 'client_user_id' });
+            .upsert(payload, { onConflict: 'client_user_id' });
 
         if (error) throw error;
     },
