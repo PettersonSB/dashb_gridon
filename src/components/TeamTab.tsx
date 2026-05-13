@@ -102,7 +102,7 @@ export default function TeamTab() {
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Users className="w-5 h-5 text-primary" /></div>
                     <div>
                         <h3 className="text-lg font-semibold text-white">Equipe</h3>
-                        <p className="text-xs text-white/40">{members.length} de {maxMembers} membros</p>
+                        <p className="text-xs text-white/40">{members.filter(m => m.role !== 'owner').length} de {maxMembers} membros</p>
                     </div>
                     {isOwner && (
                         editingLimit ? (
@@ -133,7 +133,7 @@ export default function TeamTab() {
 
             {/* Members List */}
             <div className="space-y-2">
-                {members.map(m => {
+                {members.filter(m => m.role !== 'owner').map(m => {
                     const roleInfo = ROLE_LABELS[m.role] || ROLE_LABELS.vendedor;
                     const RoleIcon = roleInfo.icon;
                     const isSelf = m.user_id === user?.id;
