@@ -4,10 +4,11 @@ import { clientService, ClientAccount, CreateClientPayload } from '@/services/cl
 import {
     Users, Plus, Search, Eye, Ban, CheckCircle, XCircle,
     Loader2, Smartphone, Mail, Phone, X,
-    DollarSign, MapPin, Clock, Upload
+    DollarSign, MapPin, Clock, Upload, Bell
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { LocationMap } from '@/components/LocationMap';
+import SendNotificationModal from '@/components/SendNotificationModal';
 
 const STATUS_COLORS: Record<string, string> = {
     ativo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -53,6 +54,7 @@ export default function ClientAccounts() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showNotificationModal, setShowNotificationModal] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -99,13 +101,22 @@ export default function ClientAccounts() {
                     </h1>
                     <p className="text-white/50 mt-1">Gerencie os acessos dos clientes ao Gridon+</p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-                >
-                    <Plus className="w-4 h-4" />
-                    Novo Cliente
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowNotificationModal(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.04] border border-white/[0.08] text-white font-medium rounded-xl hover:bg-white/[0.08] hover:border-white/[0.15] transition-all"
+                    >
+                        <Bell className="w-4 h-4 text-primary" />
+                        Enviar Notificação
+                    </button>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Novo Cliente
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -221,6 +232,13 @@ export default function ClientAccounts() {
                         setShowCreateModal(false);
                         loadClients();
                     }}
+                />
+            )}
+
+            {/* Notification Modal */}
+            {showNotificationModal && (
+                <SendNotificationModal
+                    onClose={() => setShowNotificationModal(false)}
                 />
             )}
         </div>
