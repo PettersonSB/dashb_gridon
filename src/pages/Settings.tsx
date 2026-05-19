@@ -5,7 +5,8 @@ import { profileService } from '@/services/profileService';
 import { settingsService } from '@/services/settingsService';
 import { supabase } from '@/lib/supabase';
 import TeamTab from '@/components/TeamTab';
-import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon, Smartphone, Download, ChevronRight, Sparkles, Users, User } from 'lucide-react';
+import AppUpdateTab from '@/components/AppUpdateTab';
+import { Camera, Save, Lock, Loader2, AlertCircle, CheckCircle2, Globe, Sun, Moon, Smartphone, Download, ChevronRight, Sparkles, Users, User, Package } from 'lucide-react';
 
 interface AppVersion {
     id: string;
@@ -19,8 +20,8 @@ interface AppVersion {
 
 export default function Settings() {
     const { user } = useAuth();
-    const { canManageTeam } = usePermissions();
-    const [activeTab, setActiveTab] = useState<'conta' | 'equipe'>('conta');
+    const { canManageTeam, isOwner } = usePermissions();
+    const [activeTab, setActiveTab] = useState<'conta' | 'equipe' | 'atualizacoes'>('conta');
 
     // Form State - Profile
     const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
@@ -162,11 +163,22 @@ export default function Settings() {
                         <Users className="w-4 h-4" />Equipe
                     </button>
                 )}
+                {isOwner && (
+                    <button onClick={() => setActiveTab('atualizacoes')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'atualizacoes' ? 'bg-primary/10 text-primary' : 'text-white/50 hover:text-white hover:bg-white/[0.04]'}`}>
+                        <Package className="w-4 h-4" />Atualizações
+                    </button>
+                )}
             </div>
 
             {/* Tab: Equipe */}
             {activeTab === 'equipe' && canManageTeam && (
                 <TeamTab />
+            )}
+
+            {/* Tab: Atualizações (owner only) */}
+            {activeTab === 'atualizacoes' && isOwner && (
+                <AppUpdateTab />
             )}
 
             {/* Tab: Conta */}

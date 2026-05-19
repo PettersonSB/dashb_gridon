@@ -138,7 +138,7 @@ export default function TeamTab() {
                     const RoleIcon = roleInfo.icon;
                     const isSelf = m.user_id === user?.id;
                     return (
-                        <div key={m.id} className={`glass-card p-4 flex items-center gap-4 ${m.status === 'suspenso' ? 'opacity-50' : ''}`}>
+                        <div key={m.id} className={`glass-card p-4 flex items-center gap-4 ${m.status === 'suspenso' ? 'opacity-50' : ''} ${actionMenu === m.user_id ? 'z-50 relative' : 'relative z-0'}`}>
                             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
                                 {m.full_name.charAt(0).toUpperCase()}
                             </div>

@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Calculator, CheckCircle2, Clock, FilePlus, Download, TrendingUp, Loader2 } from "lucide-react";
 import { budgetService } from "@/services/budgetService";
 import { SolarBudget } from "@/lib/types";
+import ConversionChartModal from "@/components/ConversionChartModal";
 
 export default function BudgetOverview() {
+    const navigate = useNavigate();
     const [budgets, setBudgets] = useState<SolarBudget[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [showChart, setShowChart] = useState(false);
+    const [selectedMonthStr, setSelectedMonthStr] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
 
     useEffect(() => {
         const loadBudgets = async () => {
@@ -23,15 +30,16 @@ export default function BudgetOverview() {
     }, []);
 
     // Calcula os stats
-    const totalRecebidos = budgets.length;
-    const emAnalise = budgets.filter(b => b.status === "em analise" || b.status === "visualizado").length;
+    const orcamentosTotais = budgets.filter(b => b.status && b.status !== 'excluido' as any).length;
+    const emNegociacao = budgets.filter(b => ['novo', 'em analise', 'visualizado'].includes(b.status)).length;
 
-    // Calcula aprovados no mês atual
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+    // Calcula aprovados no mês selecionado
+    const [selYear, selMonth] = selectedMonthStr.split('-');
     const aprovadosThisMonth = budgets.filter(b => {
         const date = new Date(b.created_at);
-        return b.status === "aprovado" && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        return b.status === "aprovado" && 
+               date.getMonth() === (parseInt(selMonth) - 1) && 
+               date.getFullYear() === parseInt(selYear);
     }).length;
 
     const totalResolvidos = budgets.filter(b => b.status === "aprovado" || b.status === "recusado").length;
@@ -39,11 +47,30 @@ export default function BudgetOverview() {
         ? Math.round((budgets.filter(b => b.status === "aprovado").length / totalResolvidos) * 100)
         : 0;
 
+    // Calcula meses disponíveis para o select
+    const availableMonths = Array.from({ length: 12 }).map((_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        return { val, label: label.charAt(0).toUpperCase() + label.slice(1) };
+    });
+
+    const handleCardClick = (type: string) => {
+        if (type === 'negociacao') {
+            navigate('/budget/list?filter=negociacao');
+        } else if (type === 'aprovados') {
+            navigate(`/budget/list?filter=aprovado&month=${selectedMonthStr}`);
+        } else if (type === 'conversao') {
+            setShowChart(true);
+        }
+    };
+
     const budgetStats = [
-        { label: "Total Recebidos", value: totalRecebidos.toString(), icon: Calculator, color: "text-blue-400" },
-        { label: "Em Negociação", value: emAnalise.toString(), icon: Clock, color: "text-amber-400" },
-        { label: "Aprovados (Mês)", value: aprovadosThisMonth.toString(), icon: CheckCircle2, color: "text-emerald-400" },
-        { label: "Taxa de Conversão", value: `${taxaConversao}%`, icon: TrendingUp, color: "text-violet-400" },
+        { id: 'totais', label: "Orçamentos Totais", value: orcamentosTotais.toString(), icon: Calculator, color: "text-blue-400" },
+        { id: 'negociacao', label: "Em Negociação", value: emNegociacao.toString(), icon: Clock, color: "text-amber-400", clickable: true },
+        { id: 'aprovados', label: "Aprovados", value: aprovadosThisMonth.toString(), icon: CheckCircle2, color: "text-emerald-400", clickable: true, hasMonthSelect: true },
+        { id: 'conversao', label: "Taxa de Conversão", value: `${taxaConversao}%`, icon: TrendingUp, color: "text-violet-400", clickable: true },
     ];
 
     const formatCurrency = (value: number | undefined) => {
@@ -128,12 +155,30 @@ export default function BudgetOverview() {
             {/* Stats Grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {budgetStats.map((stat) => (
-                    <div key={stat.label} className="card-stat">
+                    <div 
+                        key={stat.id} 
+                        className={`card-stat ${stat.clickable ? 'cursor-pointer hover:bg-white/[0.04] transition-colors relative' : ''}`}
+                        onClick={() => stat.clickable && handleCardClick(stat.id)}
+                    >
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-white/40">{stat.label}</span>
                             <stat.icon className={`w-5 h-5 ${stat.color}`} />
                         </div>
                         <span className="font-display text-3xl font-bold text-white mt-3 block">{stat.value}</span>
+                        
+                        {stat.hasMonthSelect && (
+                            <div className="mt-4" onClick={e => e.stopPropagation()}>
+                                <select 
+                                    value={selectedMonthStr} 
+                                    onChange={e => setSelectedMonthStr(e.target.value)}
+                                    className="bg-white/5 border border-white/10 text-xs text-white/70 rounded-lg px-2 py-1.5 focus:outline-none w-full appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                    {availableMonths.map(m => (
+                                        <option key={m.val} value={m.val} className="bg-slate-900">{m.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -222,6 +267,8 @@ export default function BudgetOverview() {
                     </table>
                 </div>
             </div>
+            {/* Modal de Gráfico */}
+            {showChart && <ConversionChartModal budgets={budgets} onClose={() => setShowChart(false)} />}
         </div>
     );
 }

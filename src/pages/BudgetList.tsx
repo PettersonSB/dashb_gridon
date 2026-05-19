@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { emitToast } from "@/components/ui/Toaster";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
     Search,
     Edit,
@@ -17,7 +17,9 @@ import {
     ThumbsDown,
     Clock,
     BarChart2,
-    Copy
+    Copy,
+    Filter,
+    X
 } from "lucide-react";
 import { budgetService } from "@/services/budgetService";
 import { SolarBudget } from "@/lib/types";
@@ -98,9 +100,16 @@ const BudgetCountdown = ({ budget, calculatedStatus }: { budget: SolarBudget; ca
 
 export default function BudgetList() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const urlFilter = searchParams.get('filter');
+    const urlMonth = searchParams.get('month');
+
     const [budgets, setBudgets] = useState<SolarBudget[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [showFilters, setShowFilters] = useState(false);
     const [error, setError] = useState("");
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [analyticsTarget, setAnalyticsTarget] = useState<SolarBudget | null>(null);
@@ -196,10 +205,37 @@ export default function BudgetList() {
         }
     };
 
-    const filteredBudgets = budgets.filter(b =>
-        b.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredBudgets = budgets.filter(b => {
+        const matchSearch = b.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            b.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+        let matchDate = true;
+        if (startDate || endDate) {
+            const bDateStr = b.created_at.split('T')[0];
+            if (startDate && endDate) {
+                matchDate = bDateStr >= startDate && bDateStr <= endDate;
+            } else if (startDate) {
+                matchDate = bDateStr >= startDate;
+            } else if (endDate) {
+                matchDate = bDateStr <= endDate;
+            }
+        }
+
+        let matchUrlFilter = true;
+        if (urlFilter === 'negociacao') {
+            matchUrlFilter = ['novo', 'em analise', 'visualizado'].includes(b.status);
+        } else if (urlFilter === 'aprovado') {
+            matchUrlFilter = b.status === 'aprovado';
+            if (matchUrlFilter && urlMonth) {
+                const date = new Date(b.created_at);
+                const [selYear, selMonth] = urlMonth.split('-');
+                matchUrlFilter = date.getMonth() === (parseInt(selMonth) - 1) && 
+                                 date.getFullYear() === parseInt(selYear);
+            }
+        }
+
+        return matchSearch && matchDate && matchUrlFilter;
+    });
 
     const handleCopyLink = async (budget: SolarBudget) => {
         const url = `${BUDGET_BASE_URL}/${budget.id}`;
@@ -290,6 +326,13 @@ export default function BudgetList() {
                             className="bg-slate-900 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 w-full md:w-64 transition-colors"
                         />
                     </div>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`p-2 rounded-lg transition-colors border ${showFilters ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/10 text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Filtros"
+                    >
+                        <Filter className="w-5 h-5" />
+                    </button>
                     <Link
                         to="/budget/new"
                         className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
@@ -298,6 +341,39 @@ export default function BudgetList() {
                     </Link>
                 </div>
             </div>
+
+            {/* Painel de Filtros */}
+            {showFilters && (
+                <div className="glass-card p-4 rounded-xl flex flex-col sm:flex-row items-end gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="w-full sm:w-auto">
+                        <label className="block text-xs font-medium text-white/60 mb-1.5">Data Inicial</label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50 w-full transition-colors"
+                        />
+                    </div>
+                    <div className="w-full sm:w-auto">
+                        <label className="block text-xs font-medium text-white/60 mb-1.5">Data Final</label>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50 w-full transition-colors"
+                        />
+                    </div>
+                    {(startDate || endDate) && (
+                        <button
+                            onClick={() => { setStartDate(''); setEndDate(''); }}
+                            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors w-full sm:w-auto"
+                        >
+                            <X className="w-4 h-4" />
+                            Limpar
+                        </button>
+                    )}
+                </div>
+            )}
 
             {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium">
