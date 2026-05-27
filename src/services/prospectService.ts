@@ -47,9 +47,10 @@ export const prospectService = {
    * Cria um novo prospect
    */
   async createProspect(prospect: Omit<Prospect, 'id' | 'created_at' | 'updated_at'>): Promise<Prospect> {
+    const normalizedPhone = prospect.phone.replace(/\D/g, '');
     const { data, error } = await supabase
       .from('prospects')
-      .insert(prospect)
+      .insert({ ...prospect, phone: normalizedPhone })
       .select()
       .single();
 
@@ -65,9 +66,14 @@ export const prospectService = {
    * Atualiza um prospect existente
    */
   async updateProspect(id: string, updates: Partial<Prospect>): Promise<Prospect> {
+    const cleanUpdates = { ...updates };
+    if (updates.phone) {
+      cleanUpdates.phone = updates.phone.replace(/\D/g, '');
+    }
+    
     const { data, error } = await supabase
       .from('prospects')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...cleanUpdates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -101,18 +107,17 @@ export const prospectService = {
   async findProspectByPhone(phone: string): Promise<Prospect | null> {
     // Normaliza o telefone para garantir uma busca melhor (remove caracteres não numéricos)
     const normalizedPhone = phone.replace(/\D/g, '');
+    if (!normalizedPhone) return null;
     
-    // Busca todos ou tenta fazer um match no banco
+    // Busca exata pelo telefone normalizado
     const { data, error } = await supabase
       .from('prospects')
       .select('*')
-      .ilike('phone', `%${normalizedPhone}%`)
+      .eq('phone', normalizedPhone)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      // Supabase retorna erro se não encontrar `single()`, mas podemos ignorar se for "Not Found"
-      if (error.code === 'PGRST116') return null;
       console.error('Erro ao buscar prospect por telefone:', error);
       return null;
     }

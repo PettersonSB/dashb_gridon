@@ -317,6 +317,15 @@ export interface SolarBudget {
     kit?: SolarKit; // For nested joins
 }
 
+export interface PhaseTelemetry {
+    voltage: number | null;
+    current: number | null;
+    power: number | null;
+    forward_energy: number | null;
+    reverse_energy: number | null;
+    power_factor: number | null;
+}
+
 export interface Device {
     id: string;
     device_id: string;
@@ -331,6 +340,24 @@ export interface Device {
     online: string | null;
 
     updated_at: string;
+    phase_config?: {
+        a?: 'generation' | 'consumption' | 'none';
+        b?: 'generation' | 'consumption' | 'none';
+        c?: 'generation' | 'consumption' | 'none';
+    } | null;
+    telemetry_data?: {
+        total_power: number | null;
+        forward_energy_total: number | null;
+        reverse_energy_total: number | null;
+        frequency?: number | null;
+        temperature?: number | null;
+        power_factor?: number | null;
+        phases?: {
+            a?: PhaseTelemetry | null;
+            b?: PhaseTelemetry | null;
+            c?: PhaseTelemetry | null;
+        } | null;
+    } | null;
 }
 
 export interface DeviceLog {
@@ -343,6 +370,19 @@ export interface DeviceLog {
     power: number | null;
 
     created_at: string;
+    telemetry_data?: {
+        total_power: number | null;
+        forward_energy_total: number | null;
+        reverse_energy_total: number | null;
+        frequency?: number | null;
+        temperature?: number | null;
+        power_factor?: number | null;
+        phases?: {
+            a?: PhaseTelemetry | null;
+            b?: PhaseTelemetry | null;
+            c?: PhaseTelemetry | null;
+        } | null;
+    } | null;
 }
 
 export interface Prospect {

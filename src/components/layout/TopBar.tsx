@@ -115,11 +115,11 @@ const TopBar = () => {
                 <div className="relative">
                     <button 
                         onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                        className={`relative p-2 rounded-xl transition-all ${isNotificationsOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'}`}
+                        className={`relative p-2 rounded-xl transition-all ${isNotificationsOpen ? 'bg-amber-500/10 text-amber-500' : 'text-muted-foreground hover:text-amber-500 hover:bg-white/5'}`}
                     >
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[9px] font-bold text-background border-2 border-background">
+                            <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-background">
                                 {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                         )}
@@ -135,7 +135,7 @@ const TopBar = () => {
                                     {notifications.length > 0 && (
                                         <button 
                                             onClick={handleClearNotifications}
-                                            className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
+                                            className="text-xs font-semibold text-muted-foreground hover:text-amber-500 transition-colors"
                                         >
                                             Limpar
                                         </button>
@@ -153,10 +153,10 @@ const TopBar = () => {
                                                 <div 
                                                     key={notification.id} 
                                                     onClick={() => markAsRead(notification.id, notification.is_read)}
-                                                    className={`p-4 transition-colors cursor-pointer hover:bg-muted/50 ${!notification.is_read ? 'bg-primary/5' : ''}`}
+                                                    className={`p-4 transition-colors cursor-pointer hover:bg-muted/50 ${!notification.is_read ? 'bg-amber-500/5' : ''}`}
                                                 >
                                                     <div className="flex items-start justify-between gap-3 mb-1">
-                                                        <h4 className={`text-sm font-semibold flex-1 ${!notification.is_read ? 'text-primary' : 'text-foreground'}`}>
+                                                        <h4 className={`text-sm font-semibold flex-1 ${!notification.is_read ? 'text-amber-500' : 'text-foreground'}`}>
                                                             {notification.title}
                                                         </h4>
                                                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -167,7 +167,7 @@ const TopBar = () => {
                                                         {notification.message}
                                                     </p>
                                                     {notification.metadata?.btn && (
-                                                        <div className="mt-2 text-[10px] font-bold text-primary/70 bg-primary/10 inline-block px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                        <div className="mt-2 text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 inline-block px-1.5 py-0.5 rounded uppercase tracking-wider">
                                                             Ação: {notification.metadata.btn}
                                                         </div>
                                                     )}

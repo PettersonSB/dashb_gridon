@@ -191,7 +191,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                             onClick={isExpanded ? toggleSite : undefined}
                             title={!isExpanded ? "Site" : undefined}
                             className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${isSiteRelated(location.pathname) && (!isExpanded || !isSiteOpen)
-                                ? "bg-primary/10 text-primary" // Active but collapsed state
+                                ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" // Active but collapsed state
                                 : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                                 }`}
                         >
@@ -271,7 +271,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                             onClick={isExpanded ? toggleBudget : undefined}
                             title={!isExpanded ? "Orçamento" : undefined}
                             className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/budget') && (!isExpanded || !isBudgetOpen)
-                                ? "bg-primary/10 text-primary" // Active but collapsed state
+                                ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" // Active but collapsed state
                                 : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                                 }`}
                         >
@@ -301,8 +301,12 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                                             `sidebar-item !py-1.5 !px-4 !text-[13px] !rounded-lg ml-2 ${isActive ? "active" : ""}`
                                         }
                                     >
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
-                                        {subItem.label}
+                                        {({ isActive }) => (
+                                            <>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 transition-all ${isActive ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'bg-white/20'}`} />
+                                                {subItem.label}
+                                            </>
+                                        )}
                                     </NavLink>
                                 ))}
                             </div>
@@ -317,7 +321,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                             onClick={isExpanded ? toggleDevices : undefined}
                             title={!isExpanded ? "Dispositivos" : undefined}
                             className={`w-full flex items-center justify-between py-2.5 rounded-xl transition-all ${!isExpanded ? "px-0 justify-center" : "px-3"} ${location.pathname.startsWith('/devices') && (!isExpanded || !isDevicesOpen)
-                                ? "bg-primary/10 text-primary" // Active but collapsed state
+                                ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" // Active but collapsed state
                                 : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                                 }`}
                         >
@@ -347,8 +351,12 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                                             `sidebar-item !py-1.5 !px-4 !text-[13px] !rounded-lg ml-2 ${isActive ? "active" : ""}`
                                         }
                                     >
-                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 mr-2" />
-                                        {subItem.label}
+                                        {({ isActive }) => (
+                                            <>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 transition-all ${isActive ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'bg-white/20'}`} />
+                                                {subItem.label}
+                                            </>
+                                        )}
                                     </NavLink>
                                 ))}
                             </div>
@@ -365,10 +373,10 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                             <img
                                 src={user.user_metadata.avatar_url}
                                 alt="Avatar"
-                                className="w-8 h-8 rounded-lg object-cover ring-2 ring-transparent group-hover:ring-primary/50 transition-all"
+                                className="w-8 h-8 rounded-lg object-cover ring-2 ring-transparent group-hover:ring-amber-500/50 transition-all"
                             />
                         ) : (
-                            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-xs font-bold text-amber-500 ring-2 ring-transparent group-hover:ring-amber-500/50 transition-all">
                                 {user?.user_metadata?.full_name?.charAt(0).toUpperCase() || user?.email?.[0].toUpperCase() || "G"}
                             </div>
                         )}

@@ -14,3 +14,16 @@ logs
 .idea
 .DS_Store
 *.sw?
+
+# Test and utility scripts (potentially containing credentials/secrets)
+test_*.mjs
+test_*.js
+check_*.mjs
+check_*.js
+query_*.mjs
+query_*.js
+run_*.js
+run_*.mjs
+list_*.mjs
+list_*.js
+

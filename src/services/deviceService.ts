@@ -164,6 +164,7 @@ export const deviceService = {
             power: number | null;
             isOn: boolean;
             online: string;
+            telemetry_data?: any;
         };
     },
 
@@ -205,6 +206,7 @@ export const deviceService = {
                         power: realtime.power,
                         is_on: realtime.isOn,
                         online: realtime.online === 'online' ? 'true' : 'false',
+                        telemetry_data: realtime.telemetry_data,
                         updated_at: localTimestamp,
                     })
                     .eq('device_id', device.device_id);
@@ -212,7 +214,7 @@ export const deviceService = {
                 if (error) console.error(`Erro ao atualizar ${device.device_id}:`, error);
 
                 // 4. Gravar snapshot no histórico (tabela device_logs)
-                if (realtime.voltage != null || realtime.current != null || realtime.power != null) {
+                if (realtime.voltage != null || realtime.current != null || realtime.power != null || realtime.telemetry_data != null) {
                     const { error: logError } = await supabase
                         .from('device_logs')
                         .insert({
@@ -221,6 +223,7 @@ export const deviceService = {
                             voltage: realtime.voltage,
                             current: realtime.current,
                             power: realtime.power,
+                            telemetry_data: realtime.telemetry_data,
                             created_at: localTimestamp,
                         });
 
@@ -327,8 +330,10 @@ export const deviceService = {
                 voltage: d.avg_voltage,
                 current: d.avg_current,
                 power: d.avg_power,
+                generation: d.generation,
+                consumption: d.consumption,
                 created_at: `${d.date}T12:00:00Z`,
-            })) as DeviceLog[];
+            })) as any[];
 
             return { logs, startDate, endDate };
         }
@@ -355,8 +360,10 @@ export const deviceService = {
             voltage: d.avg_voltage,
             current: d.avg_current,
             power: d.avg_power,
+            generation: d.generation,
+            consumption: d.consumption,
             created_at: `${d.year_month}-15T12:00:00Z`,
-        })) as DeviceLog[];
+        })) as any[];
 
         return { logs, startDate, endDate };
     },
@@ -370,6 +377,19 @@ export const deviceService = {
             new_cron: cronExpression,
         });
         if (error) throw error;
+    },
+
+    /** Atualiza a configuração de fases (TCs) de um dispositivo */
+    async updatePhaseConfig(id: string, phaseConfig: any) {
+        const { data, error } = await supabase
+            .from('devices')
+            .update({ phase_config: phaseConfig })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data as Device;
     },
 };
 

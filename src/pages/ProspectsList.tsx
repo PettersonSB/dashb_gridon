@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Users, Plus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
-    Calendar, DollarSign, Loader2, ArrowRight, Receipt
+    Calendar, DollarSign, Loader2, ArrowRight, Receipt, X
 } from 'lucide-react';
 import { prospectService } from '@/services/prospectService';
 import { Prospect } from '@/lib/types';
@@ -129,9 +129,9 @@ export default function ProspectsList() {
                 </div>
                 <button
                     onClick={() => { resetForm(); setIsModalOpen(true); }}
-                    className="btn btn-primary whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 whitespace-nowrap"
                 >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
                     Novo Prospect
                 </button>
             </div>
@@ -166,140 +166,171 @@ export default function ProspectsList() {
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredProspects.map(prospect => (
-                        <div key={prospect.id} className="glass-card-hover p-5 flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-start justify-between mb-4">
-                                    <h3 className="text-lg font-bold text-white truncate max-w-[70%]">
-                                        {prospect.name}
-                                    </h3>
-                                    <span className={`px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${statusColors[prospect.status] || statusColors['novo']}`}>
-                                        {prospect.status}
-                                    </span>
-                                </div>
-                                
-                                <div className="space-y-2 mb-6">
-                                    <div className="flex items-center gap-2 text-sm text-white/60">
-                                        <Phone className="w-4 h-4 text-white/40" />
-                                        {formatPhone(prospect.phone) || 'Sem telefone'}
-                                    </div>
-                                    {(prospect.city || prospect.state) && (
-                                        <div className="flex items-center gap-2 text-sm text-white/60">
-                                            <MapPin className="w-4 h-4 text-white/40" />
-                                            {prospect.city}{prospect.state ? ` - ${prospect.state}` : ''}
-                                        </div>
-                                    )}
-                                    {prospect.email && (
-                                        <div className="flex items-center gap-2 text-sm text-white/60">
-                                            <Mail className="w-4 h-4 text-white/40" />
-                                            <span className="truncate">{prospect.email}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
-                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
-                                            <Receipt className="w-4 h-4" />
-                                            {prospect.budgets_count || 0} Orçamento(s) gerado(s)
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Ações */}
-                            <div className="pt-4 border-t border-white/10 flex items-center justify-between mt-auto">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => handleEdit(prospect)}
-                                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"
-                                        title="Editar Prospect"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(prospect.id)}
-                                        className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors"
-                                        title="Excluir Prospect"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                
-                                <button 
-                                    onClick={() => handleCreateBudget(prospect)}
-                                    className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary-light rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                                >
-                                    Gerar Orçamento
-                                    <ArrowRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                <div className="glass-card overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-white/10 bg-white/[0.01]">
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Nome / Status</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">WhatsApp / Telefone</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Localização</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">E-mail</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Orçamentos</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {filteredProspects.map(prospect => (
+                                    <tr key={prospect.id} className="hover:bg-white/[0.02] transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-3">
+                                                <div className="font-semibold text-white">{prospect.name}</div>
+                                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider border ${statusColors[prospect.status] || statusColors['novo']}`}>
+                                                    {prospect.status}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white/70">
+                                            <div className="flex items-center gap-2">
+                                                <Phone className="w-4 h-4 text-white/30" />
+                                                {formatPhone(prospect.phone) || 'Sem telefone'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white/70">
+                                            {prospect.city || prospect.state ? (
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-4 h-4 text-white/30" />
+                                                    {prospect.city}{prospect.state ? ` - ${prospect.state}` : ''}
+                                                </div>
+                                            ) : (
+                                                <span className="text-white/30">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white/70">
+                                            {prospect.email ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Mail className="w-4 h-4 text-white/30" />
+                                                    {prospect.email}
+                                                </div>
+                                            ) : (
+                                                <span className="text-white/30">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                                                <Receipt className="w-3.5 h-3.5" />
+                                                {prospect.budgets_count || 0} Orçamento(s)
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <button 
+                                                    onClick={() => handleCreateBudget(prospect)}
+                                                    className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary-light rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1.5"
+                                                >
+                                                    Gerar Orçamento
+                                                    <ArrowRight className="w-3.5 h-3.5" />
+                                                </button>
+                                                
+                                                <button
+                                                    onClick={() => handleEdit(prospect)}
+                                                    className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"
+                                                    title="Editar Prospect"
+                                                >
+                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(prospect.id)}
+                                                    className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors"
+                                                    title="Excluir Prospect"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
             {/* Modal de Criação / Edição */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-[#1A1D24] border border-white/10 rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-white">
-                                {editingId ? 'Editar Prospect' : 'Novo Prospect'}
-                            </h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#13161C] border border-white/10 rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/80 animate-in slide-in-from-bottom-4 duration-300">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                                    <Users className="w-4.5 h-4.5 text-amber-500" />
+                                </div>
+                                <h2 className="text-xl font-bold text-white tracking-wide">
+                                    {editingId ? 'Editar Prospect' : 'Novo Prospect'}
+                                </h2>
+                            </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="text-white/40 hover:text-white transition-colors text-2xl leading-none"
+                                className="p-2 hover:bg-white/5 rounded-lg text-white/40 hover:text-white transition-colors"
                             >
-                                &times;
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs text-white/60 font-semibold uppercase tracking-wider">Nome *</label>
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-wider">Nome *</label>
                                     <input
                                         type="text" required
                                         value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200"
+                                        placeholder="Ex: João da Silva"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-white/60 font-semibold uppercase tracking-wider">WhatsApp / Telefone *</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-wider">WhatsApp / Telefone *</label>
                                     <input
                                         type="text" required
                                         value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200"
+                                        placeholder="Ex: (61) 99999-9999"
                                     />
                                 </div>
-                                <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs text-white/60 font-semibold uppercase tracking-wider">E-mail</label>
+                                <div className="space-y-1.5 md:col-span-2">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-wider">E-mail</label>
                                     <input
                                         type="email"
                                         value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200"
+                                        placeholder="Ex: contato@email.com"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-white/60 font-semibold uppercase tracking-wider">Cidade</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-wider">Cidade</label>
                                     <input
                                         type="text"
                                         value={formData.city || ''} onChange={e => setFormData({...formData, city: e.target.value})}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200"
+                                        placeholder="Ex: Brasília"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-white/60 font-semibold uppercase tracking-wider">Estado (UF)</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-wider">Estado (UF)</label>
                                     <input
                                         type="text" maxLength={2}
                                         value={formData.state || ''} onChange={e => setFormData({...formData, state: e.target.value.toUpperCase()})}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary uppercase"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200 uppercase"
+                                        placeholder="Ex: DF"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-white/60 font-semibold uppercase tracking-wider">Status</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-wider">Status</label>
                                     <select
                                         value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
-                                        className="w-full bg-[#1A1D24] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-primary"
+                                        className="w-full bg-[#1A1D24] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all duration-200"
                                     >
                                         <option value="novo">Novo</option>
                                         <option value="em contato">Em Contato</option>
@@ -311,10 +342,18 @@ export default function ProspectsList() {
                             </div>
                             
                             <div className="pt-4 flex justify-end gap-3 mt-6 border-t border-white/10">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn bg-white/5 text-white hover:bg-white/10">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsModalOpen(false)} 
+                                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold rounded-xl transition-all duration-200 text-sm"
+                                >
                                     Cancelar
                                 </button>
-                                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="btn btn-primary">
+                                <button 
+                                    type="submit" 
+                                    disabled={createMutation.isPending || updateMutation.isPending} 
+                                    className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/10 text-sm"
+                                >
                                     {createMutation.isPending || updateMutation.isPending ? 'Salvando...' : 'Salvar Prospect'}
                                 </button>
                             </div>

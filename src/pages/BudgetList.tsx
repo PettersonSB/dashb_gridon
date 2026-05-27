@@ -292,7 +292,7 @@ export default function BudgetList() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
             </div>
         );
     }
@@ -302,11 +302,11 @@ export default function BudgetList() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                         <img 
                             src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/icons_gridon/historico-de-pedidos.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpY29uc19ncmlkb24vaGlzdG9yaWNvLWRlLXBlZGlkb3MucG5nIiwiaWF0IjoxNzc0NTc3MzkwLCJleHAiOjMzMjc5MDQxMzkwfQ.8xjn8zIz3vuH2lVnNwpWs55ZlK4qDLPTKElZe3cc3Cc" 
                             alt="" 
-                            className="w-5 h-5 object-contain"
+                            className="w-5 h-5 object-contain animate-pulse"
                         />
                     </div>
                     <div>
@@ -323,19 +323,19 @@ export default function BudgetList() {
                             placeholder="Buscar por cliente..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-slate-900 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-primary/50 w-full md:w-64 transition-colors"
+                            className="bg-slate-900 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 w-full md:w-64 transition-colors"
                         />
                     </div>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
-                        className={`p-2 rounded-lg transition-colors border ${showFilters ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/10 text-white/40 hover:text-white hover:bg-white/5'}`}
+                        className={`p-2 rounded-xl transition-colors border ${showFilters ? 'bg-amber-500/20 border-amber-500/30 text-amber-500' : 'bg-transparent border-white/10 text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Filtros"
                     >
                         <Filter className="w-5 h-5" />
                     </button>
                     <Link
                         to="/budget/new"
-                        className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
                     >
                         Criar Novo
                     </Link>
@@ -351,7 +351,7 @@ export default function BudgetList() {
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50 w-full transition-colors"
+                            className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 w-full transition-colors"
                         />
                     </div>
                     <div className="w-full sm:w-auto">
@@ -360,7 +360,7 @@ export default function BudgetList() {
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50 w-full transition-colors"
+                            className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 w-full transition-colors"
                         />
                     </div>
                     {(startDate || endDate) && (
@@ -421,23 +421,30 @@ export default function BudgetList() {
                                             <td className="px-6 py-4">
                                                 <div className="text-white/80">{new Date(budget.created_at).toLocaleDateString('pt-BR')}</div>
                                                 <div className="text-[11px] text-white/40 mt-1 mb-1">Validade: {budget.proposal_validity_days} dias</div>
-                                                <div className="text-[11px] text-primary/80 mt-1 font-medium bg-primary/10 inline-block px-1.5 py-0.5 rounded border border-primary/20">
+                                                <div className="text-[11px] text-amber-400 mt-1 font-semibold bg-amber-500/10 inline-block px-2.5 py-0.5 rounded-full border border-amber-500/20">
                                                     Por: {budget.created_by_name || 'Sistema'}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-white font-medium">{budget.kit?.system_power} kWp</div>
-                                                <div className="text-primary text-xs mt-0.5">
+                                                <div className="text-xs font-semibold mt-0.5 flex flex-wrap items-center gap-1.5">
                                                     {budget.is_multi ? (
-                                                        <span><span className="text-white/40 text-[10px] mr-1 uppercase">A partir de</span>{formatCurrency(calculateFinalCashPrice(budget))}</span>
+                                                        <>
+                                                            <span className="text-white/40 text-[9px] uppercase tracking-wider">A partir de</span>
+                                                            <span className="bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent font-bold">
+                                                                {formatCurrency(calculateFinalCashPrice(budget))}
+                                                            </span>
+                                                        </>
                                                     ) : (
-                                                        formatCurrency(calculateFinalCashPrice(budget))
+                                                        <span className="bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent font-bold">
+                                                            {formatCurrency(calculateFinalCashPrice(budget))}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {budget.is_multi ? (
-                                                    <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-md text-xs font-semibold inline-block shadow-[0_0_10px_rgba(99,102,241,0.1)]">
+                                                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-md text-xs font-semibold inline-block shadow-[0_0_10px_rgba(245,158,11,0.1)]">
                                                         Múltiplo
                                                     </span>
                                                 ) : (
@@ -458,7 +465,7 @@ export default function BudgetList() {
                                                     {/* Analytics da Proposta */}
                                                     <button
                                                         onClick={() => setAnalyticsTarget(budget)}
-                                                        className="p-2 text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                                                        className="p-2 text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
                                                         title="Analytics da Proposta"
                                                     >
                                                         <BarChart2 className="w-4 h-4" />
@@ -469,7 +476,7 @@ export default function BudgetList() {
                                                         onClick={() => handleCopyLink(budget)}
                                                         className={`p-2 rounded-lg transition-colors ${copiedId === budget.id
                                                             ? 'bg-emerald-500/10 text-emerald-400'
-                                                            : 'hover:bg-white/10 hover:text-primary'
+                                                            : 'hover:bg-white/10 hover:text-amber-500'
                                                             }`}
                                                         title={copiedId === budget.id ? 'Link copiado!' : 'Copiar link do orçamento'}
                                                     >

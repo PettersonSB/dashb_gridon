@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     // 1. Buscar todos os dispositivos
     const { data: devices, error: devicesError } = await supabase
       .from('devices')
-      .select('device_id, user_id')
+      .select('device_id, user_id, phase_config')
 
     if (devicesError) {
       console.error('Erro ao buscar devices:', devicesError)
@@ -47,7 +47,10 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
           },
-          body: JSON.stringify({ device_id: device.device_id }),
+          body: JSON.stringify({ 
+            device_id: device.device_id,
+            phase_config: (device as any).phase_config
+          }),
         })
 
         if (!tuyaResponse.ok) {
@@ -78,6 +81,7 @@ Deno.serve(async (req) => {
             power: realtime.power,
             is_on: realtime.isOn,
             online: realtime.online === 'online' ? 'true' : 'false',
+            telemetry_data: realtime.telemetry_data,
             updated_at: saoPauloTimestamp,
           })
           .eq('device_id', device.device_id)
@@ -87,7 +91,7 @@ Deno.serve(async (req) => {
         }
 
         // 4. Gravar snapshot no histórico (device_logs)
-        if (realtime.voltage != null || realtime.current != null || realtime.power != null) {
+        if (realtime.voltage != null || realtime.current != null || realtime.power != null || realtime.telemetry_data != null) {
           const { error: logError } = await supabase
             .from('device_logs')
             .insert({
@@ -96,6 +100,7 @@ Deno.serve(async (req) => {
               voltage: realtime.voltage,
               current: realtime.current,
               power: realtime.power,
+              telemetry_data: realtime.telemetry_data,
               created_at: saoPauloTimestamp,
             })
 
@@ -110,6 +115,7 @@ Deno.serve(async (req) => {
           current: realtime.current,
           power: realtime.power,
           online: realtime.online,
+          telemetry_data: realtime.telemetry_data,
         })
       } catch (e) {
         console.error(`Exceção para ${device.device_id}:`, e)

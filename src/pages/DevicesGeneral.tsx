@@ -19,6 +19,7 @@ import {
     List,
     Timer,
     ChevronDown,
+    Sun,
 } from 'lucide-react';
 
 const REFRESH_OPTIONS = [
@@ -196,7 +197,17 @@ export default function DevicesGeneral() {
     const totalDevices = devices.length;
     const onlineCount = devices.filter((d) => d.online === 'true').length;
     const offlineCount = totalDevices - onlineCount;
-    const offCount = devices.filter((d) => d.is_on === false).length;
+
+    // Check if device is actually active/on (online and measuring/explicitly on)
+    const isDeviceOn = (d: Device) => {
+        const isOnline = d.online === 'true';
+        if (!isOnline) return false;
+        const phases = d.telemetry_data?.phases;
+        const hasMultiphase = !!phases && Object.keys(phases).length > 0;
+        return d.is_on === true || hasMultiphase || (d.power != null && Math.abs(d.power) > 2);
+    };
+
+    const offCount = devices.filter((d) => d.online === 'true' && !isDeviceOn(d)).length;
     const totalPower = devices.reduce((sum, d) => sum + (d.power ?? 0), 0);
 
     const formatPower = (w: number | null) => {
@@ -249,8 +260,8 @@ export default function DevicesGeneral() {
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative">
                 {/* Title */}
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex flex-shrink-0 items-center justify-center">
-                        <Smartphone className="w-5 h-5 text-violet-400" />
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-shrink-0 items-center justify-center">
+                        <Smartphone className="w-5 h-5 text-amber-500" />
                     </div>
                     <div>
                         <h2 className="section-title !mb-0">Dispositivos</h2>
@@ -259,12 +270,12 @@ export default function DevicesGeneral() {
                 </div>
 
                 {/* Inline Stats (Centered) */}
-                <div className="flex items-center gap-6 px-6 py-2.5 bg-white/[0.02] border border-white/[0.04] rounded-2xl w-fit xl:absolute xl:left-1/2 xl:-translate-x-1/2">
+                <div className="flex items-center gap-6 px-6 py-2.5 bg-[#13161C]/90 border border-amber-500/15 rounded-2xl w-fit xl:absolute xl:left-1/2 xl:-translate-x-1/2 shadow-xl shadow-black/40 hover:border-amber-500/30 transition-all duration-300">
                     <div className="flex flex-col items-center">
                         <span className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
-                            <Smartphone className="w-3 h-3 text-violet-400" /> Total
+                            <Smartphone className="w-3 h-3 text-amber-500" /> Total
                         </span>
-                        <span className="text-xl font-display font-bold text-white mt-0.5">{totalDevices}</span>
+                        <span className="text-xl font-display font-bold bg-gradient-to-br from-amber-400 to-yellow-500 bg-clip-text text-transparent mt-0.5">{totalDevices}</span>
                     </div>
                     <div className="w-px h-8 bg-white/[0.06]" />
                     <div className="flex flex-col items-center">
@@ -297,7 +308,7 @@ export default function DevicesGeneral() {
                             onClick={() => setShowIntervalDropdown(!showIntervalDropdown)}
                             className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
                         >
-                            <Timer className="w-4 h-4 text-primary" />
+                            <Timer className="w-4 h-4 text-amber-500" />
                             <span className="text-white/70 font-mono tabular-nums min-w-[36px] text-center">
                                 {formatCountdown(countdown)}
                             </span>
@@ -311,7 +322,7 @@ export default function DevicesGeneral() {
                                         key={opt.value}
                                         onClick={() => changeInterval(opt.value)}
                                         className={`w-full text-left px-4 py-2 text-sm hover:bg-white/5 transition-colors ${
-                                            intervalSeconds === opt.value ? 'text-primary font-semibold' : 'text-white/60'
+                                            intervalSeconds === opt.value ? 'text-amber-500 font-semibold' : 'text-white/60'
                                         }`}
                                     >
                                         {opt.label}
@@ -335,7 +346,7 @@ export default function DevicesGeneral() {
                     <button
                         onClick={handleSync}
                         disabled={isSyncing || isRefreshing}
-                        className="glow-btn flex items-center gap-2 text-sm !px-5 !py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-sm"
                     >
                         <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                         {isSyncing ? 'Sincronizando...' : 'Sincronizar Tuya'}
@@ -362,7 +373,7 @@ export default function DevicesGeneral() {
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                                 filterStatus === status
-                                    ? 'bg-primary/20 text-primary border border-primary/30'
+                                    ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
                                     : 'bg-white/[0.04] text-white/50 border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/70'
                             }`}
                         >
@@ -372,10 +383,10 @@ export default function DevicesGeneral() {
                 </div>
             </div>
 
-            {/* Device Grid */}
+            {/* Device Table List */}
             {isLoading ? (
                 <div className="flex items-center justify-center h-64">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="glass-card p-12 text-center">
@@ -390,18 +401,175 @@ export default function DevicesGeneral() {
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filtered.map((device) => (
-                        <DeviceCard
-                            key={device.id}
-                            device={device}
-                            formatPower={formatPower}
-                            formatVoltage={formatVoltage}
-                            formatCurrent={formatCurrent}
-                            formatUpdatedAt={formatUpdatedAt}
-                            onClick={() => setSelectedDevice(device)}
-                        />
-                    ))}
+                <div className="glass-card overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-white/10 bg-white/[0.01]">
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Dispositivo</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Status</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Potência Atual</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Leituras (V / A)</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Fases (TCs)</th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40">Última Atualização</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {filtered.map((device) => {
+                                    const isOnline = device.online === 'true';
+                                    const phases = device.telemetry_data?.phases;
+                                    const phaseConfig = device.phase_config;
+
+                                    let genPower = 0;
+                                    let conPower = 0;
+                                    let hasMultiphase = false;
+
+                                    if (phases) {
+                                        const phaseKeys = Object.keys(phases);
+                                        if (phaseKeys.length > 0) {
+                                            hasMultiphase = true;
+                                            phaseKeys.forEach((pKey) => {
+                                                const phase = (phases as any)[pKey];
+                                                if (phase) {
+                                                    const role = phaseConfig?.[pKey as keyof typeof phaseConfig] ?? 
+                                                        (pKey === 'a' ? 'generation' : pKey === 'b' ? 'consumption' : 'none');
+                                                    
+                                                    const p = phase.power ?? 0;
+                                                    if (role === 'generation') {
+                                                        genPower += Math.abs(p);
+                                                    } else if (role === 'consumption') {
+                                                        conPower += Math.abs(p);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+
+                                    const isOn = isOnline && (
+                                        device.is_on === true ||
+                                        hasMultiphase ||
+                                        (device.power != null && Math.abs(device.power) > 2)
+                                    );
+
+                                    return (
+                                        <tr 
+                                            key={device.id}
+                                            onClick={() => setSelectedDevice(device)}
+                                            className="hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                                        >
+                                            {/* Dispositivo */}
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <div>
+                                                        <div className="font-semibold text-amber-500 group-hover:text-amber-400 transition-colors">
+                                                            {device.name || 'Sem nome'}
+                                                        </div>
+                                                        <div className="text-[10px] text-white/30 font-mono mt-0.5">
+                                                            {device.device_id}
+                                                        </div>
+                                                    </div>
+                                                    {hasMultiphase && (
+                                                        <span className="text-[8px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                                            Multi-fase
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {!isOnline ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                        Offline
+                                                    </span>
+                                                ) : isOn ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+                                                        Ligado
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                                        Desligado
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Potência Atual */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {hasMultiphase ? (
+                                                    <div className="flex flex-col gap-0.5 text-xs font-mono">
+                                                        <span className="text-emerald-400 font-bold">Geração: {formatPower(genPower)}</span>
+                                                        <span className="text-blue-400 font-bold">Consumo: {formatPower(conPower)}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="font-display text-base font-bold bg-gradient-to-br from-amber-400 to-yellow-500 bg-clip-text text-transparent group-hover:from-amber-300 group-hover:to-yellow-400 transition-all duration-300">
+                                                        {isOnline ? formatPower(device.power) : '—'}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Leituras (V / A) */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-white/60">
+                                                {hasMultiphase ? (
+                                                    <span className="text-white/30 text-[11px]">Múltiplas leituras</span>
+                                                ) : isOnline ? (
+                                                    <div className="flex items-center gap-1.5 text-xs">
+                                                        <span>{formatVoltage(device.voltage)}</span>
+                                                        <span className="text-white/20">|</span>
+                                                        <span>{formatCurrent(device.current)}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-white/20">—</span>
+                                                )}
+                                            </td>
+
+                                            {/* Fases (TCs) */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {hasMultiphase && phases ? (
+                                                    <div className="flex flex-col gap-1 max-w-[280px]">
+                                                        {Object.entries(phases).map(([key, ph]: any) => {
+                                                            const role = phaseConfig?.[key as keyof typeof phaseConfig] ?? 
+                                                                (key === 'a' ? 'generation' : key === 'b' ? 'consumption' : 'none');
+                                                            const badgeColor = role === 'generation' 
+                                                                ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' 
+                                                                : role === 'consumption' 
+                                                                ? 'border-blue-500/20 bg-blue-500/5 text-blue-400' 
+                                                                : 'border-white/[0.04] text-white/30 bg-transparent';
+                                                            
+                                                            return (
+                                                                <div key={key} className={`inline-flex items-center justify-between text-[10px] font-mono border rounded-lg px-2 py-0.5 ${badgeColor}`}>
+                                                                    <span className="uppercase font-bold mr-2">TC {key.toUpperCase()}</span>
+                                                                    <div className="flex gap-1.5">
+                                                                        <span>{ph.voltage != null ? `${ph.voltage.toFixed(0)}V` : '—'}</span>
+                                                                        <span className="opacity-30">|</span>
+                                                                        <span>{ph.current != null ? `${ph.current.toFixed(1)}A` : '—'}</span>
+                                                                        <span className="opacity-30">|</span>
+                                                                        <span className="font-semibold">{ph.power != null ? `${Math.abs(ph.power).toFixed(0)}W` : '—'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-white/20 text-xs">—</span>
+                                                )}
+                                            </td>
+
+                                            {/* Última Atualização */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-xs text-white/50">
+                                                <div className="flex items-center gap-2 justify-between">
+                                                    <span>{formatUpdatedAt(device.updated_at)}</span>
+                                                    <ChevronDown className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -rotate-90 text-amber-500 transition-all duration-300" />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
@@ -412,114 +580,6 @@ export default function DevicesGeneral() {
                     onClose={() => setSelectedDevice(null)}
                 />
             )}
-        </div>
-    );
-}
-
-/* ——————————— Device Card Component ——————————— */
-
-function DeviceCard({
-    device,
-    formatPower,
-    formatVoltage,
-    formatCurrent,
-    formatUpdatedAt,
-    onClick,
-}: {
-    device: Device;
-    formatPower: (w: number | null) => string;
-    formatVoltage: (v: number | null) => string;
-    formatCurrent: (c: number | null) => string;
-    formatUpdatedAt: (dt: string) => string;
-    onClick: () => void;
-}) {
-    const isOnline = device.online === 'true';
-    const isOn = device.is_on === true;
-
-    return (
-        <div
-            onClick={onClick}
-            className="bg-[#1A1D24] border border-white/[0.04] rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 w-full relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
-            
-            {/* Status Indicator Glow */}
-            <div
-                className={`absolute top-0 left-0 right-0 h-[2px] transition-colors ${
-                    isOnline
-                        ? isOn
-                            ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.3)]'
-                            : 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.2)]'
-                        : 'bg-red-400/30'
-                }`}
-            />
-
-            {/* --- LEFT SECTION: Name & Info --- */}
-            <div className="flex flex-col flex-1 min-w-0 w-full">
-                <h4 className="text-[17px] font-bold text-[#00C2FF] truncate">
-                    {device.name || 'Sem nome'}
-                </h4>
-                <p className="text-[11px] text-[#A0AEC0] mt-0.5 font-mono truncate">
-                    {device.device_id}
-                </p>
-                <div className="w-[80%] h-px bg-white/[0.06] mt-3 mb-2" />
-                <span className="text-[12px] text-[#718096] font-medium">
-                    Atualizado: {formatUpdatedAt(device.updated_at).replace('Atualizado: ', '')}
-                </span>
-            </div>
-
-            {/* --- MIDDLE SECTION: Power Box --- */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-                <div className={`w-[46px] h-[52px] rounded-2xl flex items-center justify-center border-2 ${
-                    isOn
-                        ? 'border-[#EAB308] bg-[#EAB308]/5'
-                        : 'border-[#4A5568] bg-transparent'
-                }`}>
-                    <Power className={`w-6 h-6 ${isOn ? 'text-[#EAB308]' : 'text-[#4A5568]'}`} strokeWidth={2.5} />
-                </div>
-                <div className="flex flex-col justify-center">
-                    <span className="text-[28px] font-bold text-white leading-none tracking-tight">
-                        {formatPower(device.power)}
-                    </span>
-                    <span className="text-[11px] text-[#A0AEC0] mt-1 leading-tight">
-                        {isOn ? (
-                            <>Consumindo<br/>agora</>
-                        ) : (
-                            <>Desligado<br/>agora</>
-                        )}
-                    </span>
-                </div>
-            </div>
-
-            {/* --- RIGHT SECTION: Metrics --- */}
-            <div className="flex flex-col items-end shrink-0 w-full md:w-auto mt-2 md:mt-0">
-                <div className="bg-[#13151A] rounded-2xl border border-white/[0.03] p-3 flex items-center w-full min-w-[210px]">
-                    {/* Tensão */}
-                    <div className="flex-1 flex flex-col pl-2 pr-4 relative">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                            <Zap className="w-[14px] h-[14px] text-[#4299E1]" strokeWidth={2.5} />
-                            <span className="text-[10px] text-[#A0AEC0] uppercase tracking-widest font-semibold">Tensão</span>
-                        </div>
-                        <span className="text-lg font-bold text-white leading-none">{formatVoltage(device.voltage)}</span>
-                        {/* Vertical Divider */}
-                        <div className="absolute right-0 top-1 bottom-1 w-px bg-white/[0.06]" />
-                    </div>
-                    {/* Corrente */}
-                    <div className="flex-1 flex flex-col pl-4 pr-2">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                            <Activity className="w-[14px] h-[14px] text-[#00C2FF]" strokeWidth={2.5} />
-                            <span className="text-[10px] text-[#A0AEC0] uppercase tracking-widest font-semibold">Corrente</span>
-                        </div>
-                        <span className="text-lg font-bold text-white leading-none">{formatCurrent(device.current)}</span>
-                    </div>
-                </div>
-
-                {/* Bottom Right Dot */}
-                <div className="flex items-center gap-2 mt-2 pr-1">
-                    <span className="text-[11px] text-[#718096] font-medium">
-                        Atualizado: {formatUpdatedAt(device.updated_at).replace('Atualizado: ', '')}
-                    </span>
-                    <div className={`w-[9px] h-[9px] rounded-full ${isOnline ? 'bg-[#38A169]' : 'bg-[#E53E3E]'}`} />
-                </div>
-            </div>
         </div>
     );
 }

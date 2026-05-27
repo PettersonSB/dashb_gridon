@@ -96,7 +96,7 @@ export default function ClientAccounts() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-                        <Users className="w-7 h-7 text-primary" />
+                        <Users className="w-7 h-7 text-amber-500" />
                         App Cliente
                     </h1>
                     <p className="text-white/50 mt-1">Gerencie os acessos dos clientes ao Gridon+</p>
@@ -106,25 +106,25 @@ export default function ClientAccounts() {
                         onClick={() => setShowNotificationModal(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.04] border border-white/[0.08] text-white font-medium rounded-xl hover:bg-white/[0.08] hover:border-white/[0.15] transition-all"
                     >
-                        <Bell className="w-4 h-4 text-primary" />
+                        <Bell className="w-4 h-4 text-amber-500" />
                         Enviar Notificação
                     </button>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 whitespace-nowrap"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
                         Novo Cliente
                     </button>
                 </div>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard icon={Users} label="Total de Clientes" value={stats.total} color="text-primary" bgColor="bg-primary/10" borderColor="border-primary/20" />
-                <StatCard icon={CheckCircle} label="Ativos" value={stats.ativos} color="text-emerald-400" bgColor="bg-emerald-500/10" borderColor="border-emerald-500/20" />
-                <StatCard icon={Ban} label="Suspensos" value={stats.suspensos} color="text-amber-400" bgColor="bg-amber-500/10" borderColor="border-amber-500/20" />
-                <StatCard icon={XCircle} label="Desativados" value={stats.desativados} color="text-red-400" bgColor="bg-red-500/10" borderColor="border-red-500/20" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <StatCard icon={Users} label="Total de Clientes" value={stats.total} />
+                <StatCard icon={CheckCircle} label="Ativos" value={stats.ativos} />
+                <StatCard icon={Ban} label="Suspensos" value={stats.suspensos} />
+                <StatCard icon={XCircle} label="Desativados" value={stats.desativados} />
             </div>
 
             {/* Search */}
@@ -150,7 +150,7 @@ export default function ClientAccounts() {
             {/* Loading */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="text-center py-20 text-white/40">
@@ -167,18 +167,18 @@ export default function ClientAccounts() {
                             <div
                                 key={client.id}
                                 onClick={() => navigate(`/devices/clients/${client.user_id}`)}
-                                className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.04] transition-all cursor-pointer"
+                                className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-amber-500/20 hover:bg-white/[0.04] transition-all cursor-pointer"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         {/* Avatar */}
-                                        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
+                                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-bold text-lg">
                                             {client.full_name.charAt(0).toUpperCase()}
                                         </div>
 
                                         {/* Info */}
                                         <div>
-                                            <h3 className="text-white font-semibold group-hover:text-primary transition-colors">
+                                            <h3 className="text-white font-semibold group-hover:text-amber-500 transition-colors">
                                                 {client.full_name}
                                             </h3>
                                             <div className="flex items-center gap-4 mt-1">
@@ -215,7 +215,7 @@ export default function ClientAccounts() {
                                             <p className={`text-xs font-medium ${loginInfo.color}`}>{loginInfo.text}</p>
                                         </div>
 
-                                        <Eye className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
+                                        <Eye className="w-5 h-5 text-white/20 group-hover:text-amber-500 transition-colors" />
                                     </div>
                                 </div>
                             </div>
@@ -247,18 +247,20 @@ export default function ClientAccounts() {
 
 // ── Stat Card ───────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, color, bgColor, borderColor }: {
-    icon: any; label: string; value: number; color: string; bgColor: string; borderColor: string;
+function StatCard({ icon: Icon, label, value }: {
+    icon: any; label: string; value: number;
 }) {
     return (
-        <div className={`p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:${borderColor} transition-all`}>
-            <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl ${bgColor} border ${borderColor} flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${color}`} />
+        <div className="bg-[#13161C]/90 border border-amber-500/15 rounded-2xl p-5 relative overflow-hidden transition-all duration-300 shadow-xl shadow-black/40 hover:border-amber-500/40 hover:bg-[#171A21] hover:shadow-amber-500/[0.04] group">
+            <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-white/40">{label}</span>
+                    <span className="font-display text-3xl font-black mt-2 block tracking-tight bg-gradient-to-br from-amber-400 to-yellow-500 bg-clip-text text-transparent group-hover:from-amber-300 group-hover:to-yellow-400 transition-all duration-300">
+                        {value}
+                    </span>
                 </div>
-                <div>
-                    <p className="text-xs text-white/40">{label}</p>
-                    <p className={`text-xl font-bold ${color}`}>{value}</p>
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300">
+                    <Icon className="w-5 h-5 stroke-[2]" />
                 </div>
             </div>
         </div>
@@ -440,18 +442,18 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
         }
     }
 
-    const inputClass = "w-full px-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-white text-sm focus:outline-none focus:border-primary/30 transition-all";
+    const inputClass = "w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200 text-sm";
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="bg-[#0d1117] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar"
+                className="bg-[#13161C] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/80 custom-scrollbar"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="sticky top-0 z-10 bg-[#0d1117] flex items-center justify-between p-6 border-b border-white/[0.06]">
+                <div className="sticky top-0 z-10 bg-[#13161C] flex items-center justify-between p-6 border-b border-white/10">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Plus className="w-5 h-5 text-primary" />
+                        <Plus className="w-5 h-5 text-amber-500" />
                         Novo Cliente
                     </h2>
                     <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-all">
@@ -462,7 +464,7 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {/* Dados Pessoais */}
                     <div>
-                        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-amber-500 mb-3 flex items-center gap-2">
                             <Users className="w-4 h-4" /> Dados do Cliente
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -495,7 +497,7 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
 
                     {/* Instalação */}
                     <div>
-                        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-amber-500 mb-3 flex items-center gap-2">
                             <MapPin className="w-4 h-4" /> Instalação
                         </h3>
                         <div className="space-y-4">
@@ -626,7 +628,7 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
 
                     {/* Dispositivos */}
                     <div>
-                        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-amber-500 mb-3 flex items-center gap-2">
                             <Smartphone className="w-4 h-4" /> Vincular Dispositivos
                         </h3>
                         {loadingDevices ? (
@@ -669,14 +671,15 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                     )}
 
                     {/* Actions */}
-                    <div className="flex items-center justify-end gap-3 pt-2">
+                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10 mt-6">
                         <button type="button" onClick={onClose}
                             className="px-5 py-2.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all">
                             Cancelar
                         </button>
                         <button type="submit" disabled={loading || !fullName || !email || !password}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-black font-semibold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/10 text-sm"
+                        >
+                            {loading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : <Plus className="w-4.5 h-4.5 stroke-[2.5]" />}
                             Criar Cliente
                         </button>
                     </div>

@@ -67,10 +67,10 @@ export default function BudgetOverview() {
     };
 
     const budgetStats = [
-        { id: 'totais', label: "Orçamentos Totais", value: orcamentosTotais.toString(), icon: Calculator, color: "text-blue-400" },
-        { id: 'negociacao', label: "Em Negociação", value: emNegociacao.toString(), icon: Clock, color: "text-amber-400", clickable: true },
-        { id: 'aprovados', label: "Aprovados", value: aprovadosThisMonth.toString(), icon: CheckCircle2, color: "text-emerald-400", clickable: true, hasMonthSelect: true },
-        { id: 'conversao', label: "Taxa de Conversão", value: `${taxaConversao}%`, icon: TrendingUp, color: "text-violet-400", clickable: true },
+        { id: 'totais', label: "Orçamentos Totais", value: orcamentosTotais.toString(), icon: Calculator, color: "text-amber-500" },
+        { id: 'negociacao', label: "Em Negociação", value: emNegociacao.toString(), icon: Clock, color: "text-amber-500", clickable: true },
+        { id: 'aprovados', label: "Aprovados", value: aprovadosThisMonth.toString(), icon: CheckCircle2, color: "text-amber-500", clickable: true, hasMonthSelect: true },
+        { id: 'conversao', label: "Taxa de Conversão", value: `${taxaConversao}%`, icon: TrendingUp, color: "text-amber-500", clickable: true },
     ];
 
     const formatCurrency = (value: number | undefined) => {
@@ -153,28 +153,34 @@ export default function BudgetOverview() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {budgetStats.map((stat) => (
                     <div 
                         key={stat.id} 
-                        className={`card-stat ${stat.clickable ? 'cursor-pointer hover:bg-white/[0.04] transition-colors relative' : ''}`}
+                        className={`bg-[#13161C]/90 border border-amber-500/15 rounded-2xl p-5 relative overflow-hidden transition-all duration-300 shadow-xl shadow-black/40 hover:border-amber-500/40 hover:bg-[#171A21] hover:shadow-amber-500/[0.04] group ${stat.clickable ? 'cursor-pointer hover:-translate-y-1 active:translate-y-0' : ''}`}
                         onClick={() => stat.clickable && handleCardClick(stat.id)}
                     >
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-white/40">{stat.label}</span>
-                            <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                        <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                                <span className="text-xs font-bold uppercase tracking-wider text-white/40">{stat.label}</span>
+                                <span className="font-display text-3xl font-black mt-2 block tracking-tight bg-gradient-to-br from-amber-400 to-yellow-500 bg-clip-text text-transparent group-hover:from-amber-300 group-hover:to-yellow-400 transition-all duration-300">
+                                    {stat.value}
+                                </span>
+                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300">
+                                <stat.icon className="w-5 h-5 stroke-[2]" />
+                            </div>
                         </div>
-                        <span className="font-display text-3xl font-bold text-white mt-3 block">{stat.value}</span>
                         
                         {stat.hasMonthSelect && (
                             <div className="mt-4" onClick={e => e.stopPropagation()}>
                                 <select 
                                     value={selectedMonthStr} 
                                     onChange={e => setSelectedMonthStr(e.target.value)}
-                                    className="bg-white/5 border border-white/10 text-xs text-white/70 rounded-lg px-2 py-1.5 focus:outline-none w-full appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                                    className="w-full bg-white/[0.02] border border-white/10 text-xs text-white/70 rounded-xl px-3 py-2 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all duration-200 cursor-pointer hover:bg-white/5"
                                 >
                                     {availableMonths.map(m => (
-                                        <option key={m.val} value={m.val} className="bg-slate-900">{m.label}</option>
+                                        <option key={m.val} value={m.val} className="bg-slate-950 text-white">{m.label}</option>
                                     ))}
                                 </select>
                             </div>
