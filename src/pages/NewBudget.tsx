@@ -498,9 +498,17 @@ export default function NewBudget() {
                 navigate('/budget/list');
             }, 1500);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error("Erro ao salvar orçamento:", err);
-            setError(err instanceof Error ? err.message : "Erro desconhecido ao salvar o orçamento.");
+            let errMsg = "Erro desconhecido ao salvar o orçamento.";
+            if (err instanceof Error) {
+                errMsg = err.message;
+            } else if (err && typeof err === 'object' && err.message) {
+                errMsg = err.message;
+            } else if (typeof err === 'string') {
+                errMsg = err;
+            }
+            setError(errMsg);
         } finally {
             setIsSubmitting(false);
         }
@@ -607,13 +615,25 @@ export default function NewBudget() {
         <div className="animate-fade-in space-y-6 pb-20 relative">
             {/* Toast Notification */}
             {(isSubmitting || successMessage || error) && (
-                <div className={`fixed top-[70px] left-1/2 -translate-x-1/2 z-[100] px-8 py-3 rounded-b-xl shadow-2xl border-x border-b animate-in slide-in-from-top-4 fade-in duration-300 font-bold text-white text-sm text-center min-w-[250px] shadow-black/50 ${
+                <div className={`fixed top-[70px] left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-b-xl shadow-2xl border-x border-b animate-in slide-in-from-top-4 fade-in duration-300 font-bold text-white text-sm min-w-[300px] max-w-[90vw] shadow-black/50 flex items-center justify-between gap-4 ${
                     error ? 'bg-red-500 border-red-600' : 
                     successMessage ? 'bg-emerald-500 border-emerald-600' : 
-                    'bg-blue-600 border-blue-700 flex items-center justify-center gap-2'
+                    'bg-blue-600 border-blue-700'
                 }`}>
-                    {isSubmitting && !successMessage && !error && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {error ? 'Erro ao salvar' : successMessage ? 'Salvo com sucesso' : 'Salvando...'}
+                    <div className="flex items-center gap-2 text-left">
+                        {isSubmitting && !successMessage && !error && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <span>{error ? `Erro ao salvar: ${error}` : successMessage ? 'Salvo com sucesso' : 'Salvando...'}</span>
+                    </div>
+                    {(error || successMessage) && (
+                        <button 
+                            type="button" 
+                            onClick={() => { setError(''); setSuccessMessage(''); }}
+                            className="text-white/80 hover:text-white transition-colors flex-shrink-0"
+                            title="Fechar"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             )}
 

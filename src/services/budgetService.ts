@@ -46,19 +46,20 @@ export const budgetService = {
     },
 
     async createBudget(budget: Omit<SolarBudget, 'id' | 'created_at' | 'created_by' | 'created_by_name' | 'created_by_avatar' | 'kit' | 'status'>) {
-        // Obter usuário logado atual para o created_by
-        const { data: userData } = await supabase.auth.getUser();
+        // Obter usuário logado atual para o created_by de forma segura e rápida (instantâneo do local cache)
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         // Tentar buscar informações do perfil (user_metadata) 
-        const createdByName = userData.user?.user_metadata?.full_name || userData.user?.email || 'Sistema';
-        const createdByAvatar = userData.user?.user_metadata?.avatar_url || null;
+        const createdByName = user?.user_metadata?.full_name || user?.email || 'Sistema';
+        const createdByAvatar = user?.user_metadata?.avatar_url || null;
 
         const { data, error } = await supabase
             .from('solar_budgets')
             .insert([{
                 ...budget,
                 status: 'novo',
-                created_by: userData.user?.id || null,
+                created_by: user?.id || null,
                 created_by_name: createdByName,
                 created_by_avatar: createdByAvatar
             }])
@@ -82,10 +83,11 @@ export const budgetService = {
         // 2. Remover campos que devem ser regenerados
         const { id, created_at, status, created_by, created_by_name, created_by_avatar, ...clonePayload } = original;
 
-        // 3. Obter usuário atual
-        const { data: userData } = await supabase.auth.getUser();
-        const createdByName = userData.user?.user_metadata?.full_name || userData.user?.email || 'Sistema';
-        const createdByAvatar = userData.user?.user_metadata?.avatar_url || null;
+        // 3. Obter usuário atual de forma rápida e segura
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        const createdByName = user?.user_metadata?.full_name || user?.email || 'Sistema';
+        const createdByAvatar = user?.user_metadata?.avatar_url || null;
 
         // 4. Inserir como novo orçamento
         const { data: newBudget, error: insertError } = await supabase
@@ -93,7 +95,7 @@ export const budgetService = {
             .insert([{
                 ...clonePayload,
                 status: 'novo',
-                created_by: userData.user?.id || null,
+                created_by: user?.id || null,
                 created_by_name: createdByName,
                 created_by_avatar: createdByAvatar
             }])

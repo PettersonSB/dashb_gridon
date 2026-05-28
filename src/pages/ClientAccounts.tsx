@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { clientService, ClientAccount, CreateClientPayload } from '@/services/clientService';
 import {
     Users, Plus, Search, Eye, Ban, CheckCircle, XCircle,
@@ -50,16 +50,28 @@ function timeAgo(dateStr: string | null): { text: string; color: string } {
 
 export default function ClientAccounts() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [clients, setClients] = useState<ClientAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showNotificationModal, setShowNotificationModal] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [conversionData, setConversionData] = useState<any>(null);
 
     useEffect(() => {
         loadClients();
     }, []);
+
+    useEffect(() => {
+        const convertData = (location.state as any)?.convertProspect;
+        if (convertData) {
+            setConversionData(convertData);
+            setShowCreateModal(true);
+            // Limpa o estado para evitar que reabra ao recarregar a página
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     async function loadClients() {
         try {
@@ -178,9 +190,16 @@ export default function ClientAccounts() {
 
                                         {/* Info */}
                                         <div>
-                                            <h3 className="text-white font-semibold group-hover:text-amber-500 transition-colors">
-                                                {client.full_name}
-                                            </h3>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-white font-semibold group-hover:text-amber-500 transition-colors">
+                                                    {client.full_name}
+                                                </h3>
+                                                {(client as any).prospect_id && (
+                                                    <span className="px-2 py-0.5 rounded-md text-[9px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                        🔗 Convertido de Prospect
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-4 mt-1">
                                                 <span className="flex items-center gap-1 text-xs text-white/40">
                                                     <Mail className="w-3 h-3" /> {client.email}
@@ -227,11 +246,16 @@ export default function ClientAccounts() {
             {/* Create Modal */}
             {showCreateModal && (
                 <CreateClientModal
-                    onClose={() => setShowCreateModal(false)}
+                    onClose={() => {
+                        setShowCreateModal(false);
+                        setConversionData(null);
+                    }}
                     onCreated={() => {
                         setShowCreateModal(false);
+                        setConversionData(null);
                         loadClients();
                     }}
+                    conversionData={conversionData}
                 />
             )}
 
@@ -272,9 +296,13 @@ function StatCard({ icon: Icon, label, value }: {
 interface CreateClientModalProps {
     onClose: () => void;
     onCreated: () => void;
+    conversionData?: {
+        prospect: any;
+        selectedBudget: any;
+    } | null;
 }
 
-function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
+function CreateClientModal({ onClose, onCreated, conversionData }: CreateClientModalProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [allDevices, setAllDevices] = useState<any[]>([]);
@@ -308,6 +336,40 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
     // Photo upload
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+    // Efeito para pré-preencher dados de prospect se houver conversão
+    useEffect(() => {
+        if (conversionData) {
+            const { prospect, selectedBudget } = conversionData;
+            setFullName(prospect.name || '');
+            setEmail(prospect.email || '');
+            setPhone(prospect.phone || '');
+
+            if (selectedBudget) {
+                setCity(selectedBudget.customer_city || prospect.city || '');
+                setState(selectedBudget.customer_state || prospect.state || '');
+                setNeighborhood(selectedBudget.customer_neighborhood || prospect.neighborhood || '');
+                if (selectedBudget.energy_tariff) {
+                    setEnergyTariff(String(selectedBudget.energy_tariff));
+                }
+                if (selectedBudget.kit?.system_power) {
+                    setPowerKwp(String(selectedBudget.kit.system_power));
+                }
+                if (selectedBudget.kit?.equipment_type) {
+                    const typeMap: Record<string, string> = {
+                        'Inversor': 'inversor',
+                        'Micro Inversor': 'micro_inversor',
+                        'Inversor Híbrido': 'inversor_hibrido',
+                    };
+                    setInverterType(typeMap[selectedBudget.kit.equipment_type] || 'inversor');
+                }
+            } else {
+                setCity(prospect.city || '');
+                setState(prospect.state || '');
+                setNeighborhood(prospect.neighborhood || '');
+            }
+        }
+    }, [conversionData]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -431,6 +493,8 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                     notes: notes || undefined,
                 },
                 device_ids: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
+                prospect_id: conversionData?.prospect?.id,
+                closed_budget_id: conversionData?.selectedBudget?.id,
             };
 
             await clientService.createClient(payload);
@@ -460,6 +524,22 @@ function CreateClientModal({ onClose, onCreated }: CreateClientModalProps) {
                         <X className="w-5 h-5" />
                     </button>
                 </div>
+
+                {conversionData && (
+                    <div className="mx-6 mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col gap-1">
+                        <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+                            ⚡ Convertendo Prospect Comercial
+                        </p>
+                        <p className="text-sm font-bold text-white mt-1">
+                            {conversionData.prospect.name}
+                        </p>
+                        {conversionData.selectedBudget && (
+                            <p className="text-xs text-white/50 mt-0.5">
+                                Orçamento Base: <span className="text-amber-400 font-medium">{conversionData.selectedBudget.kit?.name || 'Sistema Solar'}</span> — R$ {conversionData.selectedBudget.kit?.kit_price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {/* Dados Pessoais */}

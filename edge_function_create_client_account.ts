@@ -70,6 +70,8 @@ Deno.serve(async (req) => {
       energy_tariff = 0.85,
       installation,
       device_ids,
+      prospect_id,
+      closed_budget_id,
     } = await req.json()
 
     // Validar campos obrigatórios
@@ -113,6 +115,8 @@ Deno.serve(async (req) => {
         status: 'ativo',
         must_change_password: true,
         created_by: callerUser.id,
+        prospect_id: prospect_id || null,
+        closed_budget_id: closed_budget_id || null,
       })
 
     if (accountError) {
@@ -123,6 +127,34 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Erro ao criar conta do cliente: ' + accountError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // 2.5 Marcar prospect como convertido (se veio de conversão)
+    if (prospect_id) {
+      const { error: prospectUpdateError } = await supabaseAdmin
+        .from('prospects')
+        .update({
+          status: 'ganho',
+          converted_to_client_id: newUserId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', prospect_id)
+
+      if (prospectUpdateError) {
+        console.error('Erro ao atualizar prospect:', prospectUpdateError)
+      }
+    }
+
+    // 2.6 Atualizar status do orçamento selecionado para 'aprovado'
+    if (closed_budget_id) {
+      const { error: budgetUpdateError } = await supabaseAdmin
+        .from('solar_budgets')
+        .update({ status: 'aprovado' })
+        .eq('id', closed_budget_id)
+
+      if (budgetUpdateError) {
+        console.error('Erro ao atualizar status do orçamento:', budgetUpdateError)
+      }
     }
 
     // 3. Inserir instalação (se dados foram enviados)

@@ -399,6 +399,7 @@ export interface Prospect {
     
     // Auxiliares (Joins)
     budgets_count?: number; // Para mostrar quantos orçamentos esse prospect possui
+    converted_to_client_id?: string | null;
 }
 
 export type TeamRole = 'owner' | 'admin' | 'vendedor';

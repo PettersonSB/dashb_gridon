@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Prospect } from '@/lib/types';
+import { Prospect, SolarBudget } from '@/lib/types';
 
 export const prospectService = {
   /**
@@ -123,5 +123,47 @@ export const prospectService = {
     }
 
     return data;
+  },
+
+  /**
+   * Busca todos os orçamentos vinculados a um prospect
+   */
+  async getProspectBudgets(prospectId: string): Promise<SolarBudget[]> {
+    const { data, error } = await supabase
+      .from('solar_budgets')
+      .select(`
+        *,
+        kit:kit_id(
+          id, name, system_type, system_power, kit_price, image_url, equipment_type
+        )
+      `)
+      .eq('prospect_id', prospectId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar orçamentos do prospect:', error);
+      throw error;
+    }
+    return (data || []) as SolarBudget[];
+  },
+
+  /**
+   * Marca o prospect como convertido para cliente
+   */
+  async markAsConverted(prospectId: string, clientUserId: string): Promise<void> {
+    const { error } = await supabase
+      .from('prospects')
+      .update({
+        status: 'ganho',
+        converted_to_client_id: clientUserId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', prospectId);
+
+    if (error) {
+      console.error('Erro ao marcar prospect como convertido:', error);
+      throw error;
+    }
   }
 };
+

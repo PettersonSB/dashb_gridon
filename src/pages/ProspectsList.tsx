@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     Users, Plus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
-    Calendar, DollarSign, Loader2, ArrowRight, Receipt, X
+    Calendar, DollarSign, Loader2, ArrowRight, Receipt, X, UserPlus, Zap
 } from 'lucide-react';
 import { prospectService } from '@/services/prospectService';
 import { Prospect } from '@/lib/types';
@@ -31,6 +31,48 @@ export default function ProspectsList() {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Estados para o fluxo de conversão
+    const [showBudgetSelectModal, setShowBudgetSelectModal] = useState(false);
+    const [prospectToConvert, setProspectToConvert] = useState<Prospect | null>(null);
+    const [prospectBudgets, setProspectBudgets] = useState<any[]>([]);
+    const [loadingBudgets, setLoadingBudgets] = useState(false);
+
+    const handleConvertToClient = async (prospect: Prospect) => {
+        setProspectToConvert(prospect);
+        setLoadingBudgets(true);
+        try {
+            const budgets = await prospectService.getProspectBudgets(prospect.id);
+            setProspectBudgets(budgets);
+            if (budgets.length > 0) {
+                setShowBudgetSelectModal(true);
+            } else {
+                // Sem orçamentos - navega direto com os dados do prospect
+                navigate('/devices/clients', {
+                    state: {
+                        convertProspect: { prospect, selectedBudget: null }
+                    }
+                });
+            }
+        } catch (err) {
+            console.error('Erro ao buscar orçamentos do prospect:', err);
+            alert('Erro ao buscar orçamentos do prospect.');
+        } finally {
+            setLoadingBudgets(false);
+        }
+    };
+
+    const handleSelectBudget = (budget: any) => {
+        setShowBudgetSelectModal(false);
+        navigate('/devices/clients', {
+            state: {
+                convertProspect: {
+                    prospect: prospectToConvert,
+                    selectedBudget: budget
+                }
+            }
+        });
+    };
     
     // Formulário do modal
     const [formData, setFormData] = useState<Partial<Prospect>>({
@@ -223,14 +265,41 @@ export default function ProspectsList() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <div className="flex items-center justify-end gap-3">
-                                                <button 
-                                                    onClick={() => handleCreateBudget(prospect)}
-                                                    className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary-light rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1.5"
-                                                >
-                                                    Gerar Orçamento
-                                                    <ArrowRight className="w-3.5 h-3.5" />
-                                                </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                {prospect.converted_to_client_id ? (
+                                                    <button
+                                                        onClick={() => navigate(`/devices/clients/${prospect.converted_to_client_id}`)}
+                                                        className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
+                                                        title="Ver ficha do cliente convertido"
+                                                    >
+                                                        ✅ Convertido
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button 
+                                                            onClick={() => handleCreateBudget(prospect)}
+                                                            className="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary-light rounded-lg text-xs font-medium transition-colors inline-flex items-center gap-1"
+                                                            title="Gerar Novo Orçamento"
+                                                        >
+                                                            Gerar
+                                                            <ArrowRight className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        
+                                                        <button 
+                                                            onClick={() => handleConvertToClient(prospect)}
+                                                            className="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/20 text-amber-400 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+                                                            disabled={loadingBudgets && prospectToConvert?.id === prospect.id}
+                                                            title="Converter Prospect para Cliente"
+                                                        >
+                                                            {loadingBudgets && prospectToConvert?.id === prospect.id ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <UserPlus className="w-3.5 h-3.5" />
+                                                            )}
+                                                            Virar Cliente
+                                                        </button>
+                                                    </>
+                                                )}
                                                 
                                                 <button
                                                     onClick={() => handleEdit(prospect)}
@@ -358,6 +427,111 @@ export default function ProspectsList() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Seleção de Orçamento para Conversão */}
+            {showBudgetSelectModal && prospectToConvert && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#13161C] border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/80 animate-in slide-in-from-bottom-4 duration-300">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                                    <Receipt className="w-4.5 h-4.5 text-amber-500" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white tracking-wide">
+                                        Selecionar Orçamento Aprovado
+                                    </h2>
+                                    <p className="text-xs text-white/50 mt-0.5">
+                                        Selecione qual proposta fechada servirá de base para o cadastro do cliente {prospectToConvert.name}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowBudgetSelectModal(false)}
+                                className="p-2 hover:bg-white/5 rounded-lg text-white/40 hover:text-white transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* List of budgets */}
+                        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                            {prospectBudgets.map((budget) => {
+                                const systemPower = budget.kit?.system_power || 0;
+                                const systemType = budget.kit?.system_type || 'Solar';
+                                const kitPrice = budget.kit?.kit_price || 0;
+                                return (
+                                    <div
+                                        key={budget.id}
+                                        onClick={() => handleSelectBudget(budget)}
+                                        className="group p-5 bg-white/[0.02] hover:bg-amber-500/[0.03] border border-white/5 hover:border-amber-500/30 rounded-xl cursor-pointer transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                    >
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold text-white group-hover:text-amber-400 transition-colors">
+                                                    {budget.kit?.name || 'Sistema Solar'}
+                                                </span>
+                                                <span className="text-[10px] text-white/40">
+                                                    ({new Date(budget.created_at).toLocaleDateString('pt-BR')})
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/60">
+                                                <span className="flex items-center gap-1">
+                                                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                                    {systemPower} kWp
+                                                </span>
+                                                <span>• {systemType}</span>
+                                                <span>• {budget.supply_type}</span>
+                                                {budget.energy_tariff && (
+                                                    <span>• Tarifa: R$ {budget.energy_tariff.toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center md:flex-col md:items-end justify-between gap-2 border-t md:border-t-0 border-white/5 pt-3 md:pt-0">
+                                            <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">
+                                                R$ {kitPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider border ${
+                                                budget.status === 'aprovado' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                budget.status === 'visualizado' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                'bg-white/5 text-white/60 border-white/10'
+                                            }`}>
+                                                {budget.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Direct conversion button */}
+                        <div className="pt-6 flex justify-between items-center mt-6 border-t border-white/10">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowBudgetSelectModal(false);
+                                    navigate('/devices/clients', {
+                                        state: {
+                                            convertProspect: { prospect: prospectToConvert, selectedBudget: null }
+                                        }
+                                    });
+                                }}
+                                className="text-xs text-white/50 hover:text-white underline transition-colors"
+                            >
+                                Continuar sem vincular orçamento
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => setShowBudgetSelectModal(false)} 
+                                className="px-5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold rounded-xl transition-all duration-200 text-sm"
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

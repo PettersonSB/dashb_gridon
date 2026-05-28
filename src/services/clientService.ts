@@ -15,6 +15,8 @@ export interface ClientAccount {
     created_by: string | null;
     created_at: string;
     updated_at: string;
+    prospect_id?: string | null;
+    closed_budget_id?: string | null;
 }
 
 export interface ClientInstallation {
@@ -92,6 +94,8 @@ export interface CreateClientPayload {
         notes?: string;
     };
     device_ids?: string[];
+    prospect_id?: string;
+    closed_budget_id?: string;
 }
 
 // ── Service ────────────────────────────────────────
@@ -372,4 +376,21 @@ export const clientService = {
 
         if (error) throw error;
     },
+
+    /** Busca todos os orçamentos de um prospect (Histórico Comercial) */
+    async getClientBudgetHistory(prospectId: string): Promise<any[]> {
+        const { data, error } = await supabase
+            .from('solar_budgets')
+            .select(`
+                *,
+                kit:kit_id(
+                    id, name, system_type, system_power, kit_price, image_url, equipment_type
+                )
+            `)
+            .eq('prospect_id', prospectId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
 };

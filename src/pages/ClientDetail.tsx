@@ -6,7 +6,7 @@ import {
     ArrowLeft, User, Mail, Phone, DollarSign, Calendar, Clock,
     Shield, CheckCircle, Ban, XCircle, Trash2, KeyRound,
     Smartphone, Plus, Unlink, Upload, FileText, Download,
-    MessageSquare, Send, Loader2, MapPin, Zap, Package, X
+    MessageSquare, Send, Loader2, MapPin, Zap, Package, X, Receipt, Eye
 } from 'lucide-react';
 import { LocationMap } from '@/components/LocationMap';
 import { supabase } from '@/lib/supabase';
@@ -26,7 +26,7 @@ export default function ClientDetail() {
     const [devices, setDevices] = useState<any[]>([]);
     const [bills, setBills] = useState<EnergyBill[]>([]);
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
-    const [activeTab, setActiveTab] = useState<'info' | 'devices' | 'bills' | 'tickets'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'devices' | 'bills' | 'tickets' | 'history'>('info');
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -149,6 +149,7 @@ export default function ClientDetail() {
         { key: 'devices' as const, label: `Dispositivos (${devices.length})`, icon: Smartphone },
         { key: 'bills' as const, label: `Contas (${bills.length})`, icon: FileText },
         { key: 'tickets' as const, label: `Chamados (${tickets.length})`, icon: MessageSquare },
+        ...((client as any).prospect_id ? [{ key: 'history' as const, label: 'Histórico', icon: FileText }] : []),
     ];
 
     return (
@@ -232,6 +233,12 @@ export default function ClientDetail() {
             {activeTab === 'devices' && <DevicesTab devices={devices} clientUserId={userId!} onReload={loadAll} />}
             {activeTab === 'bills' && <BillsTab bills={bills} clientUserId={userId!} onReload={loadAll} formatDate={formatDate} />}
             {activeTab === 'tickets' && <TicketsTab tickets={tickets} onReload={loadAll} formatDate={formatDate} />}
+            {activeTab === 'history' && (client as any).prospect_id && (
+                <HistoryTab
+                    prospectId={(client as any).prospect_id}
+                    closedBudgetId={(client as any).closed_budget_id}
+                />
+            )}
 
             {/* Reset Password Modal */}
             {showResetModal && (
@@ -920,6 +927,165 @@ function TicketsTab({ tickets, onReload, formatDate }: { tickets: SupportTicket[
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Aba de Histórico Comercial (CRM) ─────────────────────────
+function HistoryTab({ prospectId, closedBudgetId }: { prospectId: string; closedBudgetId?: string | null }) {
+    const [budgets, setBudgets] = useState<any[]>([]);
+    const [prospect, setProspect] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadHistory();
+    }, [prospectId]);
+
+    async function loadHistory() {
+        setLoading(true);
+        try {
+            const [budgetData, prospectData] = await Promise.all([
+                clientService.getClientBudgetHistory(prospectId),
+                supabase.from('prospects').select('*').eq('id', prospectId).single()
+            ]);
+            setBudgets(budgetData);
+            setProspect(prospectData.data);
+        } catch (err) {
+            console.error('Erro ao carregar histórico comercial:', err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    // Dividir orçamentos: o fechado/aprovado vs os outros
+    const closedBudget = budgets.find(b => b.id === closedBudgetId || b.status === 'aprovado');
+    const otherBudgets = budgets.filter(b => b.id !== closedBudget?.id);
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            {/* Card do Lead/Prospect Origem */}
+            {prospect && (
+                <div className="glass-card p-6 border-white/5 bg-white/[0.01]">
+                    <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider mb-4">
+                        Origem Comercial (CRM)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <p className="text-xs text-white/30">Nome no CRM</p>
+                            <p className="text-sm font-semibold text-white mt-0.5">{prospect.name}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-white/30">Contato Comercial</p>
+                            <p className="text-sm font-semibold text-white mt-0.5">{prospect.phone}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-white/30">Conversão</p>
+                            <p className="text-sm font-semibold text-amber-400 mt-0.5 flex items-center gap-1">
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Ganho em {new Date(prospect.updated_at).toLocaleDateString('pt-BR')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Proposta Fechada / Aprovada */}
+            {closedBudget && (
+                <div className="p-6 rounded-2xl border border-amber-500/30 bg-amber-500/[0.02] relative overflow-hidden shadow-xl shadow-amber-500/5">
+                    <div className="absolute top-0 right-0 px-4 py-1.5 bg-amber-500 text-slate-950 text-[10px] font-bold uppercase tracking-wider rounded-bl-xl">
+                        Proposta Aprovada
+                    </div>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2">
+                            <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                <Receipt className="w-5 h-5 text-amber-500" />
+                                {closedBudget.kit?.name || 'Sistema Solar Contratado'}
+                            </h4>
+                            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/60">
+                                <span>Potência: <strong className="text-white">{closedBudget.kit?.system_power || 0} kWp</strong></span>
+                                <span>Bairro: <strong className="text-white">{closedBudget.customer_neighborhood || '-'}</strong></span>
+                                <span>Cidade: <strong className="text-white">{closedBudget.customer_city} - {closedBudget.customer_state}</strong></span>
+                                <span>Tarifa na Proposta: <strong className="text-white">R$ {closedBudget.energy_tariff?.toFixed(2) || '0.00'}</strong></span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="text-left md:text-right">
+                                <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold">Valor do Kit</p>
+                                <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">
+                                    R$ {(closedBudget.kit?.kit_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                            <a
+                                href={`/budget/preview/${closedBudget.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transition-all flex items-center gap-1.5"
+                            >
+                                <Eye className="w-3.5 h-3.5" /> Ver Proposta
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Outros orçamentos históricos do Prospect */}
+            {otherBudgets.length > 0 && (
+                <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider">
+                        Outras Propostas Apresentadas ({otherBudgets.length})
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        {otherBudgets.map((budget) => (
+                            <div
+                                key={budget.id}
+                                className="p-4 rounded-xl bg-white/[0.01] border border-white/[0.04] flex flex-col md:flex-row md:items-center justify-between gap-4"
+                            >
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-semibold text-white">{budget.kit?.name || 'Sistema Solar'}</p>
+                                        <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider border ${
+                                            budget.status === 'visualizado' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                            'bg-white/5 text-white/50 border-white/10'
+                                        }`}>
+                                            {budget.status}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-white/40">
+                                        Criado em {new Date(budget.created_at).toLocaleDateString('pt-BR')} • {budget.kit?.system_power || 0} kWp • {budget.supply_type}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 justify-between md:justify-end">
+                                    <p className="text-sm font-bold text-white/80">
+                                        R$ {(budget.kit?.kit_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </p>
+                                    <a
+                                        href={`/budget/preview/${budget.id}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg text-xs font-semibold transition-all inline-flex items-center gap-1"
+                                    >
+                                        <Eye className="w-3.5 h-3.5" /> Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {budgets.length === 0 && (
+                <div className="p-12 text-center border border-dashed border-white/10 rounded-2xl bg-white/[0.005]">
+                    <p className="text-sm text-white/40">Nenhum orçamento encontrado para este prospect comercial.</p>
                 </div>
             )}
         </div>
