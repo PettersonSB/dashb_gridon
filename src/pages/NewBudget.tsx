@@ -362,13 +362,21 @@ export default function NewBudget() {
 
         setIsSubmitting(true);
 
+        // Timeout de segurança: se a operação levar mais de 30s, cancela com erro visível
+        const timeoutId = setTimeout(() => {
+            setIsSubmitting(false);
+            setError('A operação está demorando demais. Verifique sua conexão com a internet e tente novamente.');
+        }, 30000);
+
         try {
             // Handle multiple images
             let finalImageUrls = [...(isEditing ? imagePreviewUrls.filter(url => !url.startsWith('blob:')) : [])];
             
             if (imageFiles.length > 0) {
+                console.log('[Budget Save] Uploading images...');
                 const uploadedUrls = await budgetService.uploadBudgetImages(imageFiles);
                 finalImageUrls = [...finalImageUrls, ...uploadedUrls];
+                console.log('[Budget Save] Images uploaded:', uploadedUrls.length);
             }
 
             // Finalizar workspace atual se for multi
@@ -380,40 +388,53 @@ export default function NewBudget() {
                 );
             }
 
-            // Tratar Prospect (Auto-criação ou Sincronização)
+            // Tratar Prospect (Auto-criação ou Sincronização) — NÃO BLOQUEANTE
+            // Se falhar ou demorar, o orçamento é salvo sem vínculo ao prospect
             let prospectId = prefillProspect?.id || null;
 
             if (!prospectId && customerPhone) {
                 try {
-                    // Tenta buscar por telefone
-                    const existing = await prospectService.findProspectByPhone(customerPhone);
-                    if (existing) {
-                        prospectId = existing.id;
-                        // Atualizar dados do prospect com os mais recentes do orçamento
-                        await prospectService.updateProspect(existing.id, {
-                            name: customerName,
-                            email: customerEmail || existing.email,
-                            city: customerCity || existing.city,
-                            state: customerState || existing.state,
-                            neighborhood: customerNeighborhood || existing.neighborhood
-                        });
-                    } else {
-                        // Criar novo prospect auto-capturado
-                        const newProspect = await prospectService.createProspect({
-                            name: customerName,
-                            phone: customerPhone,
-                            email: customerEmail || null,
-                            city: customerCity || null,
-                            state: customerState || null,
-                            neighborhood: customerNeighborhood || null,
-                            status: 'novo'
-                        });
-                        prospectId = newProspect.id;
-                    }
+                    // Executa com timeout de 8 segundos para não bloquear o save principal
+                    const prospectResult = await Promise.race([
+                        (async () => {
+                            const existing = await prospectService.findProspectByPhone(customerPhone);
+                            if (existing) {
+                                // Atualizar dados do prospect com os mais recentes do orçamento
+                                await prospectService.updateProspect(existing.id, {
+                                    name: customerName,
+                                    email: customerEmail || existing.email,
+                                    city: customerCity || existing.city,
+                                    state: customerState || existing.state,
+                                    neighborhood: customerNeighborhood || existing.neighborhood
+                                });
+                                return existing.id;
+                            } else {
+                                // Criar novo prospect auto-capturado
+                                const newProspect = await prospectService.createProspect({
+                                    name: customerName,
+                                    phone: customerPhone,
+                                    email: customerEmail || null,
+                                    city: customerCity || null,
+                                    state: customerState || null,
+                                    neighborhood: customerNeighborhood || null,
+                                    status: 'novo'
+                                });
+                                return newProspect.id;
+                            }
+                        })(),
+                        new Promise<null>((resolve) => setTimeout(() => {
+                            console.warn('[Budget Save] Prospect sync timeout (8s) — salvando orçamento sem vínculo');
+                            resolve(null);
+                        }, 8000))
+                    ]);
+                    prospectId = prospectResult;
                 } catch (e) {
-                    console.warn("Falha silenciosa ao sincronizar prospect", e);
+                    console.warn("[Budget Save] Falha silenciosa ao sincronizar prospect:", e);
+                    // Continua sem prospect_id — o orçamento será salvo mesmo assim
                 }
             }
+
+            console.log('[Budget Save] Building payload...', { prospectId, kitId: selectedKitId });
 
             const payload: any = {
                 prospect_id: prospectId,
@@ -429,7 +450,7 @@ export default function NewBudget() {
                 installation_location: installationLocation,
                 construction_type: constructionType,
                 supply_type: supplyType,
-                installation_warranty: Number(installationWarranty),
+                installation_warranty: Number(installationWarranty) || 0,
 
                 proposal_validity_days: Number(validityDays),
                 installation_notes: includeNotes ? (notes || null) : null,
@@ -465,10 +486,13 @@ export default function NewBudget() {
             };
 
             if (isEditing && id) {
+                console.log('[Budget Save] Updating budget:', id);
                 await budgetService.updateBudget(id, payload);
                 setSuccessMessage('Orçamento atualizado com sucesso!');
             } else {
+                console.log('[Budget Save] Creating new budget...');
                 const createdBudget = await budgetService.createBudget(payload);
+                console.log('[Budget Save] Budget created:', createdBudget?.id);
 
                 // Upload audio if recorded (non-blocking)
                 if (audioBlob && createdBudget?.id) {
@@ -499,17 +523,19 @@ export default function NewBudget() {
             }, 1500);
 
         } catch (err: any) {
-            console.error("Erro ao salvar orçamento:", err);
+            console.error("[Budget Save] Erro ao salvar orçamento:", err);
             let errMsg = "Erro desconhecido ao salvar o orçamento.";
             if (err instanceof Error) {
                 errMsg = err.message;
-            } else if (err && typeof err === 'object' && err.message) {
-                errMsg = err.message;
+            } else if (err && typeof err === 'object') {
+                // Supabase PostgrestError tem fields: message, details, hint, code
+                errMsg = err.message || err.details || err.hint || JSON.stringify(err);
             } else if (typeof err === 'string') {
                 errMsg = err;
             }
             setError(errMsg);
         } finally {
+            clearTimeout(timeoutId);
             setIsSubmitting(false);
         }
     };
