@@ -45,24 +45,32 @@ export const budgetService = {
         return data as SolarBudget;
     },
 
-    async createBudget(budget: Omit<SolarBudget, 'id' | 'created_at' | 'created_by' | 'created_by_name' | 'created_by_avatar' | 'kit' | 'status'>) {
-        // Obter usuário logado atual para o created_by de forma segura e rápida (instantâneo do local cache)
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
+    async createBudget(budget: Record<string, any>) {
+        // Se o chamador já forneceu created_by/status (pré-resolvido),
+        // pula getSession() que pode travar ao renovar token expirado.
+        let insertPayload: Record<string, any>;
 
-        // Tentar buscar informações do perfil (user_metadata) 
-        const createdByName = user?.user_metadata?.full_name || user?.email || 'Sistema';
-        const createdByAvatar = user?.user_metadata?.avatar_url || null;
-
-        const { data, error } = await supabase
-            .from('solar_budgets')
-            .insert([{
+        if (budget.created_by !== undefined && budget.status !== undefined) {
+            // Campos de usuário já resolvidos pelo chamador
+            insertPayload = { ...budget };
+        } else {
+            // Fallback: obter sessão (pode travar se token expirado)
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
+            const createdByName = user?.user_metadata?.full_name || user?.email || 'Sistema';
+            const createdByAvatar = user?.user_metadata?.avatar_url || null;
+            insertPayload = {
                 ...budget,
                 status: 'novo',
                 created_by: user?.id || null,
                 created_by_name: createdByName,
                 created_by_avatar: createdByAvatar
-            }])
+            };
+        }
+
+        const { data, error } = await supabase
+            .from('solar_budgets')
+            .insert([insertPayload])
             .select()
             .single();
 

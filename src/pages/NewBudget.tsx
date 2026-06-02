@@ -9,6 +9,7 @@ import { kitService } from '@/services/kitService';
 import { SolarBudget, SolarKit, CustomBudgetCard } from '@/lib/types';
 import AudioRecorderModal from '@/components/AudioRecorderModal';
 import { confirmAction } from '@/components/ui/ConfirmDialog';
+import { supabase } from '@/lib/supabase';
 
 const DEFAULT_INSTALLATION_LOCATIONS = [
     'telhado fibrocimento', 'telhado colonial', 'telhado de concreto',
@@ -407,6 +408,21 @@ export default function NewBudget() {
 
         log('Iniciando salvamento de orçamento...');
 
+        // PRE-RESOLVER sessão do usuário ANTES de tudo (evita getSession travar dentro do createBudget)
+        let authUser: any = null;
+        try {
+            log('Obtendo sessão do usuário...');
+            const sessionResult = await Promise.race([
+                supabase.auth.getSession(),
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout ao obter sessão (5s)')), 5000))
+            ]);
+            authUser = (sessionResult as any)?.data?.session?.user || null;
+            log('Sessão obtida com sucesso', { userId: authUser?.id, email: authUser?.email });
+        } catch (authErr: any) {
+            log('Falha ao obter sessão (prosseguindo sem user info)', authErr?.message);
+            // Continua sem user info - o createBudget vai inserir com created_by null
+        }
+
         // Timeout de segurança global: 30s
         const timeoutId = setTimeout(() => {
             setIsSubmitting(false);
@@ -534,7 +550,13 @@ export default function NewBudget() {
                 pix_mode: pixMode,
                 pix_manual_value: Number(pixManualValue),
                 pix_enabled: pixEnabled,
-                financing_options: financingOptions
+                financing_options: financingOptions,
+
+                // Campos de autenticação pré-resolvidos (evita getSession travar no createBudget)
+                status: 'novo',
+                created_by: authUser?.id || null,
+                created_by_name: authUser?.user_metadata?.full_name || authUser?.email || 'Sistema',
+                created_by_avatar: authUser?.user_metadata?.avatar_url || null
             };
 
             log('Payload construído com sucesso.');
