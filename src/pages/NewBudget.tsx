@@ -362,10 +362,20 @@ export default function NewBudget() {
 
         setIsSubmitting(true);
 
-        // Timeout de segurança: se a operação levar mais de 30s, cancela com erro visível
+        const saveLogs: string[] = [];
+        const log = (msg: string, data?: any) => {
+            const time = new Date().toLocaleTimeString();
+            const logMsg = `[${time}] ${msg}${data ? ': ' + (typeof data === 'object' ? JSON.stringify(data) : data) : ''}`;
+            saveLogs.push(logMsg);
+            console.log(`[Budget Save] ${msg}`, data || '');
+        };
+
+        log('Iniciando salvamento de orçamento...');
+
+        // Timeout de segurança global: 30s
         const timeoutId = setTimeout(() => {
             setIsSubmitting(false);
-            setError('A operação está demorando demais. Verifique sua conexão com a internet e tente novamente.');
+            setError(`A operação está demorando demais. Histórico de logs:\n${saveLogs.join('\n')}`);
         }, 30000);
 
         try {
@@ -373,15 +383,19 @@ export default function NewBudget() {
             let finalImageUrls = [...(isEditing ? imagePreviewUrls.filter(url => !url.startsWith('blob:')) : [])];
             
             if (imageFiles.length > 0) {
-                console.log('[Budget Save] Uploading images...');
-                const uploadedUrls = await budgetService.uploadBudgetImages(imageFiles);
+                log('Fazendo upload de imagens de capa...', { count: imageFiles.length });
+                const uploadedUrls = await Promise.race([
+                    budgetService.uploadBudgetImages(imageFiles),
+                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao enviar imagens (15s)')), 15000))
+                ]);
                 finalImageUrls = [...finalImageUrls, ...uploadedUrls];
-                console.log('[Budget Save] Images uploaded:', uploadedUrls.length);
+                log('Upload de imagens concluído com sucesso', { count: uploadedUrls.length });
             }
 
             // Finalizar workspace atual se for multi
             let finalOptions = [...multiOptions];
             if (isMulti) {
+                log('Salvando workspace atual como opção múltipla...');
                 finalOptions[activeOptionIndex] = getCurrentWorkspaceAsOption(
                     finalOptions[activeOptionIndex].id,
                     finalOptions[activeOptionIndex].name
@@ -389,17 +403,18 @@ export default function NewBudget() {
             }
 
             // Tratar Prospect (Auto-criação ou Sincronização) — NÃO BLOQUEANTE
-            // Se falhar ou demorar, o orçamento é salvo sem vínculo ao prospect
             let prospectId = prefillProspect?.id || null;
 
             if (!prospectId && customerPhone) {
+                log('Sincronizando prospect por telefone...', { phone: customerPhone });
                 try {
                     // Executa com timeout de 8 segundos para não bloquear o save principal
                     const prospectResult = await Promise.race([
                         (async () => {
+                            log('Buscando prospect existente no banco...');
                             const existing = await prospectService.findProspectByPhone(customerPhone);
                             if (existing) {
-                                // Atualizar dados do prospect com os mais recentes do orçamento
+                                log('Prospect encontrado. Atualizando dados...', { id: existing.id });
                                 await prospectService.updateProspect(existing.id, {
                                     name: customerName,
                                     email: customerEmail || existing.email,
@@ -407,9 +422,10 @@ export default function NewBudget() {
                                     state: customerState || existing.state,
                                     neighborhood: customerNeighborhood || existing.neighborhood
                                 });
+                                log('Prospect atualizado com sucesso');
                                 return existing.id;
                             } else {
-                                // Criar novo prospect auto-capturado
+                                log('Prospect não encontrado. Criando novo prospect...');
                                 const newProspect = await prospectService.createProspect({
                                     name: customerName,
                                     phone: customerPhone,
@@ -419,23 +435,24 @@ export default function NewBudget() {
                                     neighborhood: customerNeighborhood || null,
                                     status: 'novo'
                                 });
+                                log('Novo prospect criado com sucesso', { id: newProspect.id });
                                 return newProspect.id;
                             }
                         })(),
                         new Promise<null>((resolve) => setTimeout(() => {
-                            console.warn('[Budget Save] Prospect sync timeout (8s) — salvando orçamento sem vínculo');
+                            log('Timeout de 8 segundos na sincronização do prospect atingido. Pulando vínculo...');
                             resolve(null);
                         }, 8000))
                     ]);
                     prospectId = prospectResult;
-                } catch (e) {
-                    console.warn("[Budget Save] Falha silenciosa ao sincronizar prospect:", e);
-                    // Continua sem prospect_id — o orçamento será salvo mesmo assim
+                } catch (e: any) {
+                    log('Falha ao sincronizar prospect (ignorado)', e?.message || e);
                 }
+            } else if (prospectId) {
+                log('Utilizando prospect pré-selecionado', { id: prospectId });
             }
 
-            console.log('[Budget Save] Building payload...', { prospectId, kitId: selectedKitId });
-
+            log('Construindo payload final do orçamento...');
             const payload: any = {
                 prospect_id: prospectId,
                 customer_name: customerName,
@@ -485,21 +502,35 @@ export default function NewBudget() {
                 financing_options: financingOptions
             };
 
+            log('Payload construído com sucesso.');
+
             if (isEditing && id) {
-                console.log('[Budget Save] Updating budget:', id);
-                await budgetService.updateBudget(id, payload);
+                log('Atualizando orçamento existente...', { id });
+                await Promise.race([
+                    budgetService.updateBudget(id, payload),
+                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao atualizar orçamento (15s)')), 15000))
+                ]);
+                log('Orçamento atualizado com sucesso.');
                 setSuccessMessage('Orçamento atualizado com sucesso!');
             } else {
-                console.log('[Budget Save] Creating new budget...');
-                const createdBudget = await budgetService.createBudget(payload);
-                console.log('[Budget Save] Budget created:', createdBudget?.id);
+                log('Enviando requisição de criação de novo orçamento...');
+                const createdBudget = await Promise.race([
+                    budgetService.createBudget(payload),
+                    new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao criar orçamento (15s)')), 15000))
+                ]);
+                log('Orçamento criado com sucesso', { id: createdBudget?.id });
 
                 // Upload audio if recorded (non-blocking)
                 if (audioBlob && createdBudget?.id) {
+                    log('Enviando gravação de áudio explicativo...', { size: audioBlob.size });
                     try {
-                        await budgetService.uploadBudgetAudio(createdBudget.id, audioBlob);
-                    } catch (audioErr) {
-                        console.warn('Falha ao enviar áudio:', audioErr);
+                        await Promise.race([
+                            budgetService.uploadBudgetAudio(createdBudget.id, audioBlob),
+                            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao enviar áudio (10s)')), 10000))
+                        ]);
+                        log('Áudio enviado e vinculado com sucesso');
+                    } catch (audioErr: any) {
+                        log('Falha ao enviar áudio', audioErr?.message || audioErr);
                         setError('Orçamento salvo, mas o áudio não foi enviado. Verifique se o bucket "budget_audios" existe no Supabase Storage.');
                     }
                 }
@@ -509,31 +540,36 @@ export default function NewBudget() {
 
             // Upload audio for edited budgets (non-blocking)
             if (isEditing && id && audioBlob) {
+                log('Enviando áudio atualizado para o orçamento editado...', { size: audioBlob.size });
                 try {
-                    await budgetService.uploadBudgetAudio(id, audioBlob);
-                } catch (audioErr) {
-                    console.warn('Falha ao enviar áudio na edição:', audioErr);
+                    await Promise.race([
+                        budgetService.uploadBudgetAudio(id, audioBlob),
+                        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao enviar áudio (10s)')), 10000))
+                    ]);
+                    log('Áudio editado enviado com sucesso');
+                } catch (audioErr: any) {
+                    log('Falha ao enviar áudio na edição', audioErr?.message || audioErr);
                     setError('Orçamento salvo, mas o áudio não foi enviado. Verifique se o bucket "budget_audios" existe no Supabase Storage.');
                 }
             }
 
+            log('Concluído. Redirecionando em 1.5 segundos...');
             // Redireciona para visão geral após 1.5s
             setTimeout(() => {
                 navigate('/budget/list');
             }, 1500);
 
         } catch (err: any) {
-            console.error("[Budget Save] Erro ao salvar orçamento:", err);
+            log('Erro no salvamento', err?.message || err);
             let errMsg = "Erro desconhecido ao salvar o orçamento.";
             if (err instanceof Error) {
                 errMsg = err.message;
             } else if (err && typeof err === 'object') {
-                // Supabase PostgrestError tem fields: message, details, hint, code
                 errMsg = err.message || err.details || err.hint || JSON.stringify(err);
             } else if (typeof err === 'string') {
                 errMsg = err;
             }
-            setError(errMsg);
+            setError(`${errMsg}\n\nLogs do processo:\n${saveLogs.join('\n')}`);
         } finally {
             clearTimeout(timeoutId);
             setIsSubmitting(false);
@@ -646,9 +682,11 @@ export default function NewBudget() {
                     successMessage ? 'bg-emerald-500 border-emerald-600' : 
                     'bg-blue-600 border-blue-700'
                 }`}>
-                    <div className="flex items-center gap-2 text-left">
-                        {isSubmitting && !successMessage && !error && <Loader2 className="w-4 h-4 animate-spin" />}
-                        <span>{error ? `Erro ao salvar: ${error}` : successMessage ? 'Salvo com sucesso' : 'Salvando...'}</span>
+                    <div className="flex items-start gap-2 text-left max-w-full">
+                        {isSubmitting && !successMessage && !error && <Loader2 className="w-4 h-4 animate-spin mt-0.5" />}
+                        <span className="whitespace-pre-wrap font-medium text-xs break-all max-h-[30vh] overflow-y-auto pr-2">
+                            {error ? `Erro ao salvar: ${error}` : successMessage ? 'Salvo com sucesso' : 'Salvando...'}
+                        </span>
                     </div>
                     {(error || successMessage) && (
                         <button 
