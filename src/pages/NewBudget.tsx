@@ -29,6 +29,41 @@ function saveInstallationLocations(locations: string[]) {
     localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
 }
 
+const fetchLogs: string[] = [];
+
+// Interceptor global do fetch para diagnóstico
+if (typeof window !== 'undefined' && !(window as any).__fetchIntercepted) {
+    (window as any).__fetchIntercepted = true;
+    const originalFetch = window.fetch;
+    window.fetch = async function (...args) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url || (args[0] as any).toString();
+        const options = args[1] || {};
+        const method = options.method || 'GET';
+        
+        // Log short URL for clean display
+        const shortUrl = url.replace('https://bfsddnjwjbqlxfxxlorf.supabase.co', '');
+        const time = new Date().toLocaleTimeString();
+        
+        // Evitar logar excesso de requests periódicas não relacionadas ao salvamento
+        if (shortUrl.includes('/rest/v1/prospects') || shortUrl.includes('/rest/v1/solar_budgets') || shortUrl.includes('/storage/v1/object/budget_audios')) {
+            fetchLogs.push(`[${time}] FETCH START: ${method} ${shortUrl}`);
+        }
+        
+        try {
+            const response = await originalFetch(...args);
+            if (shortUrl.includes('/rest/v1/prospects') || shortUrl.includes('/rest/v1/solar_budgets') || shortUrl.includes('/storage/v1/object/budget_audios')) {
+                fetchLogs.push(`[${time}] FETCH SUCCESS: ${method} ${shortUrl} -> Status ${response.status}`);
+            }
+            return response;
+        } catch (err: any) {
+            if (shortUrl.includes('/rest/v1/prospects') || shortUrl.includes('/rest/v1/solar_budgets') || shortUrl.includes('/storage/v1/object/budget_audios')) {
+                fetchLogs.push(`[${time}] FETCH ERROR: ${method} ${shortUrl} -> ${err?.message || err}`);
+            }
+            throw err;
+        }
+    };
+}
+
 const CONSTRUCTION_TYPES = [
     'residencial', 'comercial', 'industrial',
     'predio residencial', 'predio comercial', 'rural'
@@ -375,7 +410,7 @@ export default function NewBudget() {
         // Timeout de segurança global: 30s
         const timeoutId = setTimeout(() => {
             setIsSubmitting(false);
-            setError(`A operação está demorando demais. Histórico de logs:\n${saveLogs.join('\n')}`);
+            setError(`A operação está demorando demais. Histórico de logs:\n${saveLogs.join('\n')}\n\nLogs de Rede (Fetch):\n${fetchLogs.join('\n')}`);
         }, 30000);
 
         try {
@@ -569,7 +604,7 @@ export default function NewBudget() {
             } else if (typeof err === 'string') {
                 errMsg = err;
             }
-            setError(`${errMsg}\n\nLogs do processo:\n${saveLogs.join('\n')}`);
+            setError(`${errMsg}\n\nLogs do processo:\n${saveLogs.join('\n')}\n\nLogs de Rede (Fetch):\n${fetchLogs.join('\n')}`);
         } finally {
             clearTimeout(timeoutId);
             setIsSubmitting(false);
