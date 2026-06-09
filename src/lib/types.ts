@@ -479,7 +479,7 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: Te
 
 export interface SurveyStep {
     id: string;
-    type: 'images' | 'video' | 'audio' | 'text';
+    type: 'images' | 'video' | 'audio' | 'text' | 'explanation';
     title: string;
     description: string;
     min_qty?: number;

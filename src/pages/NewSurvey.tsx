@@ -12,7 +12,8 @@ import {
     Music,
     FileText,
     ChevronLeft,
-    CheckCircle2
+    CheckCircle2,
+    BookOpen
 } from "lucide-react";
 import { surveyService } from "@/services/surveyService";
 import { budgetService } from "@/services/budgetService";
@@ -132,19 +133,21 @@ export default function NewSurvey() {
     };
 
     // Add a new step
-    const addStep = (type: 'images' | 'video' | 'audio' | 'text') => {
+    const addStep = (type: 'images' | 'video' | 'audio' | 'text' | 'explanation') => {
         const defaultTitle = {
             images: "Fotos do Local",
             video: "Vídeo do Local",
             audio: "Explicação em Áudio",
-            text: "Detalhes Adicionais"
+            text: "Detalhes Adicionais",
+            explanation: "Orientações Importantes"
         }[type];
 
         const defaultDescription = {
             images: "Envie fotos nítidas do local solicitado.",
             video: "Grave um vídeo panorâmico detalhando o espaço.",
             audio: "Grave uma mensagem explicando os detalhes do local.",
-            text: "Descreva brevemente detalhes ou dificuldades observadas."
+            text: "Descreva brevemente detalhes ou dificuldades observadas.",
+            explanation: "Leia atentamente as instruções a seguir para realizar o próximo passo corretamente."
         }[type];
 
         const newStep: SurveyStep = {
@@ -152,12 +155,12 @@ export default function NewSurvey() {
             type,
             title: defaultTitle,
             description: defaultDescription,
-            required: true,
+            required: type !== 'explanation',
             ...(type === 'images' ? { min_qty: 1 } : {})
         };
 
         setSteps([...steps, newStep]);
-        emitToast({ title: "Etapa Adicionada", description: `Etapa de ${type} incluída com sucesso.` });
+        emitToast({ title: "Etapa Adicionada", description: `Etapa de ${type === 'explanation' ? 'explicação' : type} incluída com sucesso.` });
     };
 
     // Remove a step
@@ -373,6 +376,14 @@ export default function NewSurvey() {
 
                             <button
                                 type="button"
+                                onClick={() => addStep('explanation')}
+                                className="px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" /> + Explicação
+                            </button>
+
+                            <button
+                                type="button"
                                 onClick={() => addStep('images')}
                                 className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
                             >
@@ -445,6 +456,12 @@ export default function NewSurvey() {
 
                                         {/* Tipo da Etapa (Badge visual) */}
                                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 min-w-[130px] justify-center lg:justify-start">
+                                            {step.type === 'explanation' && (
+                                                <>
+                                                    <BookOpen className="w-4 h-4 text-indigo-400" />
+                                                    <span className="text-xs font-semibold text-indigo-400">Explicação</span>
+                                                </>
+                                            )}
                                             {step.type === 'images' && (
                                                 <>
                                                     <Image className="w-4 h-4 text-emerald-400" />
@@ -475,60 +492,66 @@ export default function NewSurvey() {
                                          <div className="flex-1 flex flex-col gap-3 w-full">
                                              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full items-end">
                                                  <div className="md:col-span-4">
-                                                     <label className="text-[11px] font-medium text-white/40 block mb-1">Título da Etapa (Cliente)</label>
+                                                     <label className="text-[11px] font-medium text-white/40 block mb-1">
+                                                         {step.type === 'explanation' ? 'Título da Orientação' : 'Título da Etapa (Cliente)'}
+                                                     </label>
                                                      <input
                                                          type="text"
                                                          value={step.title}
                                                          onChange={(e) => updateStepField(step.id, 'title', e.target.value)}
-                                                         placeholder="Ex: Foto do Relógio Padrão"
+                                                         placeholder={step.type === 'explanation' ? "Ex: Como tirar foto do telhado" : "Ex: Foto do Relógio Padrão"}
                                                          required
                                                          className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
                                                      />
                                                  </div>
 
-                                                 <div className="md:col-span-5">
-                                                     <label className="text-[11px] font-medium text-white/40 block mb-1">Instruções para o Cliente</label>
+                                                 <div className={step.type === 'explanation' ? "md:col-span-8" : "md:col-span-5"}>
+                                                     <label className="text-[11px] font-medium text-white/40 block mb-1">
+                                                         {step.type === 'explanation' ? 'Conteúdo da Explicação' : 'Instruções para o Cliente'}
+                                                     </label>
                                                      <input
                                                          type="text"
                                                          value={step.description}
                                                          onChange={(e) => updateStepField(step.id, 'description', e.target.value)}
-                                                         placeholder="Ex: Tire a foto mostrando bem os disjuntores."
+                                                         placeholder={step.type === 'explanation' ? "Ex: No próximo passo, procure focar bem..." : "Ex: Tire a foto mostrando bem os disjuntores."}
                                                          required
                                                          className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
                                                      />
                                                  </div>
 
-                                                 <div className="md:col-span-3 flex flex-row items-center gap-4 justify-start md:justify-end h-full pb-1 md:pb-0">
-                                                     {step.type === 'images' && (
-                                                         <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl px-2.5 py-1.5 h-[38px]">
-                                                             <span className="text-[11px] text-white/40 whitespace-nowrap">Mínimo</span>
+                                                 {step.type !== 'explanation' && (
+                                                     <div className="md:col-span-3 flex flex-row items-center gap-4 justify-start md:justify-end h-full pb-1 md:pb-0">
+                                                         {step.type === 'images' && (
+                                                             <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl px-2.5 py-1.5 h-[38px]">
+                                                                 <span className="text-[11px] text-white/40 whitespace-nowrap">Mínimo</span>
+                                                                 <input
+                                                                     type="number"
+                                                                     min={1}
+                                                                     max={15}
+                                                                     value={step.min_qty || 1}
+                                                                     onChange={(e) => updateStepField(step.id, 'min_qty', parseInt(e.target.value) || 1)}
+                                                                     className="bg-slate-950 border border-white/10 rounded px-1.5 py-0.5 text-center text-xs text-white w-10 focus:outline-none focus:border-primary transition-colors"
+                                                                 />
+                                                             </div>
+                                                         )}
+                                                         
+                                                         <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2 h-[38px]">
                                                              <input
-                                                                 type="number"
-                                                                 min={1}
-                                                                 max={15}
-                                                                 value={step.min_qty || 1}
-                                                                 onChange={(e) => updateStepField(step.id, 'min_qty', parseInt(e.target.value) || 1)}
-                                                                 className="bg-slate-950 border border-white/10 rounded px-1.5 py-0.5 text-center text-xs text-white w-10 focus:outline-none focus:border-primary transition-colors"
+                                                                 type="checkbox"
+                                                                 checked={step.required}
+                                                                 onChange={(e) => updateStepField(step.id, 'required', e.target.checked)}
+                                                                 className="rounded border-white/10 bg-slate-950 text-primary focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                                                              />
-                                                         </div>
-                                                     )}
-                                                     
-                                                     <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2 h-[38px]">
-                                                         <input
-                                                             type="checkbox"
-                                                             checked={step.required}
-                                                             onChange={(e) => updateStepField(step.id, 'required', e.target.checked)}
-                                                             className="rounded border-white/10 bg-slate-950 text-primary focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                                                         />
-                                                         <span className="text-[11px] text-white/40 whitespace-nowrap">Obrigatório</span>
-                                                     </label>
-                                                 </div>
+                                                             <span className="text-[11px] text-white/40 whitespace-nowrap">Obrigatório</span>
+                                                         </label>
+                                                     </div>
+                                                 )}
                                              </div>
 
-                                             {/* Sub-linha para Foto de Exemplo (se for tipo images) */}
-                                             {step.type === 'images' && (
+                                             {/* Sub-linha para Foto de Exemplo (se for tipo explanation) */}
+                                             {step.type === 'explanation' && (
                                                  <div className="pt-2.5 border-t border-white/[0.04] flex items-center gap-3 w-full">
-                                                     <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Foto de Exemplo:</span>
+                                                     <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Foto/Imagem de Exemplo:</span>
                                                      {step.example_image_url ? (
                                                          <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 rounded-xl p-1 pr-3">
                                                              <a 
@@ -551,7 +574,7 @@ export default function NewSurvey() {
                                                          </div>
                                                      ) : (
                                                          <label className="cursor-pointer px-2.5 py-1 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-amber-500/30 text-white/70 hover:text-white rounded-lg text-[10px] font-semibold flex items-center gap-1.5 transition-colors">
-                                                             <Plus className="w-3 h-3 text-amber-500" />
+                                                             <Plus className="w-3.5 h-3.5 text-amber-500" />
                                                              <span>Adicionar Foto de Exemplo</span>
                                                              <input 
                                                                  type="file" 
