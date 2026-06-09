@@ -76,15 +76,26 @@ export const surveyService = {
 
     async deleteSurvey(id: string) {
         // 1. Listar arquivos do bucket storage correspondentes à vistoria
-        const { data: files } = await supabase.storage
+        // O cliente envia mídias para a pasta 'survey_files/${id}' dentro do bucket 'survey_files'
+        const folderPath = `survey_files/${id}`;
+        
+        const { data: files, error: listError } = await supabase.storage
             .from('survey_files')
-            .list(id);
+            .list(folderPath);
+
+        if (listError) {
+            console.error("Erro ao listar arquivos do storage:", listError);
+        }
 
         if (files && files.length > 0) {
-            const filePaths = files.map(f => `${id}/${f.name}`);
-            await supabase.storage
+            const filePaths = files.map(f => `${folderPath}/${f.name}`);
+            const { error: removeError } = await supabase.storage
                 .from('survey_files')
                 .remove(filePaths);
+                
+            if (removeError) {
+                console.error("Erro ao remover arquivos do storage:", removeError);
+            }
         }
 
         // 2. Excluir registro do banco de dados
