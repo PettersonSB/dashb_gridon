@@ -198,7 +198,7 @@ export default function NewSurvey() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="animate-fade-in space-y-6 max-w-4xl pb-20">
+        <form onSubmit={handleSubmit} className="animate-fade-in space-y-6 w-full pb-20">
             {/* Header Area */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.04] pb-6 mb-4">
                 <div className="flex items-center gap-3">
@@ -232,22 +232,25 @@ export default function NewSurvey() {
                 </button>
             </div>
 
-            {/* Content Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Layout Reorganizado: Dados do Cliente no topo, Etapas abaixo */}
+            <div className="space-y-6">
                 
-                {/* Left side: Client Info */}
-                <div className="md:col-span-1 space-y-5">
-                    <div className="glass-card p-6 space-y-5">
-                        <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Dados do Cliente</h3>
-                        
+                {/* 1ª Linha: Dados do Cliente (Horizontal) */}
+                <div className="glass-card p-6 space-y-5">
+                    <div className="flex items-center gap-2 border-b border-white/[0.04] pb-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Dados do Cliente</h3>
+                    </div>
+                    
+                    <div className={`grid grid-cols-1 ${(!isEditing && budgets.length > 0) ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>
                         {/* Auto Prefill Selector */}
-                        {!isEditing && budgets.length > 0 && (
+                        {!isEditing && budgets.length > 0 ? (
                             <div>
-                                <label className="form-label">Preencher de um Orçamento</label>
+                                <label className="form-label text-xs">Preencher de um Orçamento</label>
                                 <select
                                     value={selectedBudgetId}
                                     onChange={(e) => handleBudgetChange(e.target.value)}
-                                    className="form-input bg-slate-900 border-white/10 text-white/80"
+                                    className="form-input bg-slate-900 border-white/10 text-white/80 h-[46px]"
                                 >
                                     <option value="">-- Selecione para preencher --</option>
                                     {budgets.map(b => (
@@ -257,208 +260,228 @@ export default function NewSurvey() {
                                     ))}
                                 </select>
                             </div>
-                        )}
+                        ) : null}
 
                         <div>
-                            <label className="form-label">Nome Completo</label>
+                            <label className="form-label text-xs">Nome Completo</label>
                             <input
                                 type="text"
                                 value={customerName}
                                 onChange={(e) => setCustomerName(e.target.value)}
                                 required
                                 placeholder="Ex: Petterson SB"
-                                className="form-input"
+                                className="form-input h-[46px]"
                             />
                         </div>
 
                         <div>
-                            <label className="form-label">Telefone (WhatsApp)</label>
+                            <label className="form-label text-xs">Telefone (WhatsApp)</label>
                             <input
                                 type="text"
                                 value={customerPhone}
                                 onChange={(e) => setCustomerPhone(e.target.value)}
                                 required
                                 placeholder="Ex: 61992387499"
-                                className="form-input"
+                                className="form-input h-[46px]"
                             />
                         </div>
 
                         <div>
-                            <label className="form-label">Email (Opcional)</label>
+                            <label className="form-label text-xs">Email (Opcional)</label>
                             <input
                                 type="email"
                                 value={customerEmail}
                                 onChange={(e) => setCustomerEmail(e.target.value)}
                                 placeholder="Ex: cliente@email.com"
-                                className="form-input"
+                                className="form-input h-[46px]"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Right side: Dynamic Step Builder */}
-                <div className="md:col-span-2 space-y-5">
-                    <div className="glass-card p-6 space-y-6">
-                        <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
-                            <div>
-                                <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Etapas da Vistoria</h3>
-                                <p className="text-xs text-white/30 mt-1">Defina quais mídias serão solicitadas e em qual ordem.</p>
+                {/* 2ª Linha: Dynamic Step Builder (Etapas da Vistoria) */}
+                <div className="glass-card p-6 space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.04] pb-4">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Etapas da Vistoria</h3>
                             </div>
-                            
-                            {/* Add Step Actions */}
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => addStep('images')}
-                                    className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> +Fotos
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => addStep('video')}
-                                    className="px-2.5 py-1.5 bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> +Vídeo
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => addStep('audio')}
-                                    className="px-2.5 py-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> +Áudio
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => addStep('text')}
-                                    className="px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> +Texto
-                                </button>
-                            </div>
+                            <p className="text-xs text-white/30 mt-1">Defina quais mídias serão solicitadas e em qual ordem.</p>
                         </div>
+                        
+                        {/* Add Step Actions */}
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => addStep('images')}
+                                className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" /> + Fotos
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => addStep('video')}
+                                className="px-3 py-2 bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" /> + Vídeo
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => addStep('audio')}
+                                className="px-3 py-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" /> + Áudio
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => addStep('text')}
+                                className="px-3 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" /> + Texto
+                            </button>
+                        </div>
+                    </div>
 
-                        {/* List of Builder Steps */}
-                        {steps.length === 0 ? (
-                            <div className="text-center py-10 border-2 border-dashed border-white/5 rounded-xl text-white/30 text-sm">
-                                Nenhuma etapa criada ainda. Use os botões acima para adicionar solicitações.
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {steps.map((step, index) => {
-                                    const isFirst = index === 0;
-                                    const isLast = index === steps.length - 1;
+                    {/* List of Builder Steps */}
+                    {steps.length === 0 ? (
+                        <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-2xl text-white/30 text-sm">
+                            Nenhuma etapa criada ainda. Use os botões acima para adicionar solicitações.
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {steps.map((step, index) => {
+                                const isFirst = index === 0;
+                                const isLast = index === steps.length - 1;
 
-                                    return (
-                                        <div key={step.id} className="p-4 rounded-xl border border-white/[0.04] bg-slate-900/30 flex gap-4 transition-all hover:border-white/[0.08] relative group">
-                                            {/* Reorder Buttons Column */}
-                                            <div className="flex flex-col justify-center items-center gap-2 pr-1">
-                                                <button
-                                                    type="button"
-                                                    disabled={isFirst}
-                                                    onClick={() => moveStep(index, 'up')}
-                                                    className="p-1 rounded bg-white/5 text-white/40 hover:bg-white/10 hover:text-white disabled:opacity-20 disabled:hover:bg-white/5 disabled:hover:text-white/40 transition-colors"
-                                                    title="Mover para cima"
-                                                >
-                                                    <ArrowUp className="w-3.5 h-3.5" />
-                                                </button>
-                                                <span className="text-[10px] font-bold text-white/20 select-none">
-                                                    {index + 1}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    disabled={isLast}
-                                                    onClick={() => moveStep(index, 'down')}
-                                                    className="p-1 rounded bg-white/5 text-white/40 hover:bg-white/10 hover:text-white disabled:opacity-20 disabled:hover:bg-white/5 disabled:hover:text-white/40 transition-colors"
-                                                    title="Mover para baixo"
-                                                >
-                                                    <ArrowDown className="w-3.5 h-3.5" />
-                                                </button>
+                                return (
+                                    <div 
+                                        key={step.id} 
+                                        className="p-4 rounded-2xl border border-white/[0.04] bg-slate-900/30 flex flex-col lg:flex-row items-stretch lg:items-center gap-4 transition-all hover:border-white/[0.1] hover:bg-slate-900/50 relative group"
+                                    >
+                                        {/* Reorder Buttons Column */}
+                                        <div className="flex flex-row lg:flex-col items-center justify-center gap-2 lg:gap-1.5 lg:pr-3 lg:border-r lg:border-white/5 lg:h-12 w-full lg:w-auto">
+                                            <button
+                                                type="button"
+                                                disabled={isFirst}
+                                                onClick={() => moveStep(index, 'up')}
+                                                className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white disabled:opacity-10 disabled:cursor-not-allowed transition-colors"
+                                                title="Mover para cima"
+                                            >
+                                                <ArrowUp className="w-3.5 h-3.5" />
+                                            </button>
+                                            <span className="text-xs font-mono font-bold text-white/40 select-none min-w-[20px] text-center">
+                                                {String(index + 1).padStart(2, '0')}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={isLast}
+                                                onClick={() => moveStep(index, 'down')}
+                                                className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white disabled:opacity-10 disabled:cursor-not-allowed transition-colors"
+                                                title="Mover para baixo"
+                                            >
+                                                <ArrowDown className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Tipo da Etapa (Badge visual) */}
+                                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 min-w-[130px] justify-center lg:justify-start">
+                                            {step.type === 'images' && (
+                                                <>
+                                                    <Image className="w-4 h-4 text-emerald-400" />
+                                                    <span className="text-xs font-semibold text-emerald-400">Fotos</span>
+                                                </>
+                                            )}
+                                            {step.type === 'video' && (
+                                                <>
+                                                    <Video className="w-4 h-4 text-sky-400" />
+                                                    <span className="text-xs font-semibold text-sky-400">Vídeo</span>
+                                                </>
+                                            )}
+                                            {step.type === 'audio' && (
+                                                <>
+                                                    <Music className="w-4 h-4 text-purple-400" />
+                                                    <span className="text-xs font-semibold text-purple-400">Áudio</span>
+                                                </>
+                                            )}
+                                            {step.type === 'text' && (
+                                                <>
+                                                    <FileText className="w-4 h-4 text-amber-400" />
+                                                    <span className="text-xs font-semibold text-amber-400">Texto</span>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Inputs Column */}
+                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 w-full items-end">
+                                            <div className="md:col-span-4">
+                                                <label className="text-[11px] font-medium text-white/40 block mb-1">Título da Etapa (Cliente)</label>
+                                                <input
+                                                    type="text"
+                                                    value={step.title}
+                                                    onChange={(e) => updateStepField(step.id, 'title', e.target.value)}
+                                                    placeholder="Ex: Foto do Relógio Padrão"
+                                                    required
+                                                    className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
+                                                />
                                             </div>
 
-                                            {/* Inputs Column */}
-                                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2">
-                                                        {step.type === 'images' && <Image className="w-4 h-4 text-emerald-400" />}
-                                                        {step.type === 'video' && <Video className="w-4 h-4 text-sky-400" />}
-                                                        {step.type === 'audio' && <Music className="w-4 h-4 text-purple-400" />}
-                                                        {step.type === 'text' && <FileText className="w-4 h-4 text-amber-400" />}
-                                                        <span className="text-xs font-bold text-white/50 uppercase tracking-wider">
-                                                            {step.type === 'images' ? 'Fotos' : step.type === 'video' ? 'Vídeo' : step.type === 'audio' ? 'Áudio' : 'Comentário'}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[11px] font-medium text-white/40 block mb-1">Título da Etapa (Cliente)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={step.title}
-                                                            onChange={(e) => updateStepField(step.id, 'title', e.target.value)}
-                                                            placeholder="Ex: Foto do Relógio Padrão"
-                                                            required
-                                                            className="bg-slate-950 border border-white/5 rounded-lg px-3 py-1.5 text-xs text-white/90 focus:outline-none focus:border-amber-500 w-full transition-colors"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <div className="flex justify-end items-center gap-4">
-                                                        {step.type === 'images' && (
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-[11px] text-white/40">Mínimo de fotos</span>
-                                                                <input
-                                                                    type="number"
-                                                                    min={1}
-                                                                    max={15}
-                                                                    value={step.min_qty || 1}
-                                                                    onChange={(e) => updateStepField(step.id, 'min_qty', parseInt(e.target.value) || 1)}
-                                                                    className="bg-slate-950 border border-white/5 rounded px-1.5 py-0.5 text-center text-xs text-white w-12 focus:outline-none focus:border-amber-500 transition-colors"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={step.required}
-                                                                onChange={(e) => updateStepField(step.id, 'required', e.target.checked)}
-                                                                className="rounded border-white/10 bg-slate-950 text-amber-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                                                            />
-                                                            <span className="text-[11px] text-white/40">Obrigatório</span>
-                                                        </label>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[11px] font-medium text-white/40 block mb-1">Instruções para o Cliente</label>
-                                                        <input
-                                                            type="text"
-                                                            value={step.description}
-                                                            onChange={(e) => updateStepField(step.id, 'description', e.target.value)}
-                                                            placeholder="Ex: Tire a foto mostrando bem os disjuntores."
-                                                            required
-                                                            className="bg-slate-950 border border-white/5 rounded-lg px-3 py-1.5 text-xs text-white/90 focus:outline-none focus:border-amber-500 w-full transition-colors"
-                                                        />
-                                                    </div>
-                                                </div>
+                                            <div className="md:col-span-5">
+                                                <label className="text-[11px] font-medium text-white/40 block mb-1">Instruções para o Cliente</label>
+                                                <input
+                                                    type="text"
+                                                    value={step.description}
+                                                    onChange={(e) => updateStepField(step.id, 'description', e.target.value)}
+                                                    placeholder="Ex: Tire a foto mostrando bem os disjuntores."
+                                                    required
+                                                    className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
+                                                />
                                             </div>
 
-                                            {/* Action Bin Column */}
-                                            <div className="flex items-center pl-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeStep(step.id)}
-                                                    className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                                                    title="Remover etapa"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                            <div className="md:col-span-3 flex flex-row items-center gap-4 justify-start md:justify-end h-full pb-1 md:pb-0">
+                                                {step.type === 'images' && (
+                                                    <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl px-2.5 py-1.5 h-[38px]">
+                                                        <span className="text-[11px] text-white/40 whitespace-nowrap">Mínimo</span>
+                                                        <input
+                                                            type="number"
+                                                            min={1}
+                                                            max={15}
+                                                            value={step.min_qty || 1}
+                                                            onChange={(e) => updateStepField(step.id, 'min_qty', parseInt(e.target.value) || 1)}
+                                                            className="bg-slate-950 border border-white/10 rounded px-1.5 py-0.5 text-center text-xs text-white w-10 focus:outline-none focus:border-primary transition-colors"
+                                                        />
+                                                    </div>
+                                                )}
+                                                
+                                                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2 h-[38px]">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={step.required}
+                                                        onChange={(e) => updateStepField(step.id, 'required', e.target.checked)}
+                                                        className="rounded border-white/10 bg-slate-950 text-primary focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                                                    />
+                                                    <span className="text-[11px] text-white/40 whitespace-nowrap">Obrigatório</span>
+                                                </label>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </div>
 
+                                        {/* Action Bin Column */}
+                                        <div className="flex items-center justify-end pl-2 border-t border-white/5 lg:border-t-0 pt-2 lg:pt-0 w-full lg:w-auto">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeStep(step.id)}
+                                                className="p-2 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                                                title="Remover etapa"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
         </form>
     );
