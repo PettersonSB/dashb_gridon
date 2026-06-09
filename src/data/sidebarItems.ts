@@ -43,7 +43,8 @@ export const sidebarItems: SidebarItem[] = [
             { label: 'Todos os Orçamentos', href: '/budget/list' },
             { label: 'Novo Orçamento', href: '/budget/new' },
             { label: 'Prospects', href: '/budget/prospects' },
-            { label: 'Kit Solar', href: '/budget/kits' }
+            { label: 'Kit Solar', href: '/budget/kits' },
+            { label: 'Vistorias', href: '/budget/surveys' }
         ],
     },
     {

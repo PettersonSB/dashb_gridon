@@ -56,6 +56,8 @@ export function usePermissions() {
             '/budget/new': ['budget', 'create'],
             '/budget/prospects': ['budget', 'prospects'],
             '/budget/kits': ['budget', 'kits'],
+            '/budget/surveys': ['budget', 'list'],
+            '/budget/surveys/new': ['budget', 'create'],
             '/devices/general': ['devices', 'general'],
             '/devices/clients': ['devices', 'clients'],
         };
@@ -68,7 +70,7 @@ export function usePermissions() {
         if (pathname.startsWith('/blog/edit/') || pathname.startsWith('/blog/new')) {
             return hasPermission('site', 'blog');
         }
-        if (pathname.startsWith('/budget/edit/')) {
+        if (pathname.startsWith('/budget/edit/') || pathname.startsWith('/budget/surveys/edit/')) {
             return hasPermission('budget', 'create');
         }
         if (pathname.startsWith('/budget/preview/')) {

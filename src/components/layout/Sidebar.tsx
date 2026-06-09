@@ -52,6 +52,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
         '/budget/new': 'create',
         '/budget/prospects': 'prospects',
         '/budget/kits': 'kits',
+        '/budget/surveys': 'list',
     };
 
     const devicesRoutePermMap: Record<string, string> = {

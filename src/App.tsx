@@ -31,6 +31,8 @@ const DevicesGeneral = React.lazy(() => import("@/pages/DevicesGeneral"));
 const ClientAccounts = React.lazy(() => import("@/pages/ClientAccounts"));
 const ClientDetail = React.lazy(() => import("@/pages/ClientDetail"));
 const ProspectsList = React.lazy(() => import("@/pages/ProspectsList"));
+const SurveyList = React.lazy(() => import("@/pages/SurveyList"));
+const NewSurvey = React.lazy(() => import("@/pages/NewSurvey"));
 
 
 const queryClient = new QueryClient({
@@ -83,6 +85,9 @@ function App() {
                   <Route path="/budget/preview/:id" element={<BudgetPreview />} />
                   <Route path="/budget/kits" element={<BudgetKits />} />
                   <Route path="/budget/prospects" element={<ProspectsList />} />
+                  <Route path="/budget/surveys" element={<SurveyList />} />
+                  <Route path="/budget/surveys/new" element={<NewSurvey />} />
+                  <Route path="/budget/surveys/edit/:id" element={<NewSurvey />} />
                   <Route path="/devices/general" element={<DevicesGeneral />} />
                   <Route path="/devices/clients" element={<ClientAccounts />} />
                   <Route path="/devices/clients/:userId" element={<ClientDetail />} />

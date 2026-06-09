@@ -477,3 +477,31 @@ export const PERMISSION_PRESETS: Record<string, { label: string; permissions: Te
     },
 };
 
+export interface SurveyStep {
+    id: string;
+    type: 'images' | 'video' | 'audio' | 'text';
+    title: string;
+    description: string;
+    min_qty?: number;
+    required: boolean;
+}
+
+export interface SurveyResponseValue {
+    urls?: string[];
+    url?: string;
+    text?: string;
+}
+
+export interface SolarSurvey {
+    id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email: string | null;
+    steps: SurveyStep[];
+    responses: Record<string, SurveyResponseValue>;
+    status: 'pendente' | 'enviado' | 'respondido';
+    budget_id: string | null;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
