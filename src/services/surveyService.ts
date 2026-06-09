@@ -105,5 +105,20 @@ export const surveyService = {
             .eq('id', id);
 
         if (error) throw error;
+    },
+
+    async uploadExampleImage(file: File): Promise<string> {
+        const uniqueName = `survey_examples/example_${Math.random().toString(36).substring(2, 10)}_${Date.now()}.${file.name.split('.').pop() || 'png'}`;
+        const { error } = await supabase.storage
+            .from('survey_files')
+            .upload(uniqueName, file);
+        
+        if (error) throw error;
+        
+        const { data } = supabase.storage
+            .from('survey_files')
+            .getPublicUrl(uniqueName);
+            
+        return data.publicUrl;
     }
 };

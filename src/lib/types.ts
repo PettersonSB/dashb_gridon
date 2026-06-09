@@ -484,6 +484,7 @@ export interface SurveyStep {
     description: string;
     min_qty?: number;
     required: boolean;
+    example_image_url?: string;
 }
 
 export interface SurveyResponseValue {

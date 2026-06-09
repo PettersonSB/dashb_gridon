@@ -413,57 +413,111 @@ export default function NewSurvey() {
                                         </div>
 
                                         {/* Inputs Column */}
-                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 w-full items-end">
-                                            <div className="md:col-span-4">
-                                                <label className="text-[11px] font-medium text-white/40 block mb-1">Título da Etapa (Cliente)</label>
-                                                <input
-                                                    type="text"
-                                                    value={step.title}
-                                                    onChange={(e) => updateStepField(step.id, 'title', e.target.value)}
-                                                    placeholder="Ex: Foto do Relógio Padrão"
-                                                    required
-                                                    className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
-                                                />
-                                            </div>
+                                         <div className="flex-1 flex flex-col gap-3 w-full">
+                                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full items-end">
+                                                 <div className="md:col-span-4">
+                                                     <label className="text-[11px] font-medium text-white/40 block mb-1">Título da Etapa (Cliente)</label>
+                                                     <input
+                                                         type="text"
+                                                         value={step.title}
+                                                         onChange={(e) => updateStepField(step.id, 'title', e.target.value)}
+                                                         placeholder="Ex: Foto do Relógio Padrão"
+                                                         required
+                                                         className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
+                                                     />
+                                                 </div>
 
-                                            <div className="md:col-span-5">
-                                                <label className="text-[11px] font-medium text-white/40 block mb-1">Instruções para o Cliente</label>
-                                                <input
-                                                    type="text"
-                                                    value={step.description}
-                                                    onChange={(e) => updateStepField(step.id, 'description', e.target.value)}
-                                                    placeholder="Ex: Tire a foto mostrando bem os disjuntores."
-                                                    required
-                                                    className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
-                                                />
-                                            </div>
+                                                 <div className="md:col-span-5">
+                                                     <label className="text-[11px] font-medium text-white/40 block mb-1">Instruções para o Cliente</label>
+                                                     <input
+                                                         type="text"
+                                                         value={step.description}
+                                                         onChange={(e) => updateStepField(step.id, 'description', e.target.value)}
+                                                         placeholder="Ex: Tire a foto mostrando bem os disjuntores."
+                                                         required
+                                                         className="bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 w-full transition-all duration-200 h-[38px]"
+                                                     />
+                                                 </div>
 
-                                            <div className="md:col-span-3 flex flex-row items-center gap-4 justify-start md:justify-end h-full pb-1 md:pb-0">
-                                                {step.type === 'images' && (
-                                                    <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl px-2.5 py-1.5 h-[38px]">
-                                                        <span className="text-[11px] text-white/40 whitespace-nowrap">Mínimo</span>
-                                                        <input
-                                                            type="number"
-                                                            min={1}
-                                                            max={15}
-                                                            value={step.min_qty || 1}
-                                                            onChange={(e) => updateStepField(step.id, 'min_qty', parseInt(e.target.value) || 1)}
-                                                            className="bg-slate-950 border border-white/10 rounded px-1.5 py-0.5 text-center text-xs text-white w-10 focus:outline-none focus:border-primary transition-colors"
-                                                        />
-                                                    </div>
-                                                )}
-                                                
-                                                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2 h-[38px]">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={step.required}
-                                                        onChange={(e) => updateStepField(step.id, 'required', e.target.checked)}
-                                                        className="rounded border-white/10 bg-slate-950 text-primary focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                                                    />
-                                                    <span className="text-[11px] text-white/40 whitespace-nowrap">Obrigatório</span>
-                                                </label>
-                                            </div>
-                                        </div>
+                                                 <div className="md:col-span-3 flex flex-row items-center gap-4 justify-start md:justify-end h-full pb-1 md:pb-0">
+                                                     {step.type === 'images' && (
+                                                         <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl px-2.5 py-1.5 h-[38px]">
+                                                             <span className="text-[11px] text-white/40 whitespace-nowrap">Mínimo</span>
+                                                             <input
+                                                                 type="number"
+                                                                 min={1}
+                                                                 max={15}
+                                                                 value={step.min_qty || 1}
+                                                                 onChange={(e) => updateStepField(step.id, 'min_qty', parseInt(e.target.value) || 1)}
+                                                                 className="bg-slate-950 border border-white/10 rounded px-1.5 py-0.5 text-center text-xs text-white w-10 focus:outline-none focus:border-primary transition-colors"
+                                                             />
+                                                         </div>
+                                                     )}
+                                                     
+                                                     <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2 h-[38px]">
+                                                         <input
+                                                             type="checkbox"
+                                                             checked={step.required}
+                                                             onChange={(e) => updateStepField(step.id, 'required', e.target.checked)}
+                                                             className="rounded border-white/10 bg-slate-950 text-primary focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                                                         />
+                                                         <span className="text-[11px] text-white/40 whitespace-nowrap">Obrigatório</span>
+                                                     </label>
+                                                 </div>
+                                             </div>
+
+                                             {/* Sub-linha para Foto de Exemplo (se for tipo images) */}
+                                             {step.type === 'images' && (
+                                                 <div className="pt-2.5 border-t border-white/[0.04] flex items-center gap-3 w-full">
+                                                     <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Foto de Exemplo:</span>
+                                                     {step.example_image_url ? (
+                                                         <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 rounded-xl p-1 pr-3">
+                                                             <a 
+                                                                 href={step.example_image_url} 
+                                                                 target="_blank" 
+                                                                 rel="noopener noreferrer"
+                                                                 className="w-7 h-7 rounded-lg overflow-hidden border border-white/10 block bg-black/20"
+                                                             >
+                                                                 <img src={step.example_image_url} alt="Exemplo" className="w-full h-full object-cover" />
+                                                             </a>
+                                                             <span className="text-[10px] text-white/60 truncate max-w-[150px]">Imagem de exemplo adicionada</span>
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={() => updateStepField(step.id, 'example_image_url', undefined)}
+                                                                 className="p-1 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                                                 title="Remover foto de exemplo"
+                                                             >
+                                                                 <Trash2 className="w-3.5 h-3.5" />
+                                                             </button>
+                                                         </div>
+                                                     ) : (
+                                                         <label className="cursor-pointer px-2.5 py-1 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-amber-500/30 text-white/70 hover:text-white rounded-lg text-[10px] font-semibold flex items-center gap-1.5 transition-colors">
+                                                             <Plus className="w-3 h-3 text-amber-500" />
+                                                             <span>Adicionar Foto de Exemplo</span>
+                                                             <input 
+                                                                 type="file" 
+                                                                 accept="image/*" 
+                                                                 className="hidden" 
+                                                                 onChange={async (e) => {
+                                                                     const file = e.target.files?.[0];
+                                                                     if (file) {
+                                                                         try {
+                                                                             emitToast({ title: "Enviando...", description: "Enviando foto de exemplo..." });
+                                                                             const url = await surveyService.uploadExampleImage(file);
+                                                                             updateStepField(step.id, 'example_image_url', url);
+                                                                             emitToast({ title: "Sucesso", description: "Imagem de exemplo adicionada!" });
+                                                                         } catch (err: any) {
+                                                                             console.error(err);
+                                                                             emitToast({ title: "Erro", description: "Falha ao enviar imagem de exemplo.", variant: "destructive" });
+                                                                         }
+                                                                     }
+                                                                 }}
+                                                             />
+                                                         </label>
+                                                     )}
+                                                 </div>
+                                             )}
+                                         </div>
 
                                         {/* Action Bin Column */}
                                         <div className="flex items-center justify-end pl-2 border-t border-white/5 lg:border-t-0 pt-2 lg:pt-0 w-full lg:w-auto">
