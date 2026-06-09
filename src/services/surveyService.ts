@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { SolarSurvey } from '@/lib/types';
+import { SolarSurvey, SurveyStep } from '@/lib/types';
 
 export const surveyService = {
     async getSurveys() {
@@ -120,5 +120,35 @@ export const surveyService = {
             .getPublicUrl(uniqueName);
             
         return data.publicUrl;
+    },
+
+    async getDefaultSteps(): Promise<SurveyStep[]> {
+        const { data, error } = await supabase
+            .from('global_settings')
+            .select('value')
+            .eq('key', 'default_survey_steps')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return [];
+        
+        try {
+            return JSON.parse(data.value) as SurveyStep[];
+        } catch {
+            return [];
+        }
+    },
+
+    async saveDefaultSteps(steps: SurveyStep[]): Promise<void> {
+        const valueStr = JSON.stringify(steps);
+        const { error } = await supabase
+            .from('global_settings')
+            .upsert({
+                key: 'default_survey_steps',
+                value: valueStr,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+
+        if (error) throw error;
     }
 };

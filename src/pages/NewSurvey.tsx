@@ -28,6 +28,7 @@ export default function NewSurvey() {
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSavingDefault, setIsSavingDefault] = useState(false);
 
     // Form fields
     const [customerName, setCustomerName] = useState("");
@@ -56,17 +57,37 @@ export default function NewSurvey() {
                     setSelectedBudgetId(survey.budget_id || "");
                     setSteps(survey.steps || []);
                 } else {
-                    // Prefill a default set of steps for new surveys to help user
-                    setSteps([
-                        {
-                            id: uuidv4(),
-                            type: "images",
-                            title: "Fotos do Local",
-                            description: "Tire fotos frontais do telhado, fiação geral e padrão de entrada (relógio).",
-                            min_qty: 2,
-                            required: true
+                    // Tenta obter as etapas padrão salvas no banco
+                    try {
+                        const defaultSteps = await surveyService.getDefaultSteps();
+                        if (defaultSteps && defaultSteps.length > 0) {
+                            setSteps(defaultSteps);
+                        } else {
+                            // Fallback se não houver etapas padrão salvas
+                            setSteps([
+                                {
+                                    id: uuidv4(),
+                                    type: "images",
+                                    title: "Fotos do Local",
+                                    description: "Tire fotos frontais do telhado, fiação geral e padrão de entrada (relógio).",
+                                    min_qty: 2,
+                                    required: true
+                                }
+                            ]);
                         }
-                    ]);
+                    } catch (defaultStepsErr) {
+                        console.error("Erro ao carregar etapas padrão, usando fallback:", defaultStepsErr);
+                        setSteps([
+                            {
+                                id: uuidv4(),
+                                type: "images",
+                                title: "Fotos do Local",
+                                description: "Tire fotos frontais do telhado, fiação geral e padrão de entrada (relógio).",
+                                min_qty: 2,
+                                required: true
+                            }
+                        ]);
+                    }
                 }
             } catch (err) {
                 console.error("Erro ao carregar dados iniciais:", err);
@@ -78,6 +99,24 @@ export default function NewSurvey() {
 
         loadInitialData();
     }, [isEditing, id]);
+
+    const handleSaveDefaultSteps = async () => {
+        if (steps.length === 0) {
+            emitToast({ title: "Erro", description: "Adicione ao menos 1 etapa para salvar como padrão.", variant: "destructive" });
+            return;
+        }
+
+        setIsSavingDefault(true);
+        try {
+            await surveyService.saveDefaultSteps(steps);
+            emitToast({ title: "Sucesso", description: "Modelo de etapas de vistoria salvo como padrão!" });
+        } catch (err: any) {
+            console.error("Erro ao salvar etapas padrão:", err);
+            emitToast({ title: "Erro", description: "Falha ao salvar etapas padrão no servidor.", variant: "destructive" });
+        } finally {
+            setIsSavingDefault(false);
+        }
+    };
 
     // Handle budget selection to prefill customer details
     const handleBudgetChange = (budgetId: string) => {
@@ -311,7 +350,27 @@ export default function NewSurvey() {
                         </div>
                         
                         {/* Add Step Actions */}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 items-center">
+                            <button
+                                type="button"
+                                disabled={isSavingDefault || steps.length === 0}
+                                onClick={handleSaveDefaultSteps}
+                                className="px-3 py-2 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-amber-500/30 text-amber-500 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mr-2"
+                                title="Salva este conjunto de etapas como padrão para novas vistorias"
+                            >
+                                {isSavingDefault ? (
+                                    <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Salvando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-3.5 h-3.5" /> Salvar como Padrão
+                                    </>
+                                )}
+                            </button>
+                            
+                            <div className="w-[1px] h-5 bg-white/10 mr-2" />
+
                             <button
                                 type="button"
                                 onClick={() => addStep('images')}
