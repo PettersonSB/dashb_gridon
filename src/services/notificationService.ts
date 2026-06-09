@@ -53,7 +53,7 @@ export const notificationService = {
         // Busca orçamentos ativos
         const { data: budgets, error } = await supabase
             .from('solar_budgets')
-            .select('id, customer_name, status, validity_days, created_at')
+            .select('id, customer_name, status, proposal_validity_days, created_at')
             .in('status', ['novo', 'em analise', 'visualizado']);
             
         if (error || !budgets) return;
@@ -61,7 +61,7 @@ export const notificationService = {
         const now = new Date();
         const expiredBudgets = budgets.filter(b => {
             const createdDate = new Date(b.created_at);
-            const expirationDate = new Date(createdDate.getTime() + (b.validity_days * 24 * 60 * 60 * 1000));
+            const expirationDate = new Date(createdDate.getTime() + (b.proposal_validity_days * 24 * 60 * 60 * 1000));
             // Dá uma margem até o fim do dia
             expirationDate.setHours(23, 59, 59, 999);
             return now > expirationDate;

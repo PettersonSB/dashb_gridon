@@ -408,26 +408,38 @@ export default function NewBudget() {
 
         log('Iniciando salvamento de orçamento...');
 
+        // Utility: promise com timeout usando AbortController pattern
+        const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+            return new Promise<T>((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error(`Tempo limite esgotado: ${label} (${ms / 1000}s)`)), ms);
+                promise.then(
+                    (val) => { clearTimeout(timer); resolve(val); },
+                    (err) => { clearTimeout(timer); reject(err); }
+                );
+            });
+        };
+
         // PRE-RESOLVER sessão do usuário ANTES de tudo (evita getSession travar dentro do createBudget)
         let authUser: any = null;
         try {
             log('Obtendo sessão do usuário...');
-            const sessionResult = await Promise.race([
+            const sessionResult = await withTimeout(
                 supabase.auth.getSession(),
-                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout ao obter sessão (5s)')), 5000))
-            ]);
-            authUser = (sessionResult as any)?.data?.session?.user || null;
+                10000,
+                'obter sessão'
+            );
+            authUser = sessionResult?.data?.session?.user || null;
             log('Sessão obtida com sucesso', { userId: authUser?.id, email: authUser?.email });
         } catch (authErr: any) {
             log('Falha ao obter sessão (prosseguindo sem user info)', authErr?.message);
             // Continua sem user info - o createBudget vai inserir com created_by null
         }
 
-        // Timeout de segurança global: 30s
+        // Timeout de segurança global: 60s
         const timeoutId = setTimeout(() => {
             setIsSubmitting(false);
             setError(`A operação está demorando demais. Histórico de logs:\n${saveLogs.join('\n')}\n\nLogs de Rede (Fetch):\n${fetchLogs.join('\n')}`);
-        }, 30000);
+        }, 60000);
 
         try {
             // Handle multiple images
@@ -435,10 +447,11 @@ export default function NewBudget() {
             
             if (imageFiles.length > 0) {
                 log('Fazendo upload de imagens de capa...', { count: imageFiles.length });
-                const uploadedUrls = await Promise.race([
+                const uploadedUrls = await withTimeout(
                     budgetService.uploadBudgetImages(imageFiles),
-                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao enviar imagens (15s)')), 15000))
-                ]);
+                    25000,
+                    'enviar imagens'
+                );
                 finalImageUrls = [...finalImageUrls, ...uploadedUrls];
                 log('Upload de imagens concluído com sucesso', { count: uploadedUrls.length });
             }
@@ -454,53 +467,60 @@ export default function NewBudget() {
             }
 
             // Tratar Prospect (Auto-criação ou Sincronização) — NÃO BLOQUEANTE
+            // Dispara em paralelo e aguarda depois, antes de montar o payload
             let prospectId = prefillProspect?.id || null;
+            let prospectPromise: Promise<string | null> | null = null;
 
             if (!prospectId && customerPhone) {
                 log('Sincronizando prospect por telefone...', { phone: customerPhone });
-                try {
-                    // Executa com timeout de 8 segundos para não bloquear o save principal
-                    const prospectResult = await Promise.race([
-                        (async () => {
-                            log('Buscando prospect existente no banco...');
-                            const existing = await prospectService.findProspectByPhone(customerPhone);
-                            if (existing) {
-                                log('Prospect encontrado. Atualizando dados...', { id: existing.id });
-                                await prospectService.updateProspect(existing.id, {
-                                    name: customerName,
-                                    email: customerEmail || existing.email,
-                                    city: customerCity || existing.city,
-                                    state: customerState || existing.state,
-                                    neighborhood: customerNeighborhood || existing.neighborhood
-                                });
-                                log('Prospect atualizado com sucesso');
-                                return existing.id;
-                            } else {
-                                log('Prospect não encontrado. Criando novo prospect...');
-                                const newProspect = await prospectService.createProspect({
-                                    name: customerName,
-                                    phone: customerPhone,
-                                    email: customerEmail || null,
-                                    city: customerCity || null,
-                                    state: customerState || null,
-                                    neighborhood: customerNeighborhood || null,
-                                    status: 'novo'
-                                });
-                                log('Novo prospect criado com sucesso', { id: newProspect.id });
-                                return newProspect.id;
-                            }
-                        })(),
-                        new Promise<null>((resolve) => setTimeout(() => {
-                            log('Timeout de 8 segundos na sincronização do prospect atingido. Pulando vínculo...');
-                            resolve(null);
-                        }, 8000))
-                    ]);
-                    prospectId = prospectResult;
-                } catch (e: any) {
-                    log('Falha ao sincronizar prospect (ignorado)', e?.message || e);
-                }
+                prospectPromise = (async (): Promise<string | null> => {
+                    try {
+                        const result = await withTimeout(
+                            (async () => {
+                                log('Buscando prospect existente no banco...');
+                                const existing = await prospectService.findProspectByPhone(customerPhone);
+                                if (existing) {
+                                    log('Prospect encontrado. Atualizando dados...', { id: existing.id });
+                                    await prospectService.updateProspect(existing.id, {
+                                        name: customerName,
+                                        email: customerEmail || existing.email,
+                                        city: customerCity || existing.city,
+                                        state: customerState || existing.state,
+                                        neighborhood: customerNeighborhood || existing.neighborhood
+                                    });
+                                    log('Prospect atualizado com sucesso');
+                                    return existing.id;
+                                } else {
+                                    log('Prospect não encontrado. Criando novo prospect...');
+                                    const newProspect = await prospectService.createProspect({
+                                        name: customerName,
+                                        phone: customerPhone,
+                                        email: customerEmail || null,
+                                        city: customerCity || null,
+                                        state: customerState || null,
+                                        neighborhood: customerNeighborhood || null,
+                                        status: 'novo'
+                                    });
+                                    log('Novo prospect criado com sucesso', { id: newProspect.id });
+                                    return newProspect.id;
+                                }
+                            })(),
+                            12000,
+                            'sincronizar prospect'
+                        );
+                        return result;
+                    } catch (e: any) {
+                        log('Falha ao sincronizar prospect (ignorado, prosseguindo sem vínculo)', e?.message || e);
+                        return null;
+                    }
+                })();
             } else if (prospectId) {
                 log('Utilizando prospect pré-selecionado', { id: prospectId });
+            }
+
+            // Aguarda resultado do prospect (se houve operação)
+            if (prospectPromise) {
+                prospectId = await prospectPromise;
             }
 
             log('Construindo payload final do orçamento...');
@@ -561,30 +581,42 @@ export default function NewBudget() {
 
             log('Payload construído com sucesso.');
 
+            // Helper: tentar operação com retry (1 tentativa extra)
+            const withRetry = async <T,>(fn: () => Promise<T>, label: string): Promise<T> => {
+                try {
+                    return await fn();
+                } catch (firstErr: any) {
+                    log(`Primeira tentativa falhou para ${label}: ${firstErr?.message}. Retentando em 2s...`);
+                    await new Promise(r => setTimeout(r, 2000));
+                    return await fn();
+                }
+            };
+
             if (isEditing && id) {
                 log('Atualizando orçamento existente...', { id });
-                await Promise.race([
-                    budgetService.updateBudget(id, payload),
-                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao atualizar orçamento (15s)')), 15000))
-                ]);
+                await withRetry(
+                    () => withTimeout(budgetService.updateBudget(id, payload), 30000, 'atualizar orçamento'),
+                    'updateBudget'
+                );
                 log('Orçamento atualizado com sucesso.');
                 setSuccessMessage('Orçamento atualizado com sucesso!');
             } else {
                 log('Enviando requisição de criação de novo orçamento...');
-                const createdBudget = await Promise.race([
-                    budgetService.createBudget(payload),
-                    new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao criar orçamento (15s)')), 15000))
-                ]);
+                const createdBudget = await withRetry(
+                    () => withTimeout(budgetService.createBudget(payload), 30000, 'criar orçamento'),
+                    'createBudget'
+                );
                 log('Orçamento criado com sucesso', { id: createdBudget?.id });
 
                 // Upload audio if recorded (non-blocking)
                 if (audioBlob && createdBudget?.id) {
                     log('Enviando gravação de áudio explicativo...', { size: audioBlob.size });
                     try {
-                        await Promise.race([
+                        await withTimeout(
                             budgetService.uploadBudgetAudio(createdBudget.id, audioBlob),
-                            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao enviar áudio (10s)')), 10000))
-                        ]);
+                            20000,
+                            'enviar áudio'
+                        );
                         log('Áudio enviado e vinculado com sucesso');
                     } catch (audioErr: any) {
                         log('Falha ao enviar áudio', audioErr?.message || audioErr);
@@ -599,10 +631,11 @@ export default function NewBudget() {
             if (isEditing && id && audioBlob) {
                 log('Enviando áudio atualizado para o orçamento editado...', { size: audioBlob.size });
                 try {
-                    await Promise.race([
+                    await withTimeout(
                         budgetService.uploadBudgetAudio(id, audioBlob),
-                        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Tempo limite esgotado ao enviar áudio (10s)')), 10000))
-                    ]);
+                        20000,
+                        'enviar áudio editado'
+                    );
                     log('Áudio editado enviado com sucesso');
                 } catch (audioErr: any) {
                     log('Falha ao enviar áudio na edição', audioErr?.message || audioErr);
@@ -632,6 +665,7 @@ export default function NewBudget() {
             setIsSubmitting(false);
         }
     };
+
 
     const addFinancingOption = () => {
         if (financingOptions.length >= 4) return;
