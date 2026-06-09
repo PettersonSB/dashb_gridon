@@ -155,7 +155,7 @@ const Sidebar = ({ isPinned, onTogglePin }: { isPinned: boolean, onTogglePin: ()
                         />
                     ) : (
                         <img
-                            src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-CuReGPKe.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLUN1UmVHUEtlLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODEwMTgxNTAsImV4cCI6MzE3MTA5NDgyMTUwfQ.W26ioHP5UuuDTapPUaY-ss2xzRYmxqglAfMJfocBGIk"
+                            src="https://bfsddnjwjbqlxfxxlorf.supabase.co/storage/v1/object/sign/sistema/logo-gridon-raio.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85MmMzNGE1NC02ZjBiLTRhMzItOWMxMC1jZTdjNmVmNjlmNjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzaXN0ZW1hL2xvZ28tZ3JpZG9uLXJhaW8ucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4MTAxODQyMiwiZXhwIjozMTcxMDk0ODI0MjJ9.1HJ3zhWhRcnHt_IRq17474gY6Oiml7H87uUaugePWZQ"
                             alt="Gridon"
                             className="h-8 w-8 object-contain transition-all"
                         />
