@@ -50,13 +50,13 @@ export const notificationService = {
     },
 
     async checkAndNotifyExpiredBudgets() {
-        // Busca orçamentos ativos
+        // Busca orçamentos ativos (que ainda não foram marcados como 'vencido')
         const { data: budgets, error } = await supabase
             .from('solar_budgets')
             .select('id, customer_name, status, proposal_validity_days, created_at')
             .in('status', ['novo', 'em analise', 'visualizado']);
             
-        if (error || !budgets) return;
+        if (error || !budgets || budgets.length === 0) return;
 
         const now = new Date();
         const expiredBudgets = budgets.filter(b => {
@@ -67,21 +67,41 @@ export const notificationService = {
             return now > expirationDate;
         });
 
-        for (const budget of expiredBudgets) {
-            // Atualiza o status
-            await supabase
-                .from('solar_budgets')
-                .update({ status: 'vencido' })
-                .eq('id', budget.id);
+        if (expiredBudgets.length === 0) return;
 
-            // Cria a notificação
-            await this.createNotification({
+        // Batch update: atualiza TODOS os vencidos de uma só vez (em vez de N PATCHs individuais)
+        const expiredIds = expiredBudgets.map(b => b.id);
+        await supabase
+            .from('solar_budgets')
+            .update({ status: 'vencido' })
+            .in('id', expiredIds);
+
+        // Verifica quais notificações já existem para evitar duplicatas
+        const { data: existingNotifs } = await supabase
+            .from('notifications')
+            .select('budget_id')
+            .eq('type', 'expired')
+            .in('budget_id', expiredIds);
+
+        const alreadyNotified = new Set((existingNotifs || []).map(n => n.budget_id));
+        const newExpired = expiredBudgets.filter(b => !alreadyNotified.has(b.id));
+
+        // Cria notificações apenas para os que ainda não foram notificados
+        if (newExpired.length > 0) {
+            const notifPayloads = newExpired.map(budget => ({
                 type: 'expired',
                 title: 'Orçamento Vencido',
                 message: `O orçamento do(a) cliente ${budget.customer_name} acabou de vencer e teve o status atualizado.`,
                 budget_id: budget.id,
                 metadata: { customer: budget.customer_name }
-            }).catch(console.error); // Ignora erro de duplicidade se houver
+            }));
+
+            const { error: insertErr } = await supabase
+                .from('notifications')
+                .insert(notifPayloads);
+            if (insertErr) {
+                console.error('Erro ao inserir notificações:', insertErr);
+            }
         }
     }
 };

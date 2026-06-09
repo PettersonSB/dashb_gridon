@@ -408,7 +408,7 @@ export default function NewBudget() {
 
         log('Iniciando salvamento de orçamento...');
 
-        // Utility: promise com timeout usando AbortController pattern
+        // Utility: promise com timeout
         const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
             return new Promise<T>((resolve, reject) => {
                 const timer = setTimeout(() => reject(new Error(`Tempo limite esgotado: ${label} (${ms / 1000}s)`)), ms);
@@ -419,27 +419,26 @@ export default function NewBudget() {
             });
         };
 
-        // PRE-RESOLVER sessão do usuário ANTES de tudo (evita getSession travar dentro do createBudget)
+        // PRE-RESOLVER sessão do usuário ANTES de tudo
         let authUser: any = null;
         try {
             log('Obtendo sessão do usuário...');
-            const sessionResult = await withTimeout(
-                supabase.auth.getSession(),
-                10000,
-                'obter sessão'
-            );
+            const sessionResult = await supabase.auth.getSession();
             authUser = sessionResult?.data?.session?.user || null;
-            log('Sessão obtida com sucesso', { userId: authUser?.id, email: authUser?.email });
+            if (authUser) {
+                log('Sessão obtida com sucesso', { userId: authUser?.id, email: authUser?.email });
+            } else {
+                log('Nenhuma sessão ativa encontrada (prosseguindo sem user info)');
+            }
         } catch (authErr: any) {
             log('Falha ao obter sessão (prosseguindo sem user info)', authErr?.message);
-            // Continua sem user info - o createBudget vai inserir com created_by null
         }
 
-        // Timeout de segurança global: 60s
+        // Timeout de segurança global: 45s
         const timeoutId = setTimeout(() => {
             setIsSubmitting(false);
             setError(`A operação está demorando demais. Histórico de logs:\n${saveLogs.join('\n')}\n\nLogs de Rede (Fetch):\n${fetchLogs.join('\n')}`);
-        }, 60000);
+        }, 45000);
 
         try {
             // Handle multiple images
@@ -449,7 +448,7 @@ export default function NewBudget() {
                 log('Fazendo upload de imagens de capa...', { count: imageFiles.length });
                 const uploadedUrls = await withTimeout(
                     budgetService.uploadBudgetImages(imageFiles),
-                    25000,
+                    20000,
                     'enviar imagens'
                 );
                 finalImageUrls = [...finalImageUrls, ...uploadedUrls];
@@ -475,40 +474,33 @@ export default function NewBudget() {
                 log('Sincronizando prospect por telefone...', { phone: customerPhone });
                 prospectPromise = (async (): Promise<string | null> => {
                     try {
-                        const result = await withTimeout(
-                            (async () => {
-                                log('Buscando prospect existente no banco...');
-                                const existing = await prospectService.findProspectByPhone(customerPhone);
-                                if (existing) {
-                                    log('Prospect encontrado. Atualizando dados...', { id: existing.id });
-                                    await prospectService.updateProspect(existing.id, {
-                                        name: customerName,
-                                        email: customerEmail || existing.email,
-                                        city: customerCity || existing.city,
-                                        state: customerState || existing.state,
-                                        neighborhood: customerNeighborhood || existing.neighborhood
-                                    });
-                                    log('Prospect atualizado com sucesso');
-                                    return existing.id;
-                                } else {
-                                    log('Prospect não encontrado. Criando novo prospect...');
-                                    const newProspect = await prospectService.createProspect({
-                                        name: customerName,
-                                        phone: customerPhone,
-                                        email: customerEmail || null,
-                                        city: customerCity || null,
-                                        state: customerState || null,
-                                        neighborhood: customerNeighborhood || null,
-                                        status: 'novo'
-                                    });
-                                    log('Novo prospect criado com sucesso', { id: newProspect.id });
-                                    return newProspect.id;
-                                }
-                            })(),
-                            12000,
-                            'sincronizar prospect'
-                        );
-                        return result;
+                        log('Buscando prospect existente no banco...');
+                        const existing = await prospectService.findProspectByPhone(customerPhone);
+                        if (existing) {
+                            log('Prospect encontrado. Atualizando dados...', { id: existing.id });
+                            await prospectService.updateProspect(existing.id, {
+                                name: customerName,
+                                email: customerEmail || existing.email,
+                                city: customerCity || existing.city,
+                                state: customerState || existing.state,
+                                neighborhood: customerNeighborhood || existing.neighborhood
+                            });
+                            log('Prospect atualizado com sucesso');
+                            return existing.id;
+                        } else {
+                            log('Prospect não encontrado. Criando novo prospect...');
+                            const newProspect = await prospectService.createProspect({
+                                name: customerName,
+                                phone: customerPhone,
+                                email: customerEmail || null,
+                                city: customerCity || null,
+                                state: customerState || null,
+                                neighborhood: customerNeighborhood || null,
+                                status: 'novo'
+                            });
+                            log('Novo prospect criado com sucesso', { id: newProspect.id });
+                            return newProspect.id;
+                        }
                     } catch (e: any) {
                         log('Falha ao sincronizar prospect (ignorado, prosseguindo sem vínculo)', e?.message || e);
                         return null;
@@ -594,18 +586,24 @@ export default function NewBudget() {
 
             if (isEditing && id) {
                 log('Atualizando orçamento existente...', { id });
-                await withRetry(
-                    () => withTimeout(budgetService.updateBudget(id, payload), 30000, 'atualizar orçamento'),
+                const updatedBudget = await withRetry(
+                    () => withTimeout(budgetService.updateBudget(id, payload), 20000, 'atualizar orçamento'),
                     'updateBudget'
                 );
+                if (!updatedBudget) {
+                    throw new Error('Falha ao atualizar orçamento: o servidor não retornou dados. Verifique se você está logado.');
+                }
                 log('Orçamento atualizado com sucesso.');
                 setSuccessMessage('Orçamento atualizado com sucesso!');
             } else {
                 log('Enviando requisição de criação de novo orçamento...');
                 const createdBudget = await withRetry(
-                    () => withTimeout(budgetService.createBudget(payload), 30000, 'criar orçamento'),
+                    () => withTimeout(budgetService.createBudget(payload), 20000, 'criar orçamento'),
                     'createBudget'
                 );
+                if (!createdBudget || !createdBudget.id) {
+                    throw new Error('Falha ao criar orçamento: o servidor não retornou dados. Verifique se você está logado.');
+                }
                 log('Orçamento criado com sucesso', { id: createdBudget?.id });
 
                 // Upload audio if recorded (non-blocking)
@@ -614,7 +612,7 @@ export default function NewBudget() {
                     try {
                         await withTimeout(
                             budgetService.uploadBudgetAudio(createdBudget.id, audioBlob),
-                            20000,
+                            15000,
                             'enviar áudio'
                         );
                         log('Áudio enviado e vinculado com sucesso');
@@ -633,7 +631,7 @@ export default function NewBudget() {
                 try {
                     await withTimeout(
                         budgetService.uploadBudgetAudio(id, audioBlob),
-                        20000,
+                        15000,
                         'enviar áudio editado'
                     );
                     log('Áudio editado enviado com sucesso');

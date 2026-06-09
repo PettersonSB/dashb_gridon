@@ -9,15 +9,4 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
         persistSession: true,
         detectSessionInUrl: true,
     },
-    global: {
-        // Timeout de 20s para qualquer request fetch ao Supabase
-        fetch: (url, options) => {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000);
-            return fetch(url, {
-                ...options,
-                signal: controller.signal,
-            }).finally(() => clearTimeout(timeoutId));
-        },
-    },
 });
